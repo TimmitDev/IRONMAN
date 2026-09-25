@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import type { NewWorkout, Workout } from './types'
+import { normalizeRow, type NewWorkout, type Workout } from './types'
 
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
@@ -17,7 +17,7 @@ export function useWorkouts() {
     if (error) setError(error.message)
     else {
       setError(null)
-      setWorkouts(data as Workout[])
+      setWorkouts((data as Workout[]).map(normalizeRow))
     }
     setLoading(false)
   }, [])
@@ -29,7 +29,7 @@ export function useWorkouts() {
   const add = async (w: NewWorkout) => {
     const { data, error } = await supabase.from('workouts').insert(w).select().single()
     if (error) throw error
-    setWorkouts((prev) => [data as Workout, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    setWorkouts((prev) => [normalizeRow(data as Workout), ...prev].sort((a, b) => b.date.localeCompare(a.date)))
   }
 
   const remove = async (id: string) => {

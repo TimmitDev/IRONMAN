@@ -69,10 +69,22 @@ export function formatShortDate(iso: string): string {
   return parseISODate(iso).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })
 }
 
+/** Afgerond op minuten, voor totalen: "45 min", "1u05". */
 export function formatDuration(min: number): string {
-  const h = Math.floor(min / 60)
-  const m = Math.round(min % 60)
+  const total = Math.round(min)
+  const h = Math.floor(total / 60)
+  const m = total % 60
   return h ? `${h}u${m ? String(m).padStart(2, '0') : ''}` : `${m} min`
+}
+
+/** Voor één sessie: toont seconden als die er zijn ("45:30", "1:05:30"), anders als formatDuration. */
+export function formatSessionDuration(min: number): string {
+  const totalSec = Math.round(min * 60)
+  if (totalSec % 60 === 0) return formatDuration(min)
+  const h = Math.floor(totalSec / 3600)
+  const m = Math.floor((totalSec % 3600) / 60)
+  const s = String(totalSec % 60).padStart(2, '0')
+  return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s} min`
 }
 
 export const sumMinutes = (items: { duration_min: number }[]) => items.reduce((a, w) => a + w.duration_min, 0)

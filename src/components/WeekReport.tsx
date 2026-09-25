@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
 import type { BadgeResult } from '../lib/badges'
 import { useLeaderboard } from '../lib/leaderboard'
-import { addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, parseISODate, sumKm, sumMinutes } from '../lib/race'
+import { addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, formatShortDate, parseISODate, sumKm, sumMinutes } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
 import type { Goals } from '../lib/useGoals'
 import { usePlan } from '../lib/usePlan'
@@ -142,7 +142,7 @@ export function WeekReport({
               <li>
                 <span className="text-zinc-400">Langste sessie:</span>{' '}
                 <span className="font-semibold text-white">
-                  {SPORT_LABEL[longest.sport]} {formatDuration(longest.duration_min)}
+                  {SPORT_LABEL[longest.sport]} {formatSessionDuration(longest.duration_min)}
                   {longest.distance_km ? ` (${longest.distance_km} km)` : ''}
                 </span>
               </li>

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import type { NewPlanned, Sport } from '../lib/types'
 import { errorMessage, ghostButton, inputClass, labelClass, primaryButton } from '../lib/ui'
-import { DurationFields, toMinutes } from './DurationFields'
+import { DurationFields, emptyDuration, toMinutes, type DurationValue } from './DurationFields'
 import { SportPicker } from './SportPicker'
 
 export function PlanForm({
@@ -16,8 +16,7 @@ export function PlanForm({
   const [sport, setSport] = useState<Sport>('run')
   const [date, setDate] = useState(defaultDate)
   const [title, setTitle] = useState('')
-  const [hours, setHours] = useState('')
-  const [minutes, setMinutes] = useState('')
+  const [duration, setDuration] = useState<DurationValue>(emptyDuration)
   const [distance, setDistance] = useState('')
   const [notes, setNotes] = useState('')
   const [busy, setBusy] = useState(false)
@@ -25,8 +24,8 @@ export function PlanForm({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    const duration = toMinutes(hours, minutes)
-    if (duration <= 0) return setError('Vul een duur in.')
+    const minutes = toMinutes(duration)
+    if (minutes <= 0) return setError('Vul een duur in.')
     setBusy(true)
     setError(null)
     try {
@@ -34,7 +33,7 @@ export function PlanForm({
         sport,
         date,
         title: title.trim() || null,
-        duration_min: duration,
+        duration_min: minutes,
         distance_km: distance ? Number(distance) : null,
         notes: notes.trim() || null,
       })
@@ -58,12 +57,12 @@ export function PlanForm({
         <span className={labelClass}>Titel</span>
         <input className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="bv. Lange duurloop Z2" autoFocus />
       </label>
-      <DurationFields hours={hours} minutes={minutes} onHours={setHours} onMinutes={setMinutes} />
-      <label>
+      <DurationFields value={duration} onChange={setDuration} className="col-span-2 lg:col-span-3" />
+      <label className="col-span-2 lg:col-span-2">
         <span className={labelClass}>Afstand (km)</span>
         <input type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={distance} onChange={(e) => setDistance(e.target.value)} />
       </label>
-      <label className="col-span-2 lg:col-span-6">
+      <label className="col-span-2 lg:col-span-4">
         <span className={labelClass}>Notities</span>
         <input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="bv. 3x10' tempo, 5' rust" />
       </label>

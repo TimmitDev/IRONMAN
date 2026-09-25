@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { addDays } from './race'
-import type { NewPlanned, PlannedWorkout, Workout } from './types'
+import { normalizeRow, type NewPlanned, type PlannedWorkout, type Workout } from './types'
 
 const byDate = <T extends { date: string; created_at: string }>(a: T, b: T) =>
   a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at)
@@ -28,8 +28,8 @@ export function usePlan(start: string) {
     load().then(({ planned: p, done: w }) => {
       if (stale) return
       setError(p.error?.message ?? w.error?.message ?? null)
-      setPlanned(((p.data ?? []) as PlannedWorkout[]).sort(byDate))
-      setDone(((w.data ?? []) as Workout[]).sort(byDate))
+      setPlanned(((p.data ?? []) as PlannedWorkout[]).map(normalizeRow).sort(byDate))
+      setDone(((w.data ?? []) as Workout[]).map(normalizeRow).sort(byDate))
       setLoading(false)
     })
     return () => {
@@ -40,7 +40,7 @@ export function usePlan(start: string) {
   const add = async (item: NewPlanned) => {
     const { data, error } = await supabase.from('planned_workouts').insert(item).select().single()
     if (error) throw error
-    setPlanned((prev) => [...prev, data as PlannedWorkout].sort(byDate))
+    setPlanned((prev) => [...prev, normalizeRow(data as PlannedWorkout)].sort(byDate))
   }
 
   const remove = async (id: string) => {
@@ -76,7 +76,7 @@ export function usePlan(start: string) {
       .update({ workout_id: workout.id })
       .eq('id', item.id)
     if (linkError) throw linkError
-    setDone((prev) => [...prev, workout as Workout].sort(byDate))
+    setDone((prev) => [...prev, normalizeRow(workout as Workout)].sort(byDate))
     setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, workout_id: workout.id } : p)))
   }
 
@@ -92,7 +92,7 @@ export function usePlan(start: string) {
     const rows = (data as NewPlanned[]).map((p) => ({ ...p, date: addDays(p.date, 7) }))
     const { data: inserted, error: insertError } = await supabase.from('planned_workouts').insert(rows).select()
     if (insertError) throw insertError
-    setPlanned((prev) => [...prev, ...(inserted as PlannedWorkout[])].sort(byDate))
+    setPlanned((prev) => [...prev, ...(inserted as PlannedWorkout[]).map(normalizeRow)].sort(byDate))
     return rows.length
   }
 

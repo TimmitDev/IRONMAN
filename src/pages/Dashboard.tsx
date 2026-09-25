@@ -9,7 +9,7 @@ import { PhaseTimeline } from '../components/PhaseTimeline'
 import { ProgressBar } from '../components/ProgressBar'
 import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
-import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
+import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Sport } from '../lib/types'
 import { errorMessage } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
@@ -161,7 +161,7 @@ function TodayCard({
                   {p.title || SPORT_LABEL[p.sport]}
                 </p>
                 <p className="text-sm text-zinc-400">
-                  {SPORT_LABEL[p.sport]} · {formatDuration(p.duration_min)}
+                  {SPORT_LABEL[p.sport]} · {formatSessionDuration(p.duration_min)}
                   {p.distance_km ? ` · ${p.distance_km} km` : ''}
                 </p>
                 {p.notes && <p className="mt-1 text-xs text-zinc-500">{p.notes}</p>}

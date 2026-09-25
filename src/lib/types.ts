@@ -22,6 +22,11 @@ export const SPORT_BORDER: Record<Sport, string> = {
   strength: 'border-strength',
 }
 
+/** numeric-kolommen kunnen als string uit PostgREST komen; zet ze om zodat optellen niet gaat concateneren. */
+export function normalizeRow<T extends { duration_min: number; distance_km: number | null }>(row: T): T {
+  return { ...row, duration_min: Number(row.duration_min), distance_km: row.distance_km === null ? null : Number(row.distance_km) }
+}
+
 export interface Workout {
   id: string
   user_id: string

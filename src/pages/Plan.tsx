@@ -3,7 +3,7 @@ import { Card } from '../components/Card'
 import { DoneToggle } from '../components/DoneToggle'
 import { PlanForm } from '../components/PlanForm'
 import { ProgressBar } from '../components/ProgressBar'
-import { addDays, formatDuration, formatShortDate, parseISODate, sumMinutes, todayISO, weekStart } from '../lib/race'
+import { addDays, formatDuration, formatSessionDuration, formatShortDate, parseISODate, sumMinutes, todayISO, weekStart } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout } from '../lib/types'
 import { errorMessage, ghostButton } from '../lib/ui'
 import { usePlan } from '../lib/usePlan'
@@ -125,7 +125,7 @@ export function Plan() {
                       {SPORT_LABEL[w.sport]}
                     </p>
                     <p className="text-xs text-zinc-400">
-                      {formatDuration(w.duration_min)} · niet gepland
+                      {formatSessionDuration(w.duration_min)} · niet gepland
                     </p>
                   </div>
                 ))}
@@ -157,7 +157,7 @@ function PlannedItem({ item, onToggle, onRemove }: { item: PlannedWorkout; onTog
             {item.title || SPORT_LABEL[item.sport]}
           </p>
           <p className="mt-0.5 text-xs text-zinc-400">
-            <span className="whitespace-nowrap">{formatDuration(item.duration_min)}</span>
+            <span className="whitespace-nowrap">{formatSessionDuration(item.duration_min)}</span>
             {item.distance_km ? <span className="whitespace-nowrap"> · {item.distance_km} km</span> : null}
           </p>
           {item.notes && <p className="mt-0.5 text-xs text-zinc-500">{item.notes}</p>}
