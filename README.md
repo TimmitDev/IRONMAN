@@ -10,6 +10,9 @@ login en data. Wordt gehost op GitHub Pages.
 2. **SQL Editor** → voer de bestanden in [`supabase/migrations/`](supabase/migrations/) in volgorde uit:
    - `001_workouts.sql`: gelogde trainingen
    - `002_plan_goals.sql`: trainingsschema (`planned_workouts`) en weekdoelen (`weekly_goals`)
+   - `003_leaderboard.sql`: profielen en de leaderboard-functie (alleen totalen)
+   - `004_duration_seconds.sql`: duur met seconden
+   - `005_ironman_plan.sql`: instellingen van het IRONMAN-plan en herkomst van geplande sessies
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
@@ -51,6 +54,7 @@ na een nieuwe deploy haalt de app bij de volgende start automatisch de nieuwe ve
 - `src/lib/usePlan.ts` – weekschema: plannen, afvinken (logt de training), vorige week kopiëren
 - `src/lib/useGoals.ts` – weekdoelen per sport
 - `src/lib/badges.ts` – badge-definities (voeg hier nieuwe badges toe)
+- `src/lib/ironmanPlan.ts` – generator van het IRONMAN-plan (belasting per fase, sessietitels, dagverdeling)
 - `src/components/WeekReport.tsx` – weekrapport (zondag op het dashboard)
 - `src/pages/` – Login, Dashboard, Schema, Trainingen, Doelen
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

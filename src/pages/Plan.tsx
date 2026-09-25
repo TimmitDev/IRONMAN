@@ -1,10 +1,13 @@
 import { useState, type DragEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { CompleteDialog } from '../components/CompleteDialog'
 import { DoneToggle } from '../components/DoneToggle'
 import { Modal } from '../components/Modal'
 import { PlanForm } from '../components/PlanForm'
 import { ProgressBar } from '../components/ProgressBar'
+import { Segmented } from '../components/Segmented'
+import { IronmanPlan } from './IronmanPlan'
 import {
   addDays,
   formatDuration,
@@ -20,7 +23,28 @@ import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Workout } from
 import { errorMessage, ghostButton } from '../lib/ui'
 import { usePlan } from '../lib/usePlan'
 
+const TABS = [
+  { key: 'week', label: 'Weekschema' },
+  { key: 'ironman', label: 'IRONMAN-plan' },
+] as const
+
+type Tab = (typeof TABS)[number]['key']
+
 export function Plan() {
+  // Tab staat in de URL (#/plan?tab=ironman), zodat terugknop en links werken.
+  const [params, setParams] = useSearchParams()
+  const tab: Tab = params.get('tab') === 'ironman' ? 'ironman' : 'week'
+  const setTab = (t: Tab) => setParams(t === 'week' ? {} : { tab: t })
+
+  return (
+    <div className="space-y-4">
+      <Segmented options={[...TABS]} value={tab} onChange={setTab} />
+      {tab === 'week' ? <WeekSchedule /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}
+    </div>
+  )
+}
+
+function WeekSchedule() {
   const [start, setStart] = useState(() => weekStart(new Date()))
   const { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek } = usePlan(start)
   const [addDate, setAddDate] = useState<string | null>(null)
