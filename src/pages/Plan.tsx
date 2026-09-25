@@ -1,6 +1,7 @@
 import { useState, type DragEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Card } from '../components/Card'
+import { ClearScheduleDialog } from '../components/ClearScheduleDialog'
 import { CompleteDialog } from '../components/CompleteDialog'
 import { DoneToggle } from '../components/DoneToggle'
 import { Modal } from '../components/Modal'
@@ -46,7 +47,9 @@ export function Plan() {
 
 function WeekSchedule() {
   const [start, setStart] = useState(() => weekStart(new Date()))
-  const { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek } = usePlan(start)
+  const { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek, reload } = usePlan(start)
+  const [clearing, setClearing] = useState(false)
+  const [notice, setNotice] = useState<string | null>(null)
   const [addDate, setAddDate] = useState<string | null>(null)
   const [editing, setEditing] = useState<PlannedWorkout | null>(null)
   const [completing, setCompleting] = useState<PlannedWorkout | null>(null)
@@ -108,7 +111,10 @@ function WeekSchedule() {
             Deze week
           </button>
         )}
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex flex-wrap justify-end gap-2">
+          <button onClick={() => setClearing(true)} className={`${ghostButton} text-zinc-400 hover:text-red-400`}>
+            Leegmaken
+          </button>
           <button onClick={() => run(handleCopy)} className={ghostButton}>
             Vorige week kopiëren
           </button>
@@ -122,6 +128,14 @@ function WeekSchedule() {
       </div>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
+      {notice && (
+        <p className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-zinc-900/70 px-4 py-2.5 text-sm text-zinc-300">
+          {notice}
+          <button onClick={() => setNotice(null)} className="text-zinc-500 hover:text-white" aria-label="Sluiten">
+            ×
+          </button>
+        </p>
+      )}
 
       <Card title="Gepland vs. gedaan">
         <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
@@ -238,6 +252,16 @@ function WeekSchedule() {
       )}
 
       {completing && <CompleteDialog item={completing} onComplete={complete} onClose={() => setCompleting(null)} />}
+
+      {clearing && (
+        <ClearScheduleDialog
+          onClose={() => setClearing(false)}
+          onCleared={(count) => {
+            setNotice(`${count} ${count === 1 ? 'sessie' : 'sessies'} verwijderd uit je schema.`)
+            reload()
+          }}
+        />
+      )}
     </div>
   )
 }

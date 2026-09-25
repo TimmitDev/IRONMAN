@@ -13,6 +13,9 @@ export function usePlan(start: string) {
   const [done, setDone] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [version, setVersion] = useState(0)
+  /** Opnieuw ophalen, bv. na een bulkactie buiten deze hook. */
+  const reload = () => setVersion((v) => v + 1)
 
   const load = useCallback(async () => {
     const [p, w] = await Promise.all([
@@ -35,7 +38,7 @@ export function usePlan(start: string) {
     return () => {
       stale = true
     }
-  }, [load])
+  }, [load, version])
 
   const add = async (item: NewPlanned) => {
     const { data, error } = await supabase.from('planned_workouts').insert(item).select().single()
@@ -107,5 +110,34 @@ export function usePlan(start: string) {
     return rows.length
   }
 
-  return { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek }
+  return { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek, reload }
+}
+
+export type ClearMode = 'plan' | 'open' | 'all'
+
+/*
+ * "Schema leegmaken" voor één gebruiker.
+ * plan = open sessies uit het IRONMAN-plan, open = alle niet-afgevinkte, all = alles.
+ * Het user_id-filter is ook nodig omdat Supabase deletes zonder WHERE weigert.
+ */
+
+export async function countClearable(userId: string, mode: ClearMode, fromDate: string | null): Promise<number> {
+  let q = supabase.from('planned_workouts').select('id', { count: 'exact', head: true }).eq('user_id', userId)
+  if (mode === 'plan') q = q.eq('source', 'plan')
+  if (mode !== 'all') q = q.is('workout_id', null)
+  if (fromDate) q = q.gte('date', fromDate)
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
+}
+
+/** Verwijdert geplande sessies; gelogde trainingen blijven altijd bestaan. */
+export async function clearSchedule(userId: string, mode: ClearMode, fromDate: string | null): Promise<number> {
+  let q = supabase.from('planned_workouts').delete({ count: 'exact' }).eq('user_id', userId)
+  if (mode === 'plan') q = q.eq('source', 'plan')
+  if (mode !== 'all') q = q.is('workout_id', null)
+  if (fromDate) q = q.gte('date', fromDate)
+  const { count, error } = await q
+  if (error) throw error
+  return count ?? 0
 }
