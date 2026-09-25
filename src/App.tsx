@@ -1,18 +1,20 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
-import type { ReactNode } from 'react'
+import { Suspense, lazy, type ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
 import { isConfigured } from './lib/supabase'
-import { Layout } from './components/Layout'
-import { Login } from './pages/Login'
-import { Dashboard } from './pages/Dashboard'
-import { Workouts } from './pages/Workouts'
-import { Plan } from './pages/Plan'
-import { Goals } from './pages/Goals'
-import { Leaderboard } from './pages/Leaderboard'
+import { Layout, PageLoader } from './components/Layout'
+
+// Elke pagina is een eigen chunk: de eerste keer laden haalt alleen op wat nodig is.
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
+const Workouts = lazy(() => import('./pages/Workouts').then((m) => ({ default: m.Workouts })))
+const Plan = lazy(() => import('./pages/Plan').then((m) => ({ default: m.Plan })))
+const Goals = lazy(() => import('./pages/Goals').then((m) => ({ default: m.Goals })))
+const Leaderboard = lazy(() => import('./pages/Leaderboard').then((m) => ({ default: m.Leaderboard })))
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
-  if (loading) return <div className="p-8 text-center text-sm text-zinc-500">Laden…</div>
+  if (loading) return <PageLoader />
   return session ? children : <Navigate to="/login" replace />
 }
 
@@ -35,7 +37,14 @@ export default function App() {
     <AuthProvider>
       <HashRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route
+            path="/login"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <Login />
+              </Suspense>
+            }
+          />
           <Route
             element={
               <RequireAuth>

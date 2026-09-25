@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BadgesCard } from '../components/Badges'
 import { Card } from '../components/Card'
+import { CompleteDialog } from '../components/CompleteDialog'
 import { WeekReport } from '../components/WeekReport'
 import { useBadges } from '../lib/badges'
 import { DoneToggle } from '../components/DoneToggle'
@@ -26,11 +27,16 @@ export function Dashboard() {
   const isSunday = new Date().getDay() === 0
   const [showPrevReport, setShowPrevReport] = useState(false)
 
+  const [completing, setCompleting] = useState<PlannedWorkout | null>(null)
+
+  // Afvinken opent het venster met echte waarden; uitvinken gaat meteen.
   const toggle = (p: PlannedWorkout) =>
-    plan
-      .toggle(p)
-      .then(refresh)
-      .catch((e) => alert(errorMessage(e)))
+    p.workout_id
+      ? plan
+          .uncomplete(p)
+          .then(refresh)
+          .catch((e) => alert(errorMessage(e)))
+      : setCompleting(p)
 
   const reportProps = { workouts, goals, goalMinutes, badges }
 
@@ -46,6 +52,13 @@ export function Dashboard() {
         onToggle={toggle}
         onShowReport={isSunday || showPrevReport ? undefined : () => setShowPrevReport(true)}
       />
+      {completing && (
+        <CompleteDialog
+          item={completing}
+          onComplete={(item, actual) => plan.complete(item, actual).then(refresh)}
+          onClose={() => setCompleting(null)}
+        />
+      )}
 
       {(error || plan.error) && (
         <Card className="lg:col-span-3">

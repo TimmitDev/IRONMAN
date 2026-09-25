@@ -1,4 +1,4 @@
-import { formatSessionDuration, formatShortDate } from '../lib/race'
+import { formatPace, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
 
 export function WorkoutList({ workouts, onDelete }: { workouts: Workout[]; onDelete?: (id: string) => void }) {
@@ -24,7 +24,12 @@ export function WorkoutList({ workouts, onDelete }: { workouts: Workout[]; onDel
           </div>
           <div className="shrink-0 text-right tabular-nums">
             <div className="font-semibold text-white">{formatSessionDuration(w.duration_min)}</div>
-            {w.distance_km ? <div className="text-xs text-zinc-400">{w.distance_km} km</div> : null}
+            {w.distance_km ? (
+              <div className="text-xs text-zinc-400">
+                {w.distance_km} km
+                {formatPace(w.sport, w.duration_min, w.distance_km) && <span className="text-zinc-500"> · {formatPace(w.sport, w.duration_min, w.distance_km)}</span>}
+              </div>
+            ) : null}
           </div>
           {onDelete && (
             <button

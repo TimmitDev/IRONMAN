@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Suspense, type ReactNode } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
@@ -28,6 +28,14 @@ const tabClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'text-white' : 'text-zinc-500 active:text-zinc-300'
   }`
 
+export function PageLoader() {
+  return (
+    <div className="flex justify-center p-12" role="status" aria-label="Laden">
+      <span className="size-6 animate-spin rounded-full border-2 border-zinc-700 border-t-brand" />
+    </div>
+  )
+}
+
 export function Layout() {
   const { session } = useAuth()
 
@@ -55,7 +63,10 @@ export function Layout() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
-        <Outlet />
+        {/* Binnen de layout, zodat header en tabbalk blijven staan terwijl een pagina laadt. */}
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
 
       {/* Mobiel: vaste tabbalk onderaan, binnen duimbereik. */}

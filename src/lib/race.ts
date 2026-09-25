@@ -87,6 +87,23 @@ export function formatSessionDuration(min: number): string {
   return h ? `${h}:${String(m).padStart(2, '0')}:${s}` : `${m}:${s} min`
 }
 
+const pad2 = (n: number) => String(n).padStart(2, '0')
+
+/** Tempo zoals triatleten het lezen: lopen min/km, zwemmen min/100 m, fietsen km/u. Null zonder afstand of voor kracht. */
+export function formatPace(sport: string, min: number, km: number | null): string | null {
+  if (!km || km <= 0 || !min || min <= 0) return null
+  if (sport === 'bike') return `${(km / (min / 60)).toFixed(1).replace('.', ',')} km/u`
+  if (sport === 'run') {
+    const sec = Math.round((min * 60) / km)
+    return `${Math.floor(sec / 60)}:${pad2(sec % 60)} /km`
+  }
+  if (sport === 'swim') {
+    const sec = Math.round((min * 60) / (km * 10))
+    return `${Math.floor(sec / 60)}:${pad2(sec % 60)} /100m`
+  }
+  return null
+}
+
 export const sumMinutes = (items: { duration_min: number }[]) => items.reduce((a, w) => a + w.duration_min, 0)
 export const sumKm = (items: { distance_km: number | null }[]) =>
   Math.round(items.reduce((a, w) => a + Number(w.distance_km ?? 0), 0) * 10) / 10

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { addDays } from './race'
-import { normalizeRow, type NewPlanned, type PlannedWorkout, type Workout } from './types'
+import { normalizeRow, type NewPlanned, type NewWorkout, type PlannedWorkout, type Workout } from './types'
 
 const byDate = <T extends { date: string; created_at: string }>(a: T, b: T) =>
   a.date.localeCompare(b.date) || a.created_at.localeCompare(b.created_at)
@@ -49,25 +49,36 @@ export function usePlan(start: string) {
     setPlanned((prev) => prev.filter((p) => p.id !== id))
   }
 
-  /** Afvinken logt de sessie als training; uitvinken verwijdert die gelogde training weer. */
-  const toggle = async (item: PlannedWorkout) => {
-    if (item.workout_id) {
-      const { error } = await supabase.from('workouts').delete().eq('id', item.workout_id)
-      if (error) throw error
-      // FK staat op "on delete set null", dus de planning is in de database al losgekoppeld.
-      setDone((prev) => prev.filter((w) => w.id !== item.workout_id))
-      setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, workout_id: null } : p)))
-      return
+  const inWeek = (date: string) => date >= start && date <= end
+
+  /** Wijzigt een geplande sessie. Bij een nieuwe datum verhuist de gekoppelde training mee. */
+  const update = async (item: PlannedWorkout, patch: Partial<NewPlanned>) => {
+    const { error } = await supabase.from('planned_workouts').update(patch).eq('id', item.id)
+    if (error) throw error
+    const moved = patch.date && patch.date !== item.date
+    if (moved && item.workout_id) {
+      const { error: moveError } = await supabase.from('workouts').update({ date: patch.date }).eq('id', item.workout_id)
+      if (moveError) throw moveError
+      setDone((prev) => prev.map((w) => (w.id === item.workout_id ? { ...w, date: patch.date! } : w)).filter((w) => inWeek(w.date)).sort(byDate))
     }
+    setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, ...patch } : p)).filter((p) => inWeek(p.date)).sort(byDate))
+  }
+
+  /** Uitvinken verwijdert de gelogde training weer. */
+  const uncomplete = async (item: PlannedWorkout) => {
+    if (!item.workout_id) return
+    const { error } = await supabase.from('workouts').delete().eq('id', item.workout_id)
+    if (error) throw error
+    // FK staat op "on delete set null", dus de planning is in de database al losgekoppeld.
+    setDone((prev) => prev.filter((w) => w.id !== item.workout_id))
+    setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, workout_id: null } : p)))
+  }
+
+  /** Afvinken logt de sessie als training, met wat er echt gedaan is. */
+  const complete = async (item: PlannedWorkout, actual: Pick<NewWorkout, 'duration_min' | 'distance_km' | 'rpe' | 'notes'>) => {
     const { data: workout, error } = await supabase
       .from('workouts')
-      .insert({
-        date: item.date,
-        sport: item.sport,
-        duration_min: item.duration_min,
-        distance_km: item.distance_km,
-        notes: item.title ?? item.notes,
-      })
+      .insert({ date: item.date, sport: item.sport, ...actual })
       .select()
       .single()
     if (error) throw error
@@ -96,5 +107,5 @@ export function usePlan(start: string) {
     return rows.length
   }
 
-  return { planned, done, loading, error, add, remove, toggle, copyPreviousWeek }
+  return { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek }
 }

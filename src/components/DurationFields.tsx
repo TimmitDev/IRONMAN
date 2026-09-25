@@ -51,6 +51,13 @@ export function DurationFields({
   )
 }
 
+/** Omgekeerd: minuten (decimaal) naar invulvelden; lege velden voor nul. */
+export function fromMinutes(min: number): DurationValue {
+  const total = Math.round(min * 60)
+  const part = (n: number) => (n ? String(n) : '')
+  return { hours: part(Math.floor(total / 3600)), minutes: part(Math.floor((total % 3600) / 60)), seconds: part(total % 60) }
+}
+
 /** Totale duur in minuten (decimaal), afgerond op 4 decimalen zoals de database opslaat. */
 export const toMinutes = ({ hours, minutes, seconds }: DurationValue) =>
   Math.round((Number(hours || 0) * 60 + Number(minutes || 0) + Number(seconds || 0) / 60) * 10000) / 10000
