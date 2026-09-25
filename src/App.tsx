@@ -8,6 +8,7 @@ import { Dashboard } from './pages/Dashboard'
 import { Workouts } from './pages/Workouts'
 import { Plan } from './pages/Plan'
 import { Goals } from './pages/Goals'
+import { Leaderboard } from './pages/Leaderboard'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="plan" element={<Plan />} />
             <Route path="workouts" element={<Workouts />} />
             <Route path="goals" element={<Goals />} />
+            <Route path="leaderboard" element={<Leaderboard />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

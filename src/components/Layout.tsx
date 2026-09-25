@@ -8,6 +8,7 @@ const NAV = [
   { to: '/plan', label: 'Schema' },
   { to: '/workouts', label: 'Trainingen' },
   { to: '/goals', label: 'Doelen' },
+  { to: '/leaderboard', label: 'Leaderboard' },
 ]
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
