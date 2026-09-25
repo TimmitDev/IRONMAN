@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+/* Sportkleuren: gevalideerde categorische volgorde (blauw, oranje, aqua, geel), eigen stap per modus. */
+@theme {
+  --color-swim: #2a78d6;
+  --color-bike: #eb6834;
+  --color-run: #1baf7a;
+  --color-strength: #eda100;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-swim: #3987e5;
+    --color-bike: #d95926;
+    --color-run: #199e70;
+    --color-strength: #c98500;
+  }
+}
+
+body {
+  @apply bg-stone-50 text-stone-900 antialiased dark:bg-stone-950 dark:text-stone-100;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

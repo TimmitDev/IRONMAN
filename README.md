@@ -1,0 +1,42 @@
+# IRONMAN Training Dashboard
+
+Trainingsdashboard richting IRONMAN België (5 september 2027): countdown, periodiseringsfase,
+weekvolume per sport en een trainingslog. Vite + React + TypeScript + Tailwind v4, met Supabase voor
+login en data. Wordt gehost op GitHub Pages.
+
+## 1. Supabase
+
+1. Maak een project aan op [supabase.com](https://supabase.com).
+2. **SQL Editor** → plak en voer [`supabase/schema.sql`](supabase/schema.sql) uit (tabel `workouts` + Row Level Security).
+3. **Authentication → URL Configuration**
+   - Site URL: `https://timmitdev.github.io/IRONMAN/`
+   - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
+4. Optioneel: **Authentication → Sign In / Providers → Email** → zet "Allow new users to sign up" uit
+   nadat je je eigen account hebt aangemaakt, zodat niemand anders kan registreren.
+5. **Project Settings → API Keys**: noteer de Project URL en de publishable key (`sb_publishable_...`).
+
+## 2. Lokaal draaien
+
+```powershell
+Copy-Item .env.example .env.local   # vul URL + publishable key in
+npm install
+npm run dev
+```
+
+## 3. GitHub Pages
+
+1. Repo → **Settings → Secrets and variables → Actions** → voeg twee repository secrets toe:
+   `VITE_SUPABASE_URL` en `VITE_SUPABASE_PUBLISHABLE_KEY`.
+2. Repo → **Settings → Pages** → Source: **GitHub Actions**.
+3. Push naar `main`; de workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)
+   bouwt en publiceert naar `https://timmitdev.github.io/IRONMAN/`.
+
+De publishable key komt in de gebundelde JavaScript terecht; dat is zo bedoeld. De data is beschermd door
+de RLS-policies: elke gebruiker ziet alleen zijn eigen trainingen.
+
+## Structuur
+
+- `src/lib/race.ts` – racedatum, afstanden en trainingsfases (pas hier aan)
+- `src/lib/useWorkouts.ts` – CRUD op de `workouts`-tabel
+- `src/pages/` – Login, Dashboard, Trainingen
+- `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport
