@@ -32,11 +32,21 @@ export function useWorkouts() {
     setWorkouts((prev) => [normalizeRow(data as Workout), ...prev].sort((a, b) => b.date.localeCompare(a.date)))
   }
 
+  const update = async (id: string, patch: NewWorkout) => {
+    const { data, error } = await supabase.from('workouts').update(patch).eq('id', id).select().single()
+    if (error) throw error
+    setWorkouts((prev) =>
+      prev
+        .map((w) => (w.id === id ? normalizeRow(data as Workout) : w))
+        .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)),
+    )
+  }
+
   const remove = async (id: string) => {
     const { error } = await supabase.from('workouts').delete().eq('id', id)
     if (error) throw error
     setWorkouts((prev) => prev.filter((w) => w.id !== id))
   }
 
-  return { workouts, loading, error, add, remove, refresh }
+  return { workouts, loading, error, add, update, remove, refresh }
 }
