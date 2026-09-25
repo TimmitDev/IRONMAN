@@ -33,7 +33,7 @@ export function Layout() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/80 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
           <span className="mr-6 shrink-0 text-lg font-black tracking-tight italic">
             IRON<span className="text-brand">MAN</span>

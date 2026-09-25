@@ -36,11 +36,21 @@ npm run dev
 De publishable key komt in de gebundelde JavaScript terecht; dat is zo bedoeld. De data is beschermd door
 de RLS-policies: elke gebruiker ziet alleen zijn eigen trainingen.
 
+## Als app installeren (PWA)
+
+- **Android (Chrome):** menu ⋮ → *App installeren* / *Toevoegen aan startscherm*.
+- **iPhone (Safari):** deelknop → *Zet op beginscherm*.
+
+De app opent dan fullscreen met eigen icoon. `public/sw.js` cachet de app-shell (niet de Supabase-data);
+na een nieuwe deploy haalt de app bij de volgende start automatisch de nieuwe versie op.
+
 ## Structuur
 
 - `src/lib/race.ts` – racedatum, afstanden en trainingsfases (pas hier aan)
 - `src/lib/useWorkouts.ts` – CRUD op de `workouts`-tabel
 - `src/lib/usePlan.ts` – weekschema: plannen, afvinken (logt de training), vorige week kopiëren
 - `src/lib/useGoals.ts` – weekdoelen per sport
+- `src/lib/badges.ts` – badge-definities (voeg hier nieuwe badges toe)
+- `src/components/WeekReport.tsx` – weekrapport (zondag op het dashboard)
 - `src/pages/` – Login, Dashboard, Schema, Trainingen, Doelen
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

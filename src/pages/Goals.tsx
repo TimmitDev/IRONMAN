@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from 'react'
+import { BadgesGrid } from '../components/Badges'
 import { Card } from '../components/Card'
+import { useBadges } from '../lib/badges'
+import { useWorkouts } from '../lib/useWorkouts'
 import { currentPhase, formatDuration } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
@@ -7,14 +10,17 @@ import { useGoals, type Goals as GoalMap } from '../lib/useGoals'
 
 export function Goals() {
   const { goals, loading, error, save } = useGoals()
+  const { workouts } = useWorkouts()
+  const badges = useBadges(workouts, goals)
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-4">
       <PhaseHint />
       <Card title="Weekdoelen per sport">
         {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
         {loading ? <p className="text-sm text-zinc-500">Laden…</p> : <GoalsForm initial={goals} onSave={save} />}
       </Card>
+      <BadgesGrid results={badges} />
     </div>
   )
 }

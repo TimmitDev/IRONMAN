@@ -8,3 +8,8 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// Relatief pad: registreert onder /IRONMAN/ op GitHub Pages. Niet in dev, zodat caching HMR niet in de weg zit.
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  navigator.serviceWorker.register('./sw.js')
+}

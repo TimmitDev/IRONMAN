@@ -1,11 +1,15 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { BadgesCard } from '../components/Badges'
 import { Card } from '../components/Card'
+import { WeekReport } from '../components/WeekReport'
+import { useBadges } from '../lib/badges'
 import { DoneToggle } from '../components/DoneToggle'
 import { PhaseTimeline } from '../components/PhaseTimeline'
 import { ProgressBar } from '../components/ProgressBar'
 import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
-import { RACE, currentPhase, daysUntilRace, formatDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
+import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Sport } from '../lib/types'
 import { errorMessage } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
@@ -14,8 +18,13 @@ import { useWorkouts } from '../lib/useWorkouts'
 
 export function Dashboard() {
   const { workouts, loading, error, refresh } = useWorkouts()
-  const plan = usePlan(weekStart(new Date()))
+  const thisWeek = weekStart(new Date())
+  const plan = usePlan(thisWeek)
   const { goals, totalMinutes: goalMinutes } = useGoals()
+  const badges = useBadges(workouts, goals)
+  // Het weekrapport verschijnt op zondag; andere dagen kan je dat van vorige week openen.
+  const isSunday = new Date().getDay() === 0
+  const [showPrevReport, setShowPrevReport] = useState(false)
 
   const toggle = (p: PlannedWorkout) =>
     plan
@@ -23,10 +32,20 @@ export function Dashboard() {
       .then(refresh)
       .catch((e) => alert(errorMessage(e)))
 
+  const reportProps = { workouts, goals, goalMinutes, badges }
+
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+      {!loading && isSunday && <WeekReport start={thisWeek} {...reportProps} />}
+      {!loading && !isSunday && showPrevReport && (
+        <WeekReport start={addDays(thisWeek, -7)} {...reportProps} onClose={() => setShowPrevReport(false)} />
+      )}
       <Hero />
-      <TodayCard planned={plan.planned.filter((p) => p.date === todayISO())} onToggle={toggle} />
+      <TodayCard
+        planned={plan.planned.filter((p) => p.date === todayISO())}
+        onToggle={toggle}
+        onShowReport={isSunday || showPrevReport ? undefined : () => setShowPrevReport(true)}
+      />
 
       {(error || plan.error) && (
         <Card className="lg:col-span-3">
@@ -57,6 +76,7 @@ export function Dashboard() {
       </Card>
 
       <div className="space-y-4">
+        <BadgesCard results={badges} />
         <LongestCard workouts={workouts} />
         <Card
           title="Recent"
@@ -112,9 +132,18 @@ function Hero() {
   )
 }
 
-function TodayCard({ planned, onToggle }: { planned: PlannedWorkout[]; onToggle: (p: PlannedWorkout) => void }) {
+function TodayCard({
+  planned,
+  onToggle,
+  onShowReport,
+}: {
+  planned: PlannedWorkout[]
+  onToggle: (p: PlannedWorkout) => void
+  onShowReport?: () => void
+}) {
   return (
     <Card
+      className="flex flex-col"
       title="Vandaag"
       action={
         <Link to="/plan" className="text-xs font-semibold text-brand hover:underline">
@@ -148,6 +177,18 @@ function TodayCard({ planned, onToggle }: { planned: PlannedWorkout[]; onToggle:
             Sessie plannen
           </Link>
         </div>
+      )}
+      {onShowReport && (
+        <button
+          onClick={onShowReport}
+          className="mt-auto flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:bg-white/5"
+        >
+          <span>
+            📊 Weekrapport van vorige week
+            <span className="block text-xs text-zinc-500">Het nieuwe rapport verschijnt zondag</span>
+          </span>
+          <span className="text-zinc-500">→</span>
+        </button>
       )}
     </Card>
   )
