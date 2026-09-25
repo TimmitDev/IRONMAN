@@ -7,7 +7,9 @@ login en data. Wordt gehost op GitHub Pages.
 ## 1. Supabase
 
 1. Maak een project aan op [supabase.com](https://supabase.com).
-2. **SQL Editor** → plak en voer [`supabase/schema.sql`](supabase/schema.sql) uit (tabel `workouts` + Row Level Security).
+2. **SQL Editor** → voer de bestanden in [`supabase/migrations/`](supabase/migrations/) in volgorde uit:
+   - `001_workouts.sql`: gelogde trainingen
+   - `002_plan_goals.sql`: trainingsschema (`planned_workouts`) en weekdoelen (`weekly_goals`)
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
@@ -38,5 +40,7 @@ de RLS-policies: elke gebruiker ziet alleen zijn eigen trainingen.
 
 - `src/lib/race.ts` – racedatum, afstanden en trainingsfases (pas hier aan)
 - `src/lib/useWorkouts.ts` – CRUD op de `workouts`-tabel
-- `src/pages/` – Login, Dashboard, Trainingen
-- `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport
+- `src/lib/usePlan.ts` – weekschema: plannen, afvinken (logt de training), vorige week kopiëren
+- `src/lib/useGoals.ts` – weekdoelen per sport
+- `src/pages/` – Login, Dashboard, Schema, Trainingen, Doelen
+- `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

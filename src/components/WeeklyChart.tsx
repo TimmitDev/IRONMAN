@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { parseISODate, toISODate, weekStart, formatDuration } from '../lib/race'
+import { addDays, formatDuration, formatShortDate, parseISODate, weekStart } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport, type Workout } from '../lib/types'
 
 interface Week {
@@ -9,13 +9,12 @@ interface Week {
 }
 
 function buildWeeks(workouts: Workout[], count: number): Week[] {
-  const weeks: Week[] = []
-  const monday = parseISODate(weekStart(new Date()))
-  for (let i = count - 1; i >= 0; i--) {
-    const d = new Date(monday)
-    d.setDate(d.getDate() - i * 7)
-    weeks.push({ start: toISODate(d), minutes: { swim: 0, bike: 0, run: 0, strength: 0 }, total: 0 })
-  }
+  const current = weekStart(new Date())
+  const weeks: Week[] = Array.from({ length: count }, (_, i) => ({
+    start: addDays(current, (i - count + 1) * 7),
+    minutes: { swim: 0, bike: 0, run: 0, strength: 0 },
+    total: 0,
+  }))
   const byStart = new Map(weeks.map((w) => [w.start, w]))
   for (const w of workouts) {
     const week = byStart.get(weekStart(parseISODate(w.date)))
@@ -32,37 +31,55 @@ function niceMax(hours: number): number {
   return Math.ceil(hours / step) * step
 }
 
-const fmtWeek = (iso: string) =>
-  parseISODate(iso).toLocaleDateString('nl-BE', { day: 'numeric', month: 'short' })
-
-export function WeeklyChart({ workouts, weeks: count = 12 }: { workouts: Workout[]; weeks?: number }) {
+export function WeeklyChart({
+  workouts,
+  goalMinutes = 0,
+  weeks: count = 12,
+}: {
+  workouts: Workout[]
+  goalMinutes?: number
+  weeks?: number
+}) {
   const weeks = useMemo(() => buildWeeks(workouts, count), [workouts, count])
   const [hover, setHover] = useState<number | null>(null)
-  const maxH = niceMax(Math.max(...weeks.map((w) => w.total / 60)))
+  const goalH = goalMinutes / 60
+  const maxH = niceMax(Math.max(goalH, ...weeks.map((w) => w.total / 60)))
   const ticks = [0, maxH / 2, maxH]
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600 dark:text-stone-300">
+      <div className="mb-4 flex flex-wrap gap-x-4 gap-y-1 text-sm text-zinc-300">
         {SPORTS.map((s) => (
           <span key={s} className="inline-flex items-center gap-1.5">
             <span className={`size-2.5 rounded-sm ${SPORT_BG[s]}`} />
             {SPORT_LABEL[s]}
           </span>
         ))}
+        {goalH > 0 && (
+          <span className="inline-flex items-center gap-1.5 text-zinc-400">
+            <span className="w-4 border-t-2 border-dashed border-zinc-300" />
+            Weekdoel
+          </span>
+        )}
       </div>
 
-      <div className="relative flex h-56 gap-2 pl-8">
-        {/* Gridlines + y-as */}
+      <div className="relative flex h-60 gap-1.5 pl-8 sm:gap-2">
         {ticks.map((t) => (
           <div
             key={t}
-            className="pointer-events-none absolute right-0 left-8 border-t border-stone-200 dark:border-stone-800"
+            className="pointer-events-none absolute right-0 left-8 border-t border-zinc-800"
             style={{ bottom: `${(t / maxH) * 100}%` }}
           >
-            <span className="absolute -top-2 -left-8 w-6 text-right text-xs tabular-nums text-stone-400">{t}u</span>
+            <span className="absolute -top-2 -left-8 w-6 text-right text-xs text-zinc-500 tabular-nums">{t}u</span>
           </div>
         ))}
+
+        {goalH > 0 && (
+          <div
+            className="pointer-events-none absolute right-0 left-8 z-[5] border-t-2 border-dashed border-zinc-300/70"
+            style={{ bottom: `${(goalH / maxH) * 100}%` }}
+          />
+        )}
 
         {weeks.map((w, i) => (
           <div
@@ -72,7 +89,9 @@ export function WeeklyChart({ workouts, weeks: count = 12 }: { workouts: Workout
             onMouseLeave={() => setHover(null)}
           >
             <div
-              className={`flex flex-col-reverse gap-[2px] overflow-hidden rounded-t transition-opacity ${hover !== null && hover !== i ? 'opacity-50' : ''}`}
+              className={`flex flex-col-reverse gap-[2px] overflow-hidden rounded-t transition-opacity ${
+                hover !== null && hover !== i ? 'opacity-40' : ''
+              }`}
               style={{ height: `${(w.total / 60 / maxH) * 100}%` }}
             >
               {SPORTS.filter((s) => w.minutes[s] > 0).map((s) => (
@@ -81,10 +100,14 @@ export function WeeklyChart({ workouts, weeks: count = 12 }: { workouts: Workout
             </div>
 
             {hover === i && (
-              <div className="absolute bottom-full left-1/2 z-10 mb-2 w-40 -translate-x-1/2 rounded-lg border border-stone-200 bg-white p-2.5 text-xs shadow-lg dark:border-stone-700 dark:bg-stone-900">
-                <div className="mb-1 font-medium">Week van {fmtWeek(w.start)}</div>
+              <div
+                className={`absolute bottom-full z-10 mb-2 w-44 rounded-xl border border-zinc-700 bg-zinc-900 p-3 text-xs shadow-2xl ${
+                  i < 2 ? 'left-0' : i > count - 3 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+                }`}
+              >
+                <div className="mb-1.5 font-semibold text-white">Week van {formatShortDate(w.start)}</div>
                 {SPORTS.map((s) => (
-                  <div key={s} className="flex items-center justify-between gap-2 text-stone-600 dark:text-stone-300">
+                  <div key={s} className="flex items-center justify-between gap-2 text-zinc-300">
                     <span className="inline-flex items-center gap-1.5">
                       <span className={`size-2 rounded-sm ${SPORT_BG[s]}`} />
                       {SPORT_LABEL[s]}
@@ -92,9 +115,12 @@ export function WeeklyChart({ workouts, weeks: count = 12 }: { workouts: Workout
                     <span className="tabular-nums">{w.minutes[s] ? formatDuration(w.minutes[s]) : '–'}</span>
                   </div>
                 ))}
-                <div className="mt-1 flex justify-between border-t border-stone-200 pt-1 font-medium dark:border-stone-700">
+                <div className="mt-1.5 flex justify-between border-t border-zinc-700 pt-1.5 font-semibold text-white">
                   <span>Totaal</span>
-                  <span className="tabular-nums">{formatDuration(w.total)}</span>
+                  <span className="tabular-nums">
+                    {formatDuration(w.total)}
+                    {goalMinutes > 0 && <span className="font-normal text-zinc-400"> / {formatDuration(goalMinutes)}</span>}
+                  </span>
                 </div>
               </div>
             )}
@@ -102,38 +128,40 @@ export function WeeklyChart({ workouts, weeks: count = 12 }: { workouts: Workout
         ))}
       </div>
 
-      <div className="mt-1.5 flex gap-2 pl-8 text-[10px] text-stone-400">
+      <div className="mt-1.5 flex gap-1.5 pl-8 text-[10px] text-zinc-500 sm:gap-2">
         {weeks.map((w, i) => (
           <span key={w.start} className="flex-1 text-center">
-            {i % 2 === count % 2 ? '' : fmtWeek(w.start)}
+            {(count - 1 - i) % 2 === 0 ? formatShortDate(w.start) : ''}
           </span>
         ))}
       </div>
 
-      <details className="mt-3 text-sm">
-        <summary className="cursor-pointer text-stone-500">Toon als tabel</summary>
-        <table className="mt-2 w-full text-left tabular-nums">
-          <thead className="text-stone-500">
-            <tr>
-              <th className="py-1 font-normal">Week</th>
-              {SPORTS.map((s) => (
-                <th key={s} className="py-1 font-normal">{SPORT_LABEL[s]}</th>
-              ))}
-              <th className="py-1 font-normal">Totaal</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weeks.map((w) => (
-              <tr key={w.start} className="border-t border-stone-200 dark:border-stone-800">
-                <td className="py-1">{fmtWeek(w.start)}</td>
+      <details className="mt-4 text-sm">
+        <summary className="cursor-pointer text-zinc-500 hover:text-zinc-300">Toon als tabel</summary>
+        <div className="overflow-x-auto">
+          <table className="mt-2 w-full text-left tabular-nums">
+            <thead className="text-zinc-500">
+              <tr>
+                <th className="py-1 font-normal">Week</th>
                 {SPORTS.map((s) => (
-                  <td key={s} className="py-1">{w.minutes[s] ? formatDuration(w.minutes[s]) : '–'}</td>
+                  <th key={s} className="py-1 font-normal">{SPORT_LABEL[s]}</th>
                 ))}
-                <td className="py-1 font-medium">{formatDuration(w.total)}</td>
+                <th className="py-1 font-normal">Totaal</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {weeks.map((w) => (
+                <tr key={w.start} className="border-t border-zinc-800">
+                  <td className="py-1">{formatShortDate(w.start)}</td>
+                  {SPORTS.map((s) => (
+                    <td key={s} className="py-1">{w.minutes[s] ? formatDuration(w.minutes[s]) : '–'}</td>
+                  ))}
+                  <td className="py-1 font-medium">{formatDuration(w.total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </details>
     </div>
   )

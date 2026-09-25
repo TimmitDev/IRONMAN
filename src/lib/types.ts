@@ -15,6 +15,13 @@ export const SPORT_BG: Record<Sport, string> = {
   strength: 'bg-strength',
 }
 
+export const SPORT_BORDER: Record<Sport, string> = {
+  swim: 'border-swim',
+  bike: 'border-bike',
+  run: 'border-run',
+  strength: 'border-strength',
+}
+
 export interface Workout {
   id: string
   user_id: string
@@ -28,3 +35,24 @@ export interface Workout {
 }
 
 export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>
+
+export interface PlannedWorkout {
+  id: string
+  user_id: string
+  date: string
+  sport: Sport
+  title: string | null
+  duration_min: number
+  distance_km: number | null
+  notes: string | null
+  workout_id: string | null
+  created_at: string
+}
+
+export type NewPlanned = Pick<PlannedWorkout, 'date' | 'sport' | 'title' | 'duration_min' | 'distance_km' | 'notes'>
+
+export interface WeeklyGoal {
+  sport: Sport
+  minutes: number
+  distance_km: number | null
+}

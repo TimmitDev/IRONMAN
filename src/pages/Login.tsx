@@ -3,9 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { RACE, daysUntilRace } from '../lib/race'
-
-const input =
-  'w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm dark:border-stone-700 dark:bg-stone-950'
+import { inputClass, labelClass, primaryButton } from '../lib/ui'
 
 export function Login() {
   const { session } = useAuth()
@@ -38,57 +36,45 @@ export function Login() {
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-2xl font-bold tracking-tight">
-            IRONMAN <span className="text-red-600">Training</span>
+        <div className="mb-8 text-center">
+          <h1 className="text-4xl font-black tracking-tight italic">
+            IRON<span className="text-brand">MAN</span>
           </h1>
-          <p className="mt-1 text-sm text-stone-500">
-            {RACE.name} · nog {daysUntilRace()} dagen
-          </p>
+          <p className="mt-4 text-7xl leading-none font-black tracking-tighter">{daysUntilRace()}</p>
+          <p className="mt-1 text-sm font-semibold tracking-widest text-zinc-400 uppercase">dagen tot {RACE.name}</p>
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="space-y-3 rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-800 dark:bg-stone-900"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-white/5 bg-zinc-900/70 p-6 backdrop-blur">
           <label className="block">
-            <span className="mb-1 block text-xs text-stone-500">E-mail</span>
-            <input type="email" autoComplete="email" required className={input} value={email} onChange={(e) => setEmail(e.target.value)} />
+            <span className={labelClass}>E-mail</span>
+            <input type="email" autoComplete="email" required className={inputClass} value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs text-stone-500">Wachtwoord</span>
+            <span className={labelClass}>Wachtwoord</span>
             <input
               type="password"
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               minLength={6}
               required
-              className={input}
+              className={inputClass}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
           </label>
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
-          >
+          <button type="submit" disabled={busy} className={`w-full ${primaryButton}`}>
             {busy ? 'Even geduld…' : mode === 'signin' ? 'Inloggen' : 'Account aanmaken'}
           </button>
-          {message && (
-            <p className={`text-sm ${message.type === 'error' ? 'text-red-600' : 'text-green-700 dark:text-green-500'}`}>
-              {message.text}
-            </p>
-          )}
+          {message && <p className={`text-sm ${message.type === 'error' ? 'text-red-400' : 'text-emerald-400'}`}>{message.text}</p>}
         </form>
 
-        <p className="mt-4 text-center text-sm text-stone-500">
+        <p className="mt-4 text-center text-sm text-zinc-500">
           {mode === 'signin' ? 'Nog geen account?' : 'Al een account?'}{' '}
           <button
             onClick={() => {
               setMode(mode === 'signin' ? 'signup' : 'signin')
               setMessage(null)
             }}
-            className="font-medium text-stone-900 underline dark:text-stone-100"
+            className="font-semibold text-white underline"
           >
             {mode === 'signin' ? 'Registreren' : 'Inloggen'}
           </button>
