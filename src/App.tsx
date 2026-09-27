@@ -11,6 +11,7 @@ const Workouts = lazy(() => import('./pages/Workouts').then((m) => ({ default: m
 const Plan = lazy(() => import('./pages/Plan').then((m) => ({ default: m.Plan })))
 const Goals = lazy(() => import('./pages/Goals').then((m) => ({ default: m.Goals })))
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then((m) => ({ default: m.Leaderboard })))
+const Player = lazy(() => import('./pages/Player').then((m) => ({ default: m.Player })))
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { session, loading } = useAuth()
@@ -57,6 +58,7 @@ export default function App() {
             <Route path="workouts" element={<Workouts />} />
             <Route path="goals" element={<Goals />} />
             <Route path="leaderboard" element={<Leaderboard />} />
+            <Route path="leaderboard/:userId" element={<Player />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { Segmented } from '../components/Segmented'
 import { useAuth } from '../lib/auth'
-import { compliance, ironmanFraction, useLeaderboard, useProfile, type LeaderboardRow, type Profile } from '../lib/leaderboard'
+import { compliance, formatIronman, ironmanFraction, useLeaderboard, useProfile, type LeaderboardRow, type Profile, type ProfileFields } from '../lib/leaderboard'
+import { usePlayerSearch } from '../lib/players'
 import { RACE, addDays, formatDuration, toISODate, todayISO, weekStart } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
@@ -62,10 +64,6 @@ function metricValue(r: LeaderboardRow, metric: Metric): number {
   }
 }
 
-function formatIronman(x: number) {
-  return x >= 1 ? `${x.toFixed(2).replace('.', ',')}×` : `${Math.round(x * 100)}%`
-}
-
 function formatMetric(r: LeaderboardRow, metric: Metric): { main: string; sub: string } {
   switch (metric) {
     case 'hours':
@@ -117,6 +115,7 @@ export function Leaderboard() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
+      <PlayerSearch />
       <div className="flex flex-wrap gap-2">
         <Segmented options={PERIODS} value={period} onChange={setPeriod} />
         <Segmented options={METRICS} value={metric} onChange={setMetric} />
@@ -133,7 +132,11 @@ export function Leaderboard() {
             const { main, sub } = formatMetric(r, metric)
             const segments = barSegments(r, metric).filter((s) => s.value > 0)
             return (
-              <li key={r.user_id} className={`rounded-xl border p-4 ${isMe ? 'border-brand/40 bg-brand/5' : 'border-white/5 bg-zinc-800/40'}`}>
+              <li key={r.user_id}>
+                <Link
+                  to={`/leaderboard/${r.user_id}`}
+                  className={`block rounded-xl border p-4 transition hover:brightness-125 ${isMe ? 'border-brand/40 bg-brand/5' : 'border-white/5 bg-zinc-800/40'}`}
+                >
                 <div className="flex items-center gap-4">
                   <span className={`w-8 shrink-0 text-center text-3xl font-black italic ${i === 0 ? 'text-brand' : 'text-zinc-600'}`}>{i + 1}</span>
                   <div className="min-w-0 flex-1">
@@ -163,6 +166,7 @@ export function Leaderboard() {
                     ))}
                   </div>
                 </div>
+                </Link>
               </li>
             )
           })}
@@ -194,7 +198,40 @@ export function Leaderboard() {
   )
 }
 
-type SaveProfile = (p: Pick<Profile, 'display_name' | 'show_on_leaderboard'>) => Promise<void>
+function PlayerSearch() {
+  const [query, setQuery] = useState('')
+  const { hits, loading } = usePlayerSearch(query)
+
+  return (
+    <div>
+      <input
+        type="search"
+        className={inputClass}
+        placeholder="Zoek een speler…"
+        aria-label="Zoek een speler"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      {query.trim() && (
+        <ul className={`mt-2 overflow-hidden rounded-xl border border-white/5 bg-zinc-900/70 ${loading ? 'opacity-50' : ''}`}>
+          {hits.map((h) => (
+            <li key={h.id}>
+              <Link to={`/leaderboard/${h.id}`} className="flex items-center justify-between px-4 py-2.5 text-sm text-white transition hover:bg-white/5">
+                {h.display_name}
+                <span className="text-zinc-600" aria-hidden>
+                  ›
+                </span>
+              </Link>
+            </li>
+          ))}
+          {!loading && !hits.length && <li className="px-4 py-2.5 text-sm text-zinc-500">Geen spelers gevonden.</li>}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+type SaveProfile = (p: ProfileFields) => Promise<void>
 
 function JoinCard({ defaultName, onSave }: { defaultName: string; onSave: SaveProfile }) {
   const [name, setName] = useState(defaultName)
@@ -214,7 +251,8 @@ function JoinCard({ defaultName, onSave }: { defaultName: string; onSave: SavePr
       <Card>
         <h1 className="text-2xl font-black">Doe mee met het leaderboard</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Anderen zien alleen je naam en totalen (uren, km, sessies). Notities en losse trainingen blijven privé.
+          Anderen zien je naam, totalen, records en weekgrafiek. Losse trainingen deel je pas als je dat zelf aanzet; notities en RPE
+          blijven altijd privé.
         </p>
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
           <label className="block">
@@ -234,12 +272,13 @@ function JoinCard({ defaultName, onSave }: { defaultName: string; onSave: SavePr
 function ProfileCard({ profile, onSave }: { profile: Profile; onSave: SaveProfile }) {
   const [name, setName] = useState(profile.display_name)
   const [visible, setVisible] = useState(profile.show_on_leaderboard)
+  const [share, setShare] = useState(profile.share_workouts)
   const [status, setStatus] = useState<string | null>(null)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     try {
-      await onSave({ display_name: name.trim(), show_on_leaderboard: visible })
+      await onSave({ display_name: name.trim(), show_on_leaderboard: visible, share_workouts: share })
       setStatus('Opgeslagen.')
     } catch (err) {
       setStatus(errorMessage(err))
@@ -247,7 +286,14 @@ function ProfileCard({ profile, onSave }: { profile: Profile; onSave: SaveProfil
   }
 
   return (
-    <Card title="Jouw profiel">
+    <Card
+      title="Jouw profiel"
+      action={
+        <Link to={`/leaderboard/${profile.id}`} className="text-xs font-semibold text-brand hover:underline">
+          Bekijk →
+        </Link>
+      }
+    >
       <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
         <label className="min-w-48 flex-1">
           <span className={labelClass}>Naam</span>
@@ -256,6 +302,10 @@ function ProfileCard({ profile, onSave }: { profile: Profile; onSave: SaveProfil
         <label className="flex items-center gap-2 pb-2 text-sm text-zinc-300">
           <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="size-4 accent-brand" />
           Zichtbaar op leaderboard
+        </label>
+        <label className="flex items-center gap-2 pb-2 text-sm text-zinc-300" title="Datum, sport, duur en afstand. Notities en RPE nooit.">
+          <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} className="size-4 accent-brand" />
+          Trainingen delen op profiel
         </label>
         <button type="submit" className={primaryButton}>
           Opslaan

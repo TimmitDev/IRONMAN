@@ -13,6 +13,7 @@ login en data. Wordt gehost op GitHub Pages.
    - `003_leaderboard.sql`: profielen en de leaderboard-functie (alleen totalen)
    - `004_duration_seconds.sql`: duur met seconden
    - `005_ironman_plan.sql`: instellingen van het IRONMAN-plan en herkomst van geplande sessies
+   - `006_player_profiles.sql`: spelersprofielen (totalen, records, weekgrafiek; losse trainingen alleen met opt-in)
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
@@ -56,5 +57,6 @@ na een nieuwe deploy haalt de app bij de volgende start automatisch de nieuwe ve
 - `src/lib/badges.ts` – badge-definities (voeg hier nieuwe badges toe)
 - `src/lib/ironmanPlan.ts` – generator van het IRONMAN-plan (belasting per fase, sessietitels, dagverdeling)
 - `src/components/WeekReport.tsx` – weekrapport (zondag op het dashboard)
-- `src/pages/` – Login, Dashboard, Schema, Trainingen, Doelen
+- `src/lib/players.ts` – spelers zoeken en een spelersprofiel ophalen (`player_profile`)
+- `src/pages/` – Login, Dashboard, Schema, Trainingen, Doelen, Leaderboard, Speler
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

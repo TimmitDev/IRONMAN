@@ -8,7 +8,10 @@ interface Week {
   total: number
 }
 
-function buildWeeks(workouts: Workout[], count: number): Week[] {
+/** Alleen datum, sport en duur zijn nodig; zo kan de grafiek ook weektotalen tonen. */
+type ChartItem = Pick<Workout, 'date' | 'sport' | 'duration_min'>
+
+function buildWeeks(workouts: ChartItem[], count: number): Week[] {
   const current = weekStart(new Date())
   const weeks: Week[] = Array.from({ length: count }, (_, i) => ({
     start: addDays(current, (i - count + 1) * 7),
@@ -36,7 +39,7 @@ export function WeeklyChart({
   goalMinutes = 0,
   weeks: count = 12,
 }: {
-  workouts: Workout[]
+  workouts: ChartItem[]
   goalMinutes?: number
   weeks?: number
 }) {
