@@ -102,6 +102,11 @@ html.theme-transition * {
     color 200ms ease !important;
 }
 
+/* Kaarttegels (OpenStreetMap) donker maken in dark mode: omkeren en de kleuren terugdraaien, iets gedempt. */
+.map-tiles-dark {
+  filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9) saturate(0.5);
+}
+
 /* Horizontale scrollstroken zonder zichtbare balk. */
 .no-scrollbar {
   scrollbar-width: none;

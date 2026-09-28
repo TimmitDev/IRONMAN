@@ -4,12 +4,10 @@ import { decodePolyline } from '../lib/polyline'
 import { useTheme } from '../lib/theme'
 import { SPORT_HEX, type Sport } from '../lib/types'
 
-// Kaarttegels van CARTO (OpenStreetMap-data), met een lichte en een donkere variant die het thema volgen.
-const TILES = {
-  light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-}
-const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
+// Standaardkaart van OpenStreetMap: geen API-sleutel nodig, wel naamsvermelding. In dark mode maakt
+// een CSS-filter (.map-tiles-dark in index.css) de tegels donker; de routelijn zelf blijft ongefilterd.
+const TILES = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
 /**
  * Route op een kaart. Leaflet laadt pas wanneer er echt een kaart getoond wordt.
@@ -49,7 +47,7 @@ export function RouteMap({
         attributionControl: true,
       })
       map.attributionControl.setPrefix(false)
-      L.tileLayer(TILES[resolved], { attribution: ATTRIBUTION, subdomains: 'abcd', maxZoom: 19 }).addTo(map)
+      L.tileLayer(TILES, { attribution: ATTRIBUTION, maxZoom: 19, className: resolved === 'dark' ? 'map-tiles-dark' : '' }).addTo(map)
 
       // Donkere rand onder de lijn, zodat de route op elke ondergrond leesbaar blijft.
       L.polyline(pts, { color: resolved === 'dark' ? '#000' : '#fff', weight: 7, opacity: 0.6 }).addTo(map)
