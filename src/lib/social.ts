@@ -25,6 +25,8 @@ export interface FeedItem extends FeedPerson {
   comments: FeedComment[]
   /** Ingekorte route (zonder start en finish), alleen als de speler routes deelt. */
   route?: string | null
+  /** Wat bijzonder was aan de sessie op dat moment (`workout_highlights`); null als er niets te melden is. */
+  highlights?: { bucket?: number; bucket_pr?: 'first' | 'pr'; longest?: boolean } | null
 }
 
 export interface InboxItem extends FeedPerson {

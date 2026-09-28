@@ -28,7 +28,7 @@ import { usePlan } from '../lib/usePlan'
 
 const TABS = [
   { key: 'week', label: 'Weekschema' },
-  { key: 'ironman', label: 'IRONMAN-plan' },
+  { key: 'ironman', label: 'Raceplan' },
 ] as const
 
 type Tab = (typeof TABS)[number]['key']
@@ -41,7 +41,7 @@ export function Plan() {
 
   return (
     <div>
-      <PageHeader title="Schema" description="Plan je sessies per week en vink ze af, of volg een opbouwschema richting je IRONMAN." />
+      <PageHeader title="Schema" description="Plan je sessies per week en vink ze af, of volg een opbouwschema richting je race." />
       <div className="space-y-6">
         <Segmented options={[...TABS]} value={tab} onChange={setTab} />
         {tab === 'week' ? <WeekSchedule /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}

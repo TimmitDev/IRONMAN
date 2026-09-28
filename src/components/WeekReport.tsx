@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { useAuth } from '../lib/auth'
 import type { BadgeResult } from '../lib/badges'
 import { useLeaderboard } from '../lib/leaderboard'
-import { addDays, currentPhase, daysUntilRace, formatDuration, formatPace, formatSessionDuration, formatShortDate, parseISODate, sumKm, sumMinutes } from '../lib/race'
+import { addDays, currentPhase, daysUntilRace, formatDuration, formatPace, formatSessionDuration, formatShortDate, parseISODate, racePassed, sumKm, sumMinutes } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
 import { eyebrowClass, iconButton } from '../lib/ui'
 import type { Goals } from '../lib/useGoals'
@@ -49,6 +50,7 @@ export function WeekReport({
   onClose?: () => void
 }) {
   const { session } = useAuth()
+  const race = useRace()
   const end = addDays(start, 6)
   const nextStart = addDays(start, 7)
   const plan = usePlan(start)
@@ -82,8 +84,9 @@ export function WeekReport({
     }
   }
 
-  const phaseNow = currentPhase(parseISODate(end))
-  const phaseNext = currentPhase(parseISODate(addDays(nextStart, 6)))
+  const phaseNow = currentPhase(race, parseISODate(end))
+  const phaseNext = currentPhase(race, parseISODate(addDays(nextStart, 6)))
+  const passed = racePassed(race)
   const nextTotal = sumMinutes(next.planned)
 
   return (
@@ -190,13 +193,19 @@ export function WeekReport({
           <p className="mt-0.5 text-sm text-fg-3">
             {next.planned.length ? `${next.planned.length} sessies ingepland` : 'Nog niets ingepland. Plan je week!'}
           </p>
-          {phaseNext !== phaseNow && (
+          {!passed && phaseNext !== phaseNow && (
             <p className="mt-3 rounded-lg bg-brand/10 px-3 py-2 text-sm text-fg">
               Nieuwe fase: <span className="font-semibold text-brand">{phaseNext.name}</span>. {phaseNext.description}
             </p>
           )}
           <p className="mt-3 text-sm text-fg-3">
-            Nog <span className="font-semibold text-fg">{daysUntilRace()}</span> dagen tot race-dag.
+            {passed ? (
+              <>{race.name} zit erop. Tijd voor een nieuw doel?</>
+            ) : (
+              <>
+                Nog <span className="font-semibold text-fg">{daysUntilRace(race)}</span> dagen tot {race.name}.
+              </>
+            )}
           </p>
         </Section>
       </div>

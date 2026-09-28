@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { Icon, type IconName } from '../components/Icon'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { appUrl, useAuth } from '../lib/auth'
-import { RACE, daysUntilRace } from '../lib/race'
+import { DEFAULT_RACE as RACE, daysUntilRace } from '../lib/race'
 import { supabase } from '../lib/supabase'
 import { hintClass, inputClass, labelClass, primaryButton } from '../lib/ui'
 
@@ -74,7 +74,7 @@ export function Login() {
           <p className="text-sm font-semibold tracking-wide text-white/60 uppercase">
             {RACE.name} · {RACE.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>
-          <p className="mt-3 text-8xl leading-none font-black tracking-tighter tabular-nums">{daysUntilRace()}</p>
+          <p className="mt-3 text-8xl leading-none font-black tracking-tighter tabular-nums">{daysUntilRace(RACE)}</p>
           <p className="mt-2 text-lg text-white/70">dagen tot de start. Elke training telt.</p>
           <ul className="mt-12 space-y-6">
             {FEATURES.map((f) => (
@@ -103,7 +103,7 @@ export function Login() {
         <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-10">
           {/* Mobiel: compacte countdown in plaats van het merkpaneel. */}
           <div className="mb-8 flex items-center gap-4 rounded-2xl border border-line bg-surface p-4 shadow-card lg:hidden">
-            <span className="text-4xl font-black tracking-tighter tabular-nums">{daysUntilRace()}</span>
+            <span className="text-4xl font-black tracking-tighter tabular-nums">{daysUntilRace(RACE)}</span>
             <span className="text-sm text-fg-3">
               dagen tot <span className="font-semibold text-fg">{RACE.name}</span>
             </span>

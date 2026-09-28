@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from './auth'
+import type { RaceType } from './race'
 
 export interface Profile {
   id: string
@@ -9,11 +10,17 @@ export interface Profile {
   share_workouts: boolean
   /** Routes (ingekort, zonder start en finish) tonen in de feed. Standaard uit. */
   share_routes: boolean
+  /** Eigen race; leeg = de standaardrace (DEFAULT_RACE). */
+  race_name: string | null
+  /** YYYY-MM-DD */
+  race_date: string | null
+  race_type: RaceType | null
 }
 
-export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> & Partial<Pick<Profile, 'share_workouts' | 'share_routes'>>
+export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> &
+  Partial<Pick<Profile, 'share_workouts' | 'share_routes' | 'race_name' | 'race_date' | 'race_type'>>
 
-const COLUMNS = 'id, display_name, show_on_leaderboard, share_workouts, share_routes'
+const COLUMNS = 'id, display_name, show_on_leaderboard, share_workouts, share_routes, race_name, race_date, race_type'
 
 interface ProfileState {
   profile: Profile | null

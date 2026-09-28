@@ -1,8 +1,10 @@
 import { PHASES, TIMELINE_WEEKS, currentPhase, daysUntilRace } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 
 export function PhaseTimeline() {
-  const current = currentPhase()
-  const weeksLeft = Math.min(daysUntilRace() / 7, TIMELINE_WEEKS)
+  const race = useRace()
+  const current = currentPhase(race)
+  const weeksLeft = Math.min(daysUntilRace(race) / 7, TIMELINE_WEEKS)
   const position = ((TIMELINE_WEEKS - weeksLeft) / TIMELINE_WEEKS) * 100
   const currentIndex = PHASES.indexOf(current)
 

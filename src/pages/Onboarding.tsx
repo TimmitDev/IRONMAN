@@ -4,18 +4,20 @@ import { Avatar } from '../components/Avatar'
 import { FollowButton } from '../components/FollowButton'
 import { Icon, type IconName } from '../components/Icon'
 import { PageLoader } from '../components/Layout'
+import { RaceFields, raceDraft, validateRace, type RaceDraft } from '../components/RaceFields'
 import { Switch } from '../components/Switch'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../lib/auth'
 import { DAY_NAMES, DEFAULT_SETTINGS, LEVELS, applyPlan, defaultStartDate, generatePlan, usePlanSettings, type Level, type PlanSettings } from '../lib/ironmanPlan'
-import { useProfile } from '../lib/profile'
-import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, weekStart } from '../lib/race'
+import { useProfile, type Profile, type ProfileFields } from '../lib/profile'
+import { RACE_TYPES, addDays, currentPhase, formatDuration, phaseHours, weekStart } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { useFollows, usePlayers } from '../lib/social'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import { errorMessage, ghostButton, hintClass, inputClass, labelClass, primaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 
-const STEPS = ['Welkom', 'Profiel', 'Jouw week', 'Doelen', 'Community', 'Klaar'] as const
+const STEPS = ['Welkom', 'Profiel', 'Jouw race', 'Jouw week', 'Doelen', 'Community', 'Klaar'] as const
 
 /** Typische verdeling voor een triatleet als er geen plan is om van af te leiden. */
 const SPLIT: Record<Sport, number> = { swim: 0.15, bike: 0.5, run: 0.3, strength: 0.05 }
@@ -67,10 +69,11 @@ export function Onboarding() {
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-12">
         {step === 0 && <WelcomeStep onNext={next} />}
         {step === 1 && <ProfileStep defaultName={profile?.display_name ?? defaultName} initial={profile} onSave={saveProfile} onBack={back} onNext={next} />}
-        {step === 2 && <WeekStep onBack={back} onNext={next} />}
-        {step === 3 && <GoalsStep onBack={back} onNext={next} />}
-        {step === 4 && profile && <CommunityStep meId={profile.id} onBack={back} onNext={next} />}
-        {step === 5 && <DoneStep name={profile?.display_name ?? defaultName} onFinish={() => navigate('/', { replace: true })} />}
+        {step === 2 && profile && <RaceStep profile={profile} onSave={saveProfile} onBack={back} onNext={next} />}
+        {step === 3 && <WeekStep onBack={back} onNext={next} />}
+        {step === 4 && <GoalsStep onBack={back} onNext={next} />}
+        {step === 5 && profile && <CommunityStep meId={profile.id} onBack={back} onNext={next} />}
+        {step === 6 && <DoneStep name={profile?.display_name ?? defaultName} onFinish={() => navigate('/', { replace: true })} />}
       </main>
     </div>
   )
@@ -140,6 +143,7 @@ function ErrorText({ error }: { error: string | null }) {
 function WelcomeStep({ onNext }: { onNext: () => void }) {
   const items: { icon: IconName; title: string; text: string }[] = [
     { icon: 'user', title: 'Je profiel', text: 'Hoe anderen je zien en wat je deelt.' },
+    { icon: 'flag', title: 'Je race', text: 'Welke wedstrijd, welke afstand en wanneer.' },
     { icon: 'calendar', title: 'Je trainingsweek', text: 'Niveau en vaste dagen, voor een plan op maat.' },
     { icon: 'target', title: 'Je weekdoelen', text: 'Uren per sport, zodat je voortgang meetbaar is.' },
     { icon: 'users', title: 'Je trainingsgroep', text: 'Volg anderen voor kudos, reacties en een beetje competitie.' },
@@ -148,8 +152,10 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
     <div className="flex flex-1 flex-col">
       <div className="rounded-3xl border border-line bg-surface p-6 shadow-card sm:p-8">
         <p className="text-sm font-semibold text-brand">Welkom!</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Nog {daysUntilRace()} dagen tot {RACE.name}.</h1>
-        <p className="mt-3 text-fg-3">We zetten je in een paar stappen klaar. Alles kan je later nog aanpassen in Instellingen.</p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Samen op weg naar de finish.</h1>
+        <p className="mt-3 text-fg-3">
+          We zetten je in een paar stappen klaar voor je race, van sprint tot volledige afstand. Alles kan je later nog aanpassen in Instellingen.
+        </p>
       </div>
       <ul className="mt-8 grid gap-3 sm:grid-cols-2">
         {items.map((i, n) => (
@@ -253,7 +259,69 @@ function ProfileStep({
   )
 }
 
+function RaceStep({
+  profile,
+  onSave,
+  onBack,
+  onNext,
+}: {
+  profile: Profile
+  onSave: (f: ProfileFields) => Promise<void>
+  onBack: () => void
+  onNext: () => void
+}) {
+  // Vooraf ingevuld met je gekozen race, anders de standaardrace.
+  const race = useRace()
+  const [draft, setDraft] = useState<RaceDraft>(() => raceDraft(race))
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    const invalid = validateRace(draft)
+    if (invalid) return setError(invalid)
+    setBusy(true)
+    setError(null)
+    try {
+      await onSave({
+        display_name: profile.display_name,
+        show_on_leaderboard: profile.show_on_leaderboard,
+        race_name: draft.name.trim(),
+        race_date: draft.date,
+        race_type: draft.type,
+      })
+      onNext()
+    } catch (e) {
+      setError(errorMessage(e))
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form
+      className="flex flex-1 flex-col"
+      onSubmit={(e) => {
+        e.preventDefault()
+        submit()
+      }}
+    >
+      <StepHeader icon="flag" title="Voor welke race train je?">
+        Je countdown, trainingsfases en je plan rekenen terug vanaf deze dag. Kies ook de afstand: een sprint vraagt minder volume dan een
+        volledige afstand.
+      </StepHeader>
+
+      <div className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+        <RaceFields value={draft} onChange={setDraft} />
+      </div>
+
+      <ErrorText error={error} />
+      <StepActions onBack={onBack} primary={{ label: 'Doorgaan', type: 'submit', busy }} />
+    </form>
+  )
+}
+
 function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const race = useRace()
+  const scale = RACE_TYPES[race.type].planScale
   const { settings: saved, save } = usePlanSettings()
   const [s, setS] = useState<PlanSettings>(() => saved ?? { ...DEFAULT_SETTINGS, startDate: defaultStartDate() })
   const [fillSchedule, setFillSchedule] = useState(true)
@@ -268,7 +336,7 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
     setError(null)
     try {
       await save(s)
-      if (fillSchedule) await applyPlan(generatePlan(s), addDays(weekStart(new Date()), 4 * 7 - 1))
+      if (fillSchedule) await applyPlan(generatePlan(s, race), addDays(weekStart(new Date()), 4 * 7 - 1))
       onNext()
     } catch (e) {
       setError(errorMessage(e))
@@ -292,7 +360,7 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
   return (
     <div className="flex flex-1 flex-col">
       <StepHeader icon="calendar" title="Hoe ziet jouw trainingsweek eruit?">
-        Hiermee bouwen we je IRONMAN-plan: basis, opbouw, piek en taper, met elke vierde week herstel.
+        Hiermee bouwen we je raceplan richting {race.name}: basis, opbouw, piek en taper, met elke vierde week herstel.
       </StepHeader>
 
       <fieldset>
@@ -318,7 +386,7 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
                 )}
                 <p className="font-semibold">{level.label}</p>
                 <p className="mt-1 text-sm text-fg-3">{level.description}</p>
-                <p className="mt-3 text-xs font-medium text-fg-2">Piekweek ±{level.peakHours} uur</p>
+                <p className="mt-3 text-xs font-medium text-fg-2">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
               </button>
             )
           })}
@@ -349,17 +417,18 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
 function GoalsStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
   const { goals, loading, save } = useGoals()
   const { settings, loading: planLoading } = usePlanSettings()
+  const race = useRace()
 
   // Voorstel: uit de huidige week van het plan, anders het midden van de richtlijn voor deze fase.
   const suggestion = useMemo(() => {
-    const week = settings ? generatePlan(settings).find((w) => w.start === weekStart(new Date())) : undefined
+    const week = settings ? generatePlan(settings, race).find((w) => w.start === weekStart(new Date())) : undefined
     if (week) {
       return Object.fromEntries(SPORTS.map((sp) => [sp, week.sessions.filter((x) => x.sport === sp).reduce((a, x) => a + x.duration_min, 0)])) as Record<Sport, number>
     }
-    const [min, max] = currentPhase().hoursHint
+    const [min, max] = phaseHours(currentPhase(race), race)
     const total = ((min + max) / 2) * 60
     return Object.fromEntries(SPORTS.map((sp) => [sp, Math.round((total * SPLIT[sp]) / 15) * 15])) as Record<Sport, number>
-  }, [settings])
+  }, [settings, race])
 
   if (loading || planLoading) return <PageLoader />
   return <GoalsForm initial={Object.fromEntries(SPORTS.map((sp) => [sp, goals[sp]?.minutes ?? suggestion[sp]]))} fromPlan={Boolean(settings)} onSave={save} onBack={onBack} onNext={onNext} />
@@ -381,6 +450,7 @@ function GoalsForm({
   const [hours, setHours] = useState<Record<Sport, string>>(
     () => Object.fromEntries(SPORTS.map((sp) => [sp, initial[sp] ? String(Math.round((initial[sp] / 60) * 4) / 4) : ''])) as Record<Sport, string>,
   )
+  const race = useRace()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const total = SPORTS.reduce((a, sp) => a + Math.round(Number(hours[sp] || 0) * 60), 0)
@@ -400,7 +470,7 @@ function GoalsForm({
   return (
     <div className="flex flex-1 flex-col">
       <StepHeader icon="target" title="Wat is je doel per week?">
-        {fromPlan ? 'We vulden alvast in wat je plan deze week voorziet.' : `Een voorstel voor de fase ${currentPhase().name}.`} Pas gerust aan.
+        {fromPlan ? 'We vulden alvast in wat je plan deze week voorziet.' : `Een voorstel voor de fase ${currentPhase(race).name}.`} Pas gerust aan.
       </StepHeader>
 
       <div className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">

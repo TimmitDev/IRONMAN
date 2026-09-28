@@ -15,7 +15,7 @@ import { usePlayerProfile, type PlayerProfile } from '../lib/players'
 import { useOnline } from '../lib/presence'
 import { useMe } from '../lib/profile'
 import { useSharedFollows } from '../lib/follows'
-import { formatDuration, formatSessionDuration, formatShortDate } from '../lib/race'
+import { RACE_TYPES, formatDuration, formatSessionDuration, formatShortDate, parseISODate } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { ghostButton, linkClass, pillClass } from '../lib/ui'
 
@@ -84,6 +84,16 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
             <p className="mt-1 text-sm text-fg-3">
               {t.first_date ? `Traint sinds ${formatShortDate(t.first_date)} · laatste training ${formatShortDate(t.last_date!)}` : 'Nog geen trainingen gelogd.'}
             </p>
+            {player.race && (
+              <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-fg-2">
+                <Icon name="flag" className="size-4 shrink-0 text-brand" />
+                <span className="min-w-0">
+                  Traint voor <span className="font-semibold text-fg">{player.race.name}</span> ·{' '}
+                  {parseISODate(player.race.date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {RACE_TYPES[player.race.type] ? ` · ${RACE_TYPES[player.race.type].label}` : ''}
+                </span>
+              </p>
+            )}
           </div>
           {!isMe && !follows.loading && (
             <div className="shrink-0">

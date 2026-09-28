@@ -18,6 +18,10 @@ login en data. Wordt gehost op GitHub Pages.
    - `007_social.sql`: social hub: feed van gedeelde trainingen, kudos, reacties en meldingen
    - `008_follows.sql`: spelers volgen ("vrienden") en de feed filteren op gevolgde spelers
    - `009_strava.sql`: Strava-koppeling (tokens, alleen server-side leesbaar) en `strava_activity_id` op trainingen
+   - `010_routes.sql`: routes uit Strava (volledig voor jezelf, ingekort zonder start/finish voor de feed)
+   - `011_races.sql`: eigen race per speler (naam, datum, afstand) en de race op het spelersprofiel
+   - `012_highlights.sql`: PR's, "eerste keer" en "langste ooit" als label in de feed
+   - `013_challenges.sql`: uitdagingen voor de groep, met automatische voortgang
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
@@ -110,5 +114,8 @@ bouwstenen: `src/lib/ui.ts` (knop- en invoerklassen), `Card`, `PageHeader`, `Sta
 - `src/lib/follows.tsx` – gedeelde volg-toestand (zijbalk, hub en spelerspagina's lopen gelijk)
 - `src/lib/strava.ts` – Strava koppelen/synchroniseren vanuit de app; `supabase/functions/` – de server-kant
 - `public/strava-callback.html` – landingspagina na Strava-login; geeft de code door aan `#/instellingen`
-- `src/pages/` – Login, ResetPassword, Onboarding, Hub (home), Dashboard, Schema, Trainingen, Doelen, Leaderboard, Speler, Instellingen
+- `src/lib/race.ts` + `src/lib/raceContext.tsx` – afstandstypes, standaardrace en `useRace()` (de race van de speler)
+- `src/lib/records.ts` – records per afstand (uit het sessietempo), langste sessies en mijlpalen
+- `src/lib/challenges.ts` – uitdagingen: laden, aanmaken, meedoen, voortgang
+- `src/pages/` – Login, ResetPassword, Onboarding, Hub (home), Dashboard, Schema, Trainingen, Doelen, Records, Leaderboard, Uitdagingen, Speler, Instellingen
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

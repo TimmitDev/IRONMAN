@@ -9,7 +9,7 @@ import { Segmented } from '../components/Segmented'
 import { compliance, formatIronman, ironmanFraction, useLeaderboard, type LeaderboardRow } from '../lib/leaderboard'
 import { usePlayerSearch } from '../lib/players'
 import { useMe } from '../lib/profile'
-import { RACE, addDays, formatDuration, toISODate, todayISO, weekStart } from '../lib/race'
+import { IRONMAN_DISTANCES, addDays, formatDuration, toISODate, todayISO, weekStart } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { inputClass, pillClass, secondaryButton } from '../lib/ui'
 
@@ -88,7 +88,7 @@ function barSegments(r: LeaderboardRow, metric: Metric): { cls: string; value: n
     return (['swim', 'bike', 'run', 'strength'] as const).map((s) => ({ cls: SPORT_BG[s], value: r[`${s}_min`], label: `${SPORT_LABEL[s]} ${formatDuration(r[`${s}_min`])}` }))
   if (metric === 'ironman')
     return (['swim', 'bike', 'run'] as const).map((s) => {
-      const part = r[`${s}_km`] / 3 / RACE.distances[s]
+      const part = r[`${s}_km`] / 3 / IRONMAN_DISTANCES[s]
       return { cls: SPORT_BG[s], value: part, label: `${SPORT_LABEL[s]} ${Math.round(r[`${s}_km`] * 10) / 10} km` }
     })
   return [{ cls: 'bg-brand', value: Math.max(0, metricValue(r, metric)), label: '' }]
@@ -120,10 +120,16 @@ export function Leaderboard() {
         title="Leaderboard"
         description="Vergelijk je training met de groep: per week, maand of sinds de start, op uren, afstand, actieve dagen of schema-trouw."
         actions={
-          <Link to="/instellingen" className={secondaryButton}>
-            <Icon name="shield" className="size-4" />
-            Profiel & privacy
-          </Link>
+          <>
+            <Link to="/uitdagingen" className={secondaryButton}>
+              <Icon name="flag" className="size-4" />
+              Uitdagingen
+            </Link>
+            <Link to="/instellingen" className={secondaryButton}>
+              <Icon name="shield" className="size-4" />
+              Profiel & privacy
+            </Link>
+          </>
         }
       />
 

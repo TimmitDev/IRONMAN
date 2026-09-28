@@ -8,7 +8,7 @@ import { Modal } from './Modal'
 import { Switch } from './Switch'
 
 const MODES: { key: ClearMode; label: string; description: string }[] = [
-  { key: 'plan', label: 'Alleen IRONMAN-plan', description: 'Open sessies uit het gegenereerde plan. Je eigen sessies blijven staan.' },
+  { key: 'plan', label: 'Alleen raceplan', description: 'Open sessies uit het gegenereerde plan. Je eigen sessies blijven staan.' },
   { key: 'open', label: 'Alle open sessies', description: 'Alles wat je nog niet afvinkte, ook je eigen sessies.' },
   { key: 'all', label: 'Alles', description: 'Ook afgevinkte sessies. Je gelogde trainingen blijven wel bewaard.' },
 ]

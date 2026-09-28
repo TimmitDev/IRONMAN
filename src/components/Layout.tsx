@@ -14,8 +14,8 @@ import { ThemeSwitchButton } from './ThemeToggle'
 const TABS: { to: string; label: string; icon: IconName; end?: boolean; alsoActive?: string[] }[] = [
   { to: '/', label: 'Home', icon: 'home', end: true },
   { to: '/plan', label: 'Schema', icon: 'calendar' },
-  { to: '/leaderboard', label: 'Ranking', icon: 'trophy' },
-  { to: '/dashboard', label: 'Mijn', icon: 'chart', alsoActive: ['/goals', '/instellingen'] },
+  { to: '/leaderboard', label: 'Ranking', icon: 'trophy', alsoActive: ['/uitdagingen'] },
+  { to: '/dashboard', label: 'Mijn', icon: 'chart', alsoActive: ['/goals', '/instellingen', '/records'] },
 ]
 
 export function PageLoader() {

@@ -13,9 +13,10 @@ import { PhaseTimeline } from '../components/PhaseTimeline'
 import { ProgressBar } from '../components/ProgressBar'
 import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
-import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
+import { RACE_TYPES, addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, racePassed, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Sport } from '../lib/types'
-import { errorMessage, eyebrowClass, linkClass, secondaryButton } from '../lib/ui'
+import { errorMessage, eyebrowClass, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 import { usePlan } from '../lib/usePlan'
 import { useWorkouts } from '../lib/useWorkouts'
@@ -59,10 +60,17 @@ export function Dashboard() {
         title="Dashboard"
         description="Jouw voortgang richting de race: wat er vandaag op het schema staat, hoe je week loopt en hoe ver je al staat."
         actions={
-          <Link to="/goals" className={secondaryButton}>
-            <Icon name="target" className="size-4" />
-            Doelen
-          </Link>
+          // Doelen en Records staan op mobiel niet in de tabbalk; hier zijn ze altijd bereikbaar.
+          <>
+            <Link to="/records" className={secondaryButton}>
+              <Icon name="sparkles" className="size-4" />
+              Records
+            </Link>
+            <Link to="/goals" className={secondaryButton}>
+              <Icon name="target" className="size-4" />
+              Doelen
+            </Link>
+          </>
         }
       />
 
@@ -140,43 +148,59 @@ export function Dashboard() {
 }
 
 function Hero() {
-  const days = daysUntilRace()
-  const phase = currentPhase()
+  const race = useRace()
+  const days = daysUntilRace(race)
+  const phase = currentPhase(race)
+  const passed = racePassed(race)
   return (
     <Card className="relative overflow-hidden lg:col-span-2">
       <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-brand/15 blur-3xl" aria-hidden />
       <div className="relative">
-        <p className={eyebrowClass}>
-          {RACE.name} · {RACE.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
+        <p className={`${eyebrowClass} truncate`}>
+          {race.name} · {race.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
-        <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
-          <div className="flex items-baseline gap-2">
-            <span className="text-7xl leading-none font-black tracking-tighter text-fg tabular-nums sm:text-8xl">{days}</span>
-            <span className="text-lg font-semibold text-fg-3">dagen</span>
+        {passed ? (
+          <div className="mt-3">
+            <p className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">Je race is voorbij.</p>
+            <p className="mt-1 text-sm text-fg-3">Proficiat met je finish! Kies je volgende race, dan volgen countdown, fase en trainingsplan mee.</p>
+            <Link to="/instellingen" className={`${primaryButton} mt-4`}>
+              <Icon name="flag" className="size-4" />
+              Kies je volgende race
+            </Link>
           </div>
-          <dl className="flex gap-8 pb-2 text-sm">
-            <div>
-              <dt className="text-fg-3">Weken</dt>
-              <dd className="text-lg font-semibold text-fg tabular-nums">{Math.floor(days / 7)}</dd>
+        ) : (
+          <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-7xl leading-none font-black tracking-tighter text-fg tabular-nums sm:text-8xl">{days}</span>
+              <span className="text-lg font-semibold text-fg-3">{days === 1 ? 'dag' : 'dagen'}</span>
             </div>
-            <div>
-              <dt className="text-fg-3">Fase</dt>
-              <dd className="text-lg font-semibold text-fg">{phase.name}</dd>
-            </div>
-          </dl>
-        </div>
+            <dl className="flex gap-8 pb-2 text-sm">
+              <div>
+                <dt className="text-fg-3">Weken</dt>
+                <dd className="text-lg font-semibold text-fg tabular-nums">{Math.floor(days / 7)}</dd>
+              </div>
+              <div>
+                <dt className="text-fg-3">Fase</dt>
+                <dd className="text-lg font-semibold text-fg">{phase.name}</dd>
+              </div>
+            </dl>
+          </div>
+        )}
         <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          <span className="inline-flex items-center rounded-full bg-brand/10 px-2.5 py-1 font-medium text-brand">{RACE_TYPES[race.type].label}</span>
           {(['swim', 'bike', 'run'] as const).map((s) => (
             <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-subtle px-2.5 py-1 font-medium text-fg-2">
               <span className={`size-1.5 rounded-full ${SPORT_BG[s]}`} />
-              {RACE.distances[s]} km {SPORT_LABEL[s].toLowerCase()}
+              {race.distances[s].toLocaleString('nl-BE')} km {SPORT_LABEL[s].toLowerCase()}
             </span>
           ))}
         </div>
-        <div className="mt-6 border-t border-line pt-5">
-          <PhaseTimeline />
-          <p className="mt-3 text-sm text-fg-3">{phase.description}</p>
-        </div>
+        {!passed && (
+          <div className="mt-6 border-t border-line pt-5">
+            <PhaseTimeline />
+            <p className="mt-3 text-sm text-fg-3">{phase.description}</p>
+          </div>
+        )}
       </div>
     </Card>
   )
@@ -293,18 +317,19 @@ function GoalTile({
 }
 
 function LongestCard({ workouts }: { workouts: { sport: Sport; distance_km: number | null }[] }) {
+  const race = useRace()
   return (
     <Card title="Langste sessie vs. race" description="Je langste afstand tot nu toe, tegenover de race-afstand.">
       <div className="space-y-4">
         {(['swim', 'bike', 'run'] as const).map((s) => {
           const longest = Math.max(0, ...workouts.filter((w) => w.sport === s).map((w) => Number(w.distance_km ?? 0)))
-          const target = RACE.distances[s]
+          const target = race.distances[s]
           return (
             <div key={s}>
               <div className="mb-1.5 flex justify-between gap-2 text-sm">
                 <span className="text-fg-2">{SPORT_LABEL[s]}</span>
                 <span className="text-fg-3 tabular-nums">
-                  <span className="font-semibold text-fg">{longest || 0}</span> / {target} km
+                  <span className="font-semibold text-fg">{(longest || 0).toLocaleString('nl-BE')}</span> / {target.toLocaleString('nl-BE')} km
                 </span>
               </div>
               <ProgressBar value={longest} max={target} color={SPORT_BG[s]} />

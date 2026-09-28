@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { useAuth } from './auth'
-import { PHASES, RACE, addDays, parseISODate, toISODate, weekStart, type Phase } from './race'
+import { PHASES, RACE_TYPES, addDays, parseISODate, toISODate, weekStart, type Phase, type Race } from './race'
 import type { Sport } from './types'
 
 export type Level = 'beginner' | 'intermediate' | 'advanced'
@@ -19,19 +19,19 @@ export interface PlanSettings {
 export const LEVELS: Record<Level, { label: string; description: string; peakHours: number; pace: { swimSecPer100: number; bikeKmh: number; runMinPerKm: number } }> = {
   beginner: {
     label: 'Beginner',
-    description: 'Eerste IRONMAN, finishen is het doel.',
+    description: 'Eerste keer deze afstand, finishen is het doel.',
     peakHours: 12,
     pace: { swimSecPer100: 150, bikeKmh: 25, runMinPerKm: 6.5 },
   },
   intermediate: {
     label: 'Gevorderd',
-    description: 'Ervaring met triatlon of een halve IRONMAN.',
+    description: 'Ervaring met triatlon, maar nog niet op deze afstand gepiekt.',
     peakHours: 15,
     pace: { swimSecPer100: 130, bikeKmh: 28, runMinPerKm: 5.75 },
   },
   advanced: {
     label: 'Ervaren',
-    description: 'Eerder een IRONMAN gedaan, gericht op een snelle tijd.',
+    description: 'Deze afstand al eerder gedaan, gericht op een snelle tijd.',
     peakHours: 18,
     pace: { swimSecPer100: 110, bikeKmh: 31, runMinPerKm: 5.1 },
   },
@@ -94,7 +94,7 @@ const SESSIONS: Record<string, Partial<Record<Role, [string, string | null]>>> =
     swimExtra: ['Openwater / sighting', 'Oefen oriënteren om de 6–8 slagen.'],
     bikeQ: ['Sweet spot 3x15\'', '3x15\' op 88–93% FTP, 5\' rust.'],
     bikeEasy: ['Duurrit Z2', Z2],
-    bikeLong: ['Lange rit met IM-blokken', '3x30\' op IRONMAN-tempo in de rit. Test je voeding.'],
+    bikeLong: ['Lange rit met raceblokken', '3x30\' op racetempo in de rit. Test je voeding.'],
     runQ: ['Tempoloop 3x10\'', '3x10\' op drempeltempo, 3\' dribbel.'],
     runEasy: ['Rustige duurloop', Z2],
     runLong: ['Lange duurloop', 'Z2, laatste 20\' iets sneller.'],
@@ -103,20 +103,20 @@ const SESSIONS: Record<string, Partial<Record<Role, [string, string | null]>>> =
   },
   Peak: {
     swimTech: ['Racetempo-blokken', '4x500 op racetempo, 30" rust.'],
-    swimEndurance: ['Openwater-simulatie', 'Continu 3,8 km of zo dicht mogelijk, in wetsuit indien mogelijk.'],
+    swimEndurance: ['Openwater-simulatie', 'Continu de race-afstand of zo dicht mogelijk, in wetsuit indien mogelijk.'],
     swimExtra: ['Herstelzwem', 'Losjes, techniek.'],
-    bikeQ: ['Racetempo 2x45\'', '2x45\' op IRONMAN-wattage/hartslag.'],
+    bikeQ: ['Racetempo 2x45\'', '2x45\' op racewattage/-hartslag.'],
     bikeEasy: ['Herstelrit', 'Zone 1–2.'],
-    bikeLong: ['Racesimulatie', 'Lange rit grotendeels op IRONMAN-tempo, exact je racevoeding.'],
-    runQ: ['IM-tempo 3x15\'', '3x15\' op IRONMAN-looptempo.'],
+    bikeLong: ['Racesimulatie', 'Lange rit grotendeels op racetempo, exact je racevoeding.'],
+    runQ: ['Racetempo 3x15\'', '3x15\' op je looptempo voor de race.'],
     runEasy: ['Herstelloop', 'Kort en rustig.'],
-    runLong: ['Lange loop met IM-finish', 'Z2, laatste 30\' op IRONMAN-tempo.'],
+    runLong: ['Lange loop met racefinish', 'Z2, laatste 30\' op racetempo.'],
     brick: ['Brick op racetempo', 'Direct na de rit, eerste km bewust rustig.'],
   },
   Taper: {
     swimTech: ['Kort + snel', '6x100 op racetempo, ruime rust.'],
     swimEndurance: ['Losse techniek', 'Kort, soepel, vertrouwen opbouwen.'],
-    bikeQ: ['Openers 4x3\'', '4x3\' op IM-tempo, rest rustig.'],
+    bikeQ: ['Openers 4x3\'', '4x3\' op racetempo, rest rustig.'],
     bikeEasy: ['Losrijden', 'Zone 1–2, benen fris houden.'],
     bikeLong: ['Korte rit met pieken', 'Kortere rit, enkele blokken op racetempo.'],
     runQ: ['Strides', 'Rustig + 6x20" versnellingen.'],
@@ -166,30 +166,40 @@ const SPORT_OF: Record<Role, Sport> = {
   strength: 'strength',
 }
 
-/** Raceweek: vaste, korte prikkels van maandag t/m zaterdag; de race zelf is zondag. */
-function raceWeekSessions(start: string, level: Level, restDay: number): PlanSession[] {
+/**
+ * Raceweek: vaste, korte prikkels in de dagen vóór de racedag (`raceDay`: 0 = maandag … 6 = zondag).
+ * `before` = aantal dagen vóór de race; valt dat vóór maandag, dan vervalt de sessie.
+ */
+function raceWeekSessions(start: string, level: Level, restDay: number, raceDay: number): PlanSession[] {
   const plan: [number, Sport, string, number, string][] = [
-    [1, 'swim', 'Openers zwemmen', 30, '4x100 op racetempo, verder rustig.'],
-    [1, 'bike', 'Openers fietsen', 45, '3x3\' op IRONMAN-tempo.'],
-    [2, 'run', 'Losse loop + strides', 25, '4x20" versnellingen.'],
+    [5, 'swim', 'Openers zwemmen', 30, '4x100 op racetempo, verder rustig.'],
+    [5, 'bike', 'Openers fietsen', 45, '3x3\' op racetempo.'],
+    [4, 'run', 'Losse loop + strides', 25, '4x20" versnellingen.'],
     [3, 'swim', 'Losse techniek', 25, 'Soepel, vertrouwen.'],
-    [4, 'bike', 'Fiets checken', 30, 'Alles testen wat je zondag gebruikt, 3 korte pieken.'],
-    [4, 'run', 'Shake-out loop', 15, 'Heel rustig.'],
-    [5, 'swim', 'Proefzwemmen', 15, 'Openwater indien toegestaan. Fiets inchecken, benen omhoog!'],
+    [2, 'bike', 'Fiets checken', 30, 'Alles testen wat je op racedag gebruikt, 3 korte pieken.'],
+    [2, 'run', 'Shake-out loop', 15, 'Heel rustig.'],
+    [1, 'swim', 'Proefzwemmen', 15, 'Openwater indien toegestaan. Fiets inchecken, benen omhoog!'],
   ]
-  return plan.map(([day, sport, title, min, notes]) => {
-    // Valt een sessie op je rustdag, schuif ze een dag op (nooit naar racedag).
-    const d = day === restDay ? Math.min(day + 1, 5) : day
-    return { date: addDays(start, d), sport, title, duration_min: min, distance_km: estimateKm(sport, min, level), notes }
-  })
+  const sessions: PlanSession[] = []
+  for (const [before, sport, title, min, notes] of plan) {
+    let d = raceDay - before
+    // Valt een sessie op je rustdag, schuif ze een dag op (nooit naar racedag), anders een dag terug.
+    if (d === restDay) d = d + 1 < raceDay ? d + 1 : d - 1
+    if (d < 0 || d >= raceDay) continue
+    sessions.push({ date: addDays(start, d), sport, title, duration_min: min, distance_km: estimateKm(sport, min, level), notes })
+  }
+  return sessions.sort((a, b) => a.date.localeCompare(b.date))
 }
 
-export function generatePlan(settings: PlanSettings): PlanWeek[] {
+export function generatePlan(settings: PlanSettings, race: Race): PlanWeek[] {
   const { level, restDay, longBikeDay, longRunDay } = settings
-  const raceWeekStart = weekStart(RACE.date)
+  const scale = RACE_TYPES[race.type].planScale
+  const raceWeekStart = weekStart(race.date)
+  const raceDay = (race.date.getDay() + 6) % 7
   const first = weekStart(parseISODate(settings.startDate))
   const totalWeeks = Math.round((parseISODate(raceWeekStart).getTime() - parseISODate(first).getTime()) / (7 * 86_400_000)) + 1
-  const peakMin = LEVELS[level].peakHours * 60
+  // Kortere races vragen minder volume: piekweek en lange sessies schalen mee.
+  const peakMin = LEVELS[level].peakHours * 60 * scale
   const weeks: PlanWeek[] = []
 
   for (let i = 0; i < totalWeeks; i++) {
@@ -198,7 +208,7 @@ export function generatePlan(settings: PlanSettings): PlanWeek[] {
     const phase = phaseFor(weeksToRace)
 
     if (weeksToRace === 0) {
-      const sessions = raceWeekSessions(start, level, restDay)
+      const sessions = raceWeekSessions(start, level, restDay, raceDay)
       weeks.push({ index: i + 1, start, weeksToRace, phase, recovery: false, raceWeek: true, minutes: sessions.reduce((a, s) => a + s.duration_min, 0), sessions })
       continue
     }
@@ -254,7 +264,8 @@ export function generatePlan(settings: PlanSettings): PlanWeek[] {
       perDay[day].push(role)
       dayLoad[day] += min
     }
-    const minutes = (r: Role) => round5(Math.min(durations[r] ?? 0, CAP[r] ?? Infinity))
+    // round5 houdt elke sessie op minstens 20 min, ook als de geschaalde cap lager uitkomt.
+    const minutes = (r: Role) => round5(Math.min(durations[r] ?? 0, (CAP[r] ?? Infinity) * scale))
 
     put('bikeLong', longBikeDay, minutes('bikeLong'))
     if (hasBrick) put('brick', longBikeDay, minutes('brick'))

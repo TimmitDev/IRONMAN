@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
-import { RACE, addDays, todayISO, weekStart, parseISODate } from './race'
+import { IRONMAN_DISTANCES, addDays, todayISO, weekStart, parseISODate } from './race'
 import type { Sport, Workout } from './types'
 import type { Goals } from './useGoals'
 
@@ -148,11 +148,11 @@ export const BADGES: Badge[] = [
       (best) => `${Math.round(best * 3)} / 3 disciplines in één week`,
     ),
   },
-  { id: 'swim38', emoji: '🐟', name: 'Waterrat', description: '3,8 km zwemmen in één sessie.', evaluate: singleSession('swim', RACE.distances.swim, 'km') },
+  { id: 'swim38', emoji: '🐟', name: 'Waterrat', description: '3,8 km zwemmen in één sessie.', evaluate: singleSession('swim', IRONMAN_DISTANCES.swim, 'km') },
   { id: 'bike100', emoji: '🚴', name: 'Century', description: '100 km fietsen in één rit.', evaluate: singleSession('bike', 100, 'km') },
-  { id: 'bike180', emoji: '🛣️', name: 'Volle 180', description: '180 km fietsen in één rit.', evaluate: singleSession('bike', RACE.distances.bike, 'km') },
+  { id: 'bike180', emoji: '🛣️', name: 'Volle 180', description: '180 km fietsen in één rit.', evaluate: singleSession('bike', IRONMAN_DISTANCES.bike, 'km') },
   { id: 'run21', emoji: '🏃', name: 'Halve marathon', description: '21,1 km lopen in één sessie.', evaluate: singleSession('run', 21.1, 'km') },
-  { id: 'run42', emoji: '🏅', name: 'Marathon', description: '42,2 km lopen in één sessie.', evaluate: singleSession('run', RACE.distances.run, 'km') },
+  { id: 'run42', emoji: '🏅', name: 'Marathon', description: '42,2 km lopen in één sessie.', evaluate: singleSession('run', IRONMAN_DISTANCES.run, 'km') },
   { id: 'long4h', emoji: '⏱️', name: 'Lange adem', description: 'Een training van 4 uur of langer.', evaluate: singleSession(null, 240, 'min') },
   { id: 'hours100', emoji: '💯', name: '100 uur', description: '100 trainingsuren in totaal.', evaluate: cumulative(null, 100, 'uur') },
   { id: 'swimTotal', emoji: '🌊', name: 'Kanaalzwemmer', description: '50 km zwemmen in totaal.', evaluate: cumulative('swim', 50, 'km') },
@@ -170,8 +170,8 @@ export const BADGES: Badge[] = [
       (s, w) => {
         if (w.sport !== 'strength') s[w.sport] += km(w)
       },
-      (s) => s.swim >= RACE.distances.swim && s.bike >= RACE.distances.bike && s.run >= RACE.distances.run,
-      (s) => (Math.min(1, s.swim / RACE.distances.swim) + Math.min(1, s.bike / RACE.distances.bike) + Math.min(1, s.run / RACE.distances.run)) / 3,
+      (s) => s.swim >= IRONMAN_DISTANCES.swim && s.bike >= IRONMAN_DISTANCES.bike && s.run >= IRONMAN_DISTANCES.run,
+      (s) => (Math.min(1, s.swim / IRONMAN_DISTANCES.swim) + Math.min(1, s.bike / IRONMAN_DISTANCES.bike) + Math.min(1, s.run / IRONMAN_DISTANCES.run)) / 3,
       (best) => `beste week: ${Math.round(best * 100)}% van de afstand`,
     ),
   },

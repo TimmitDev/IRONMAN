@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { ActiveChallengesCard } from '../components/ActiveChallengesCard'
 import { Avatar } from '../components/Avatar'
 import { BadgesCard } from '../components/Badges'
 import { Card } from '../components/Card'
@@ -13,7 +14,8 @@ import { useBadges } from '../lib/badges'
 import { useLeaderboard } from '../lib/leaderboard'
 import { useOnline } from '../lib/presence'
 import { useMe, type Profile, type ProfileFields } from '../lib/profile'
-import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, sumMinutes, weekStart } from '../lib/race'
+import { addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, racePassed, sumMinutes, weekStart } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { useSharedFollows } from '../lib/follows'
 import { useFeed, useInbox, usePlayers, type FeedPerson, type Follows, type InboxItem } from '../lib/social'
 import { SPORT_NOUN, type Workout } from '../lib/types'
@@ -140,6 +142,7 @@ export function Hub() {
             <div className="xl:hidden">
               <FriendsCard follows={follows} online={online} onFindFriends={() => setTab('friends')} />
             </div>
+            <ActiveChallengesCard />
             <WeekPodium profile={me} meId={meId} />
             <Card
               title="Recente sessies"
@@ -170,8 +173,10 @@ export function Hub() {
 }
 
 function HubHeader({ name }: { name: string }) {
-  const days = daysUntilRace()
-  const phase = currentPhase()
+  const race = useRace()
+  const days = daysUntilRace(race)
+  const phase = currentPhase(race)
+  const passed = racePassed(race)
   return (
     <Card className="relative overflow-hidden">
       <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-brand/15 blur-3xl" aria-hidden />
@@ -181,16 +186,24 @@ function HubHeader({ name }: { name: string }) {
           <h1 className="mt-1 truncate text-3xl font-bold tracking-tight text-fg sm:text-4xl">{name}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <Link
-              to="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2 transition hover:bg-hover"
+              to={passed ? '/instellingen' : '/dashboard'}
+              className="inline-flex max-w-full min-w-0 items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2 transition hover:bg-hover"
             >
-              <Icon name="flag" className="size-3.5 text-brand" />
-              <span className="font-semibold text-fg tabular-nums">{days}</span> dagen tot {RACE.name}
+              <Icon name="flag" className="size-3.5 shrink-0 text-brand" />
+              {passed ? (
+                <span className="truncate">Kies je volgende race</span>
+              ) : (
+                <span className="truncate">
+                  <span className="font-semibold text-fg tabular-nums">{days}</span> {days === 1 ? 'dag' : 'dagen'} tot {race.name}
+                </span>
+              )}
             </Link>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2">
-              <Icon name="target" className="size-3.5 text-fg-3" />
-              Fase <span className="font-semibold text-fg">{phase.name}</span>
-            </span>
+            {!passed && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2">
+                <Icon name="target" className="size-3.5 text-fg-3" />
+                Fase <span className="font-semibold text-fg">{phase.name}</span>
+              </span>
+            )}
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">

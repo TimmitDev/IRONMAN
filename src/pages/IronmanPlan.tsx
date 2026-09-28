@@ -1,5 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
 import { Segmented } from '../components/Segmented'
 import { Stat } from '../components/Stat'
@@ -15,14 +17,16 @@ import {
   type PlanSettings,
   type PlanWeek,
 } from '../lib/ironmanPlan'
-import { RACE, addDays, formatDuration, formatPace, formatShortDate, parseISODate, weekStart } from '../lib/race'
+import { RACE_TYPES, addDays, formatDuration, formatPace, formatShortDate, parseISODate, racePassed, toISODate, weekStart } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { errorMessage, inputClass, labelClass, linkClass, pillClass, primaryButton, secondaryButton } from '../lib/ui'
 
 export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) {
   const { settings, loading, error, save } = usePlanSettings()
+  const race = useRace()
   const [editing, setEditing] = useState(false)
-  const weeks = useMemo(() => (settings ? generatePlan(settings) : []), [settings])
+  const weeks = useMemo(() => (settings ? generatePlan(settings, race) : []), [settings, race])
 
   if (loading) return <p className="text-sm text-fg-3">Laden…</p>
 
@@ -31,12 +35,16 @@ export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) 
       <div className="max-w-3xl space-y-4">
         {error && <p className="text-sm text-danger">{error}</p>}
         <Card
-          title={settings ? 'Plan aanpassen' : 'Stel je IRONMAN-plan samen'}
+          title={settings ? 'Plan aanpassen' : 'Stel je raceplan samen'}
           description={
             <>
-              Een opbouwschema van week tot week richting {RACE.name} op{' '}
-              {RACE.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}: basis, opbouw, piek en
-              taper, met elke 4e week een herstelweek.
+              Een opbouwschema van week tot week richting {race.name} ({RACE_TYPES[race.type].label.toLowerCase()}) op{' '}
+              {race.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}: basis, opbouw, piek en
+              taper, met elke 4e week een herstelweek. Andere race?{' '}
+              <Link to="/instellingen" className={linkClass}>
+                Wijzig ze in je instellingen
+              </Link>
+              .
             </>
           }
         >
@@ -48,6 +56,36 @@ export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) 
               setEditing(false)
             }}
           />
+        </Card>
+      </div>
+    )
+  }
+
+  // Race voorbij of plan start na de raceweek: er valt niets te plannen.
+  if (!weeks.length) {
+    return (
+      <div className="max-w-3xl">
+        <Card>
+          <EmptyState
+            icon="flag"
+            title={racePassed(race) ? 'Je race is voorbij' : 'Geen weken om te plannen'}
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/instellingen" className={primaryButton}>
+                  <Icon name="flag" className="size-4" />
+                  Kies je volgende race
+                </Link>
+                <button onClick={() => setEditing(true)} className={secondaryButton}>
+                  <Icon name="settings" className="size-4" />
+                  Plan aanpassen
+                </button>
+              </div>
+            }
+          >
+            {racePassed(race)
+              ? `${race.name} ligt achter je. Kies je volgende race, dan bouwt je plan daar naartoe.`
+              : `Je plan start na de raceweek van ${race.name}. Kies een andere race of een vroegere startdatum.`}
+          </EmptyState>
         </Card>
       </div>
     )
@@ -78,6 +116,8 @@ function SettingsForm({
   onSave: (s: PlanSettings) => Promise<void>
   onCancel?: () => void
 }) {
+  const race = useRace()
+  const scale = RACE_TYPES[race.type].planScale
   const [s, setS] = useState<PlanSettings>(initial ?? { ...DEFAULT_SETTINGS, startDate: defaultStartDate() })
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -135,7 +175,7 @@ function SettingsForm({
                 )}
                 <p className="pr-6 font-semibold text-fg">{level.label}</p>
                 <p className="mt-1 text-xs text-fg-3">{level.description}</p>
-                <p className="mt-3 text-xs font-semibold text-fg-2 tabular-nums">Piekweek ±{level.peakHours} uur</p>
+                <p className="mt-3 text-xs font-semibold text-fg-2 tabular-nums">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
               </button>
             )
           })}
@@ -177,7 +217,7 @@ function Summary({ settings, weeks, onEdit }: { settings: PlanSettings; weeks: P
   const level = LEVELS[settings.level]
   return (
     <Card
-      title={`Jouw IRONMAN-plan · ${level.label}`}
+      title={`Jouw raceplan · ${level.label}`}
       description={
         <>
           Rust op {DAY_NAMES[settings.restDay].toLowerCase()}, lange rit op {DAY_NAMES[settings.longBikeDay].toLowerCase()}, lange loop
@@ -376,6 +416,8 @@ function WeekList({ weeks }: { weeks: PlanWeek[] }) {
 }
 
 function WeekCard({ week, open }: { week: PlanWeek; open: boolean }) {
+  const race = useRace()
+  const raceDate = toISODate(race.date)
   const days = Array.from({ length: 7 }, (_, i) => addDays(week.start, i))
   return (
     <details open={open} className="group rounded-xl border border-line bg-subtle">
@@ -399,14 +441,14 @@ function WeekCard({ week, open }: { week: PlanWeek; open: boolean }) {
       <div className="grid gap-2 border-t border-line p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4">
         {days.map((d) => {
           const sessions = week.sessions.filter((s) => s.date === d)
-          const isRace = week.raceWeek && d === addDays(week.start, 6)
+          const isRace = week.raceWeek && d === raceDate
           return (
             <div key={d} className={`rounded-lg p-3 ${isRace ? 'bg-brand/10' : sessions.length ? 'border border-line bg-surface' : ''}`}>
               <p className={`mb-1.5 text-[11px] font-semibold tracking-wide uppercase ${isRace ? 'text-brand' : 'text-fg-3'}`}>
                 {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })}
               </p>
               {isRace ? (
-                <p className="text-sm font-semibold text-fg">🏁 {RACE.name}</p>
+                <p className="text-sm font-semibold text-fg">🏁 {race.name}</p>
               ) : sessions.length ? (
                 <ul className="space-y-2.5">
                   {sessions.map((s, i) => {

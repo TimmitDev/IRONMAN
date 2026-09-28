@@ -2,6 +2,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Suspense, lazy, type ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
 import { ProfileProvider, useProfile } from './lib/profile'
+import { RaceProvider } from './lib/raceContext'
 import { isConfigured } from './lib/supabase'
 import { ThemeProvider } from './lib/theme'
 import { Layout, PageLoader } from './components/Layout'
@@ -18,6 +19,8 @@ const Goals = lazy(() => import('./pages/Goals').then((m) => ({ default: m.Goals
 const Leaderboard = lazy(() => import('./pages/Leaderboard').then((m) => ({ default: m.Leaderboard })))
 const Player = lazy(() => import('./pages/Player').then((m) => ({ default: m.Player })))
 const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m.Settings })))
+const Records = lazy(() => import('./pages/Records').then((m) => ({ default: m.Records })))
+const Challenges = lazy(() => import('./pages/Challenges').then((m) => ({ default: m.Challenges })))
 
 function FullPage({ children }: { children: ReactNode }) {
   return <Suspense fallback={<PageLoader />}>{children}</Suspense>
@@ -57,47 +60,51 @@ export default function App() {
       {isConfigured ? (
         <AuthProvider>
           <ProfileProvider>
-            <HashRouter>
-              <Routes>
-                <Route
-                  path="/login"
-                  element={
-                    <FullPage>
-                      <Login />
-                    </FullPage>
-                  }
-                />
-                <Route
-                  path="/welkom"
-                  element={
-                    <RequireAuth>
+            <RaceProvider>
+              <HashRouter>
+                <Routes>
+                  <Route
+                    path="/login"
+                    element={
                       <FullPage>
-                        <Onboarding />
+                        <Login />
                       </FullPage>
-                    </RequireAuth>
-                  }
-                />
-                <Route
-                  element={
-                    <RequireAuth>
-                      <RequireOnboarded>
-                        <Layout />
-                      </RequireOnboarded>
-                    </RequireAuth>
-                  }
-                >
-                  <Route index element={<Hub />} />
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="plan" element={<Plan />} />
-                  <Route path="workouts" element={<Workouts />} />
-                  <Route path="goals" element={<Goals />} />
-                  <Route path="leaderboard" element={<Leaderboard />} />
-                  <Route path="leaderboard/:userId" element={<Player />} />
-                  <Route path="instellingen" element={<Settings />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </HashRouter>
+                    }
+                  />
+                  <Route
+                    path="/welkom"
+                    element={
+                      <RequireAuth>
+                        <FullPage>
+                          <Onboarding />
+                        </FullPage>
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    element={
+                      <RequireAuth>
+                        <RequireOnboarded>
+                          <Layout />
+                        </RequireOnboarded>
+                      </RequireAuth>
+                    }
+                  >
+                    <Route index element={<Hub />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="plan" element={<Plan />} />
+                    <Route path="workouts" element={<Workouts />} />
+                    <Route path="goals" element={<Goals />} />
+                    <Route path="leaderboard" element={<Leaderboard />} />
+                    <Route path="leaderboard/:userId" element={<Player />} />
+                    <Route path="instellingen" element={<Settings />} />
+                    <Route path="records" element={<Records />} />
+                    <Route path="uitdagingen" element={<Challenges />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </HashRouter>
+            </RaceProvider>
           </ProfileProvider>
         </AuthProvider>
       ) : (

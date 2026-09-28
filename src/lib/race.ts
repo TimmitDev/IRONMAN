@@ -1,13 +1,49 @@
-export const RACE = {
+export type RaceType = 'full' | 'half' | 'olympic' | 'sprint'
+
+export interface RaceDistances {
+  swim: number
+  bike: number
+  run: number
+}
+
+// planScale: hoe zwaar het trainingsplan is t.o.v. een volledige afstand (piekuren en lange sessies).
+export const RACE_TYPES: Record<RaceType, { label: string; description: string; distances: RaceDistances; planScale: number }> = {
+  full: { label: 'Volledige afstand', description: 'IRONMAN: de klassieke lange afstand.', distances: { swim: 3.8, bike: 180, run: 42.2 }, planScale: 1 },
+  half: { label: 'Halve afstand (70.3)', description: 'De helft van alles: 113 km in totaal.', distances: { swim: 1.9, bike: 90, run: 21.1 }, planScale: 0.7 },
+  olympic: { label: 'Olympische afstand', description: 'Kort en snel, zoals op de Spelen.', distances: { swim: 1.5, bike: 40, run: 10 }, planScale: 0.5 },
+  sprint: { label: 'Sprintafstand', description: 'De kortste triatlon, ideaal om te starten.', distances: { swim: 0.75, bike: 20, run: 5 }, planScale: 0.4 },
+}
+
+export interface Race {
+  name: string
+  date: Date
+  type: RaceType
+  distances: RaceDistances
+}
+
+export const DEFAULT_RACE: Race = {
   name: 'IRONMAN België',
   date: new Date('2027-09-05T07:00:00+02:00'),
-  distances: { swim: 3.8, bike: 180, run: 42.2 },
+  type: 'full',
+  distances: RACE_TYPES.full.distances,
 }
+
+/** Vaste referentie voor leaderboard en badges: die blijven bewust IRONMAN, zodat vergelijken eerlijk is. */
+export const IRONMAN_DISTANCES: RaceDistances = { swim: 3.8, bike: 180, run: 42.2 }
+
+/** Afstanden als "3,8 · 180 · 42,2 km". */
+export const formatDistances = (d: RaceDistances) =>
+  `${[d.swim, d.bike, d.run].map((n) => n.toLocaleString('nl-BE')).join(' · ')} km`
 
 const DAY = 86_400_000
 
-export function daysUntilRace(now = new Date()): number {
-  return Math.max(0, Math.ceil((RACE.date.getTime() - now.getTime()) / DAY))
+export function daysUntilRace(race: Race, now = new Date()): number {
+  return Math.max(0, Math.ceil((race.date.getTime() - now.getTime()) / DAY))
+}
+
+/** Racedag ligt achter ons (de dag zelf telt nog niet als voorbij). */
+export function racePassed(race: Race, now = new Date()): boolean {
+  return toISODate(race.date) < toISODate(now)
 }
 
 export interface Phase {
@@ -31,11 +67,17 @@ export const PHASES: Phase[] = [
 /** Hoeveel weken de fasetijdlijn toont (de open Voorbereiding-fase wordt hierop afgekapt). */
 export const TIMELINE_WEEKS = 52
 
-export function currentPhase(now = new Date()): Phase {
-  const weeks = daysUntilRace(now) / 7
+export function currentPhase(race: Race, now = new Date()): Phase {
+  const weeks = daysUntilRace(race, now) / 7
   let phase = PHASES[0]
   for (const p of PHASES) if (weeks < p.fromWeeks) phase = p
   return phase
+}
+
+/** Richtlijn uren per week voor deze fase, geschaald naar de afstand van de race. */
+export function phaseHours(phase: Phase, race: Race): [number, number] {
+  const scale = RACE_TYPES[race.type].planScale
+  return [Math.max(2, Math.round(phase.hoursHint[0] * scale)), Math.max(3, Math.round(phase.hoursHint[1] * scale))]
 }
 
 /** Maandag van de week waarin `d` valt, als YYYY-MM-DD (lokale tijd). */

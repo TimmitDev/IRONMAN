@@ -6,7 +6,9 @@ import { PageHeader } from '../components/PageHeader'
 import { Switch } from '../components/Switch'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../lib/auth'
+import { RaceFields, raceDraft, validateRace, type RaceDraft } from '../components/RaceFields'
 import { useMe } from '../lib/profile'
+import { useRace } from '../lib/raceContext'
 import { STRAVA_ORANGE, checkStravaState, startStravaConnect, stravaEnabled, useStrava, type SyncResult } from '../lib/strava'
 import { supabase } from '../lib/supabase'
 import { errorMessage, ghostButton, hintClass, inputClass, labelClass, primaryButton, secondaryButton } from '../lib/ui'
@@ -40,6 +42,7 @@ export function Settings() {
       <Section title="Weergave" description="Licht, donker of automatisch volgens je apparaat.">
         <ThemeToggle labels />
       </Section>
+      <RaceSection />
       <TrainingSection />
       <StravaSection />
       <AccountSection />
@@ -143,10 +146,63 @@ function PrivacySection() {
   )
 }
 
+function RaceSection() {
+  const { me, save } = useMe()
+  const race = useRace()
+  const [draft, setDraft] = useState<RaceDraft>(() => raceDraft(race))
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<Status>(null)
+  const saved = raceDraft(race)
+  const changed = draft.name.trim() !== saved.name || draft.type !== saved.type || draft.date !== saved.date
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    const invalid = validateRace(draft)
+    if (invalid) return setStatus({ type: 'error', text: invalid })
+    setBusy(true)
+    setStatus(null)
+    try {
+      await save({
+        display_name: me.display_name,
+        show_on_leaderboard: me.show_on_leaderboard,
+        race_name: draft.name.trim(),
+        race_date: draft.date,
+        race_type: draft.type,
+      })
+      setStatus({ type: 'ok', text: 'Opgeslagen.' })
+    } catch (err) {
+      setStatus({ type: 'error', text: errorMessage(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section title="Jouw race" description="De wedstrijd waarvoor je traint. Countdown, fases en je trainingsplan volgen deze keuze.">
+      <form onSubmit={handleSubmit}>
+        <RaceFields value={draft} onChange={setDraft} />
+        <p className="mt-5 rounded-xl bg-subtle px-3.5 py-2.5 text-sm text-fg-2">
+          Je trainingsplan past zich aan; zet het opnieuw in je schema via{' '}
+          <Link to="/plan?tab=ironman" className="font-semibold text-brand hover:underline">
+            Schema → Raceplan
+          </Link>
+          .
+        </p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button type="submit" disabled={busy || !changed} className={primaryButton}>
+            {busy ? 'Opslaan…' : 'Opslaan'}
+          </button>
+          <StatusText status={status} />
+        </div>
+      </form>
+    </Section>
+  )
+}
+
 function TrainingSection() {
   const links: { to: string; icon: IconName; title: string; text: string }[] = [
     { to: '/goals', icon: 'target', title: 'Weekdoelen', text: 'Uren en kilometers per sport.' },
-    { to: '/plan?tab=ironman', icon: 'calendar', title: 'IRONMAN-plan', text: 'Niveau, rustdag en lange sessies.' },
+    { to: '/plan?tab=ironman', icon: 'calendar', title: 'Raceplan', text: 'Niveau, rustdag en lange sessies.' },
   ]
   return (
     <Section title="Training" description="Je doelen en je plan pas je aan op hun eigen pagina.">

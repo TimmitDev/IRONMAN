@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import { RACE } from './race'
+import { IRONMAN_DISTANCES } from './race'
 
 export interface LeaderboardRow {
   user_id: string
@@ -21,7 +21,7 @@ export interface LeaderboardRow {
 
 /** Deel van een volledige IRONMAN, elke discipline even zwaar (1 = 3,8 + 180 + 42,2 km). */
 export const ironmanFraction = (r: Pick<LeaderboardRow, 'swim_km' | 'bike_km' | 'run_km'>) =>
-  (r.swim_km / RACE.distances.swim + r.bike_km / RACE.distances.bike + r.run_km / RACE.distances.run) / 3
+  (r.swim_km / IRONMAN_DISTANCES.swim + r.bike_km / IRONMAN_DISTANCES.bike + r.run_km / IRONMAN_DISTANCES.run) / 3
 
 /** Schema-trouw 0–1, of null zonder geplande sessies. */
 export const compliance = (r: Pick<LeaderboardRow, 'planned' | 'planned_done'>) => (r.planned ? r.planned_done / r.planned : null)

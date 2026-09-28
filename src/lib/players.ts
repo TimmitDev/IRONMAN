@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
+import type { RaceType } from './race'
 import type { Sport, Workout } from './types'
 
 export interface PlayerHit {
@@ -34,6 +35,8 @@ export interface PlayerProfile {
   planned_done: number
   weeks: { week: string; sport: Sport; minutes: number; km: number }[]
   workouts: Workout[] | null
+  /** De race waarvoor de speler traint; ontbreekt zonder eigen race (of vóór migratie 011). */
+  race?: { name: string; date: string; type: RaceType } | null
 }
 
 /** Zoekt spelers op naam (hoofdletterongevoelig). RLS geeft alleen zichtbare profielen en je eigen terug. */

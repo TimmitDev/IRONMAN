@@ -4,7 +4,8 @@ import { Card } from '../components/Card'
 import { PageHeader } from '../components/PageHeader'
 import { useBadges } from '../lib/badges'
 import { useWorkouts } from '../lib/useWorkouts'
-import { currentPhase, formatDuration } from '../lib/race'
+import { currentPhase, formatDuration, phaseHours } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import { errorMessage, eyebrowClass, inputClass, primaryButton } from '../lib/ui'
 import { useGoals, type Goals as GoalMap } from '../lib/useGoals'
@@ -30,8 +31,9 @@ export function Goals() {
 }
 
 function PhaseHint() {
-  const phase = currentPhase()
-  const [min, max] = phase.hoursHint
+  const race = useRace()
+  const phase = currentPhase(race)
+  const [min, max] = phaseHours(phase, race)
   return (
     <Card>
       <p className={eyebrowClass}>Richtlijn · fase {phase.name}</p>

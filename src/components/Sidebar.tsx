@@ -3,7 +3,8 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import { useSharedFollows } from '../lib/follows'
 import { LEVELS, usePlanSettings } from '../lib/ironmanPlan'
 import { useMe } from '../lib/profile'
-import { RACE, currentPhase, daysUntilRace } from '../lib/race'
+import { currentPhase, daysUntilRace, racePassed } from '../lib/race'
+import { useRace } from '../lib/raceContext'
 import { useInbox, type InboxItem } from '../lib/social'
 import { supabase } from '../lib/supabase'
 import { iconButton } from '../lib/ui'
@@ -19,7 +20,9 @@ const NAV: { to: string; label: string; icon: IconName; tint: string; end?: bool
   { to: '/plan', label: 'Schema', icon: 'calendar', tint: 'text-bike' },
   { to: '/workouts', label: 'Trainingen', icon: 'activity', tint: 'text-run' },
   { to: '/goals', label: 'Doelen', icon: 'target', tint: 'text-strength' },
+  { to: '/records', label: 'Records', icon: 'sparkles', tint: 'text-brand' },
   { to: '/leaderboard', label: 'Leaderboard', icon: 'trophy', tint: 'text-warning' },
+  { to: '/uitdagingen', label: 'Uitdagingen', icon: 'flag', tint: 'text-swim' },
   { to: '/instellingen', label: 'Instellingen', icon: 'settings', tint: 'text-fg-3' },
 ]
 
@@ -130,8 +133,10 @@ function ProfileBlock() {
   const follows = useSharedFollows()
   const sessions = useSessionCount(me.id)
   const { settings } = usePlanSettings()
-  const phase = currentPhase()
-  const subtitle = [settings ? LEVELS[settings.level].label : null, `Fase ${phase.name}`].filter(Boolean).join(' · ')
+  const race = useRace()
+  const passed = racePassed(race)
+  const phase = currentPhase(race)
+  const subtitle = [settings ? LEVELS[settings.level].label : null, passed ? null : `Fase ${phase.name}`].filter(Boolean).join(' · ')
 
   const stats = [
     { label: 'Sessies', value: sessions },
@@ -153,7 +158,18 @@ function ProfileBlock() {
       </Link>
       <p className="text-xs font-medium text-fg-3">{subtitle}</p>
       <p className="mx-auto mt-2 max-w-[15rem] text-sm text-fg-2">
-        Op weg naar {RACE.name}, nog <span className="font-semibold text-fg tabular-nums">{daysUntilRace()}</span> dagen.
+        {passed ? (
+          <>
+            {race.name} zit erop.{' '}
+            <Link to="/instellingen" className="font-medium text-brand hover:underline">
+              Kies je volgende race
+            </Link>
+          </>
+        ) : (
+          <>
+            Op weg naar {race.name}, nog <span className="font-semibold text-fg tabular-nums">{daysUntilRace(race)}</span> dagen.
+          </>
+        )}
       </p>
 
       <dl className="mt-5 grid grid-cols-3">

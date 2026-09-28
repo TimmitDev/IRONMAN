@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom'
 import type { Profile } from '../lib/profile'
 import { formatPace, formatSessionDuration, formatShortDate, parseISODate, todayISO } from '../lib/race'
 import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type FeedPerson } from '../lib/social'
-import { SPORT_BG, SPORT_LABEL } from '../lib/types'
+import { bucketLabel } from '../lib/records'
+import { SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import { errorMessage, iconButton, pillClass } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { RouteMap } from './RouteMap'
-import { Icon } from './Icon'
+import { Icon, type IconName } from './Icon'
 
 const DAY = 86_400_000
 
@@ -37,6 +38,32 @@ function kudosText(kudos: FeedPerson[], meId: string) {
   return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
+const LONGEST_TEXT: Partial<Record<Sport, string>> = {
+  run: 'Langste loop ooit',
+  bike: 'Langste rit ooit',
+  swim: 'Langste zwemsessie ooit',
+}
+
+/** "Eerste halve marathon!", "Eerste 40 km-rit!", "Eerste 1,9 km gezwommen!". */
+function firstText(sport: Sport, km: number) {
+  const label = bucketLabel(sport, km)
+  if (sport === 'bike') return `Eerste ${label}-rit!`
+  if (sport === 'swim') return `Eerste ${label} gezwommen!`
+  return `Eerste ${label}!`
+}
+
+/** Hoogstens twee pills: PR of eerste keer op een afstand, en langste sessie ooit. */
+function highlightBadges(item: FeedItem): { text: string; icon: IconName; tone: string }[] {
+  const h = item.highlights
+  if (!h) return []
+  const out: { text: string; icon: IconName; tone: string }[] = []
+  if (h.bucket && h.bucket_pr === 'pr') out.push({ text: `Nieuw PR · ${bucketLabel(item.sport, h.bucket)}`, icon: 'trophy', tone: 'bg-brand/10 text-brand' })
+  if (h.bucket && h.bucket_pr === 'first') out.push({ text: firstText(item.sport, h.bucket), icon: 'sparkles', tone: 'bg-warning/12 text-warning' })
+  const longest = LONGEST_TEXT[item.sport]
+  if (h.longest && longest) out.push({ text: longest, icon: 'flag', tone: 'bg-muted text-fg-2' })
+  return out.slice(0, 2)
+}
+
 export function FeedCard({
   item,
   me,
@@ -61,6 +88,7 @@ export function FeedCard({
     item.distance_km ? { label: 'Afstand', value: `${item.distance_km.toLocaleString('nl-BE')} km` } : null,
     pace ? { label: item.sport === 'bike' ? 'Snelheid' : 'Tempo', value: pace } : null,
   ].filter((s) => s !== null)
+  const badges = highlightBadges(item)
 
   async function toggleKudos() {
     if (isOwn || busy) return
@@ -113,7 +141,18 @@ export function FeedCard({
         </div>
       </header>
 
-      <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 rounded-xl bg-subtle p-3 sm:px-4">
+      {badges.length > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-2">
+          {badges.map((b) => (
+            <li key={b.text} className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${b.tone}`}>
+              <Icon name={b.icon} className="size-3.5 shrink-0" />
+              <span className="truncate">{b.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <dl className={`${badges.length ? 'mt-3' : 'mt-4'} flex flex-wrap gap-x-8 gap-y-2 rounded-xl bg-subtle p-3 sm:px-4`}>
         {stats.map((s) => (
           <div key={s.label} className="min-w-0">
             <dt className="text-xs font-medium text-fg-3">{s.label}</dt>
