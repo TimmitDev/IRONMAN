@@ -37,6 +37,37 @@ export function ThemeToggle({ labels = false }: { labels?: boolean }) {
   )
 }
 
+/**
+ * Rij met een aan/uit-schakelaar voor donkere modus, in de stijl van de menu-items (zijbalk).
+ * Omschakelen kiest expliciet licht of donker; "systeem" kies je in Instellingen.
+ */
+export function DarkModeSwitch() {
+  const { resolved, preference, setPreference } = useTheme()
+  const dark = resolved === 'dark'
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={dark}
+      onClick={() => setPreference(dark ? 'light' : 'dark')}
+      className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-medium text-fg-2 transition hover:bg-hover hover:text-fg focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
+    >
+      <Icon name={dark ? 'moon' : 'sun'} className="size-5 text-fg-3" />
+      <span className="min-w-0 flex-1 leading-tight">
+        Donkere modus
+        {preference === 'system' && <span className="block text-[11px] font-normal text-fg-4">Volgt je apparaat</span>}
+      </span>
+      <span className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${dark ? 'bg-brand' : 'bg-line-strong'}`} aria-hidden>
+        <span
+          className={`absolute top-0.5 left-0.5 flex size-5 items-center justify-center rounded-full bg-white shadow-sm transition-transform ${dark ? 'translate-x-5 text-brand' : 'text-warning'}`}
+        >
+          <Icon name={dark ? 'moon' : 'sun'} className="size-3" strokeWidth={2.5} />
+        </span>
+      </span>
+    </button>
+  )
+}
+
 /** Eén knop die wisselt tussen licht en donker (mobiele bovenbalk). */
 export function ThemeSwitchButton() {
   const { resolved, setPreference } = useTheme()

@@ -10,7 +10,7 @@ import { iconButton } from '../lib/ui'
 import { useWorkoutsChanged } from '../lib/useWorkouts'
 import { Avatar } from './Avatar'
 import { Icon, type IconName } from './Icon'
-import { ThemeToggle } from './ThemeToggle'
+import { DarkModeSwitch } from './ThemeToggle'
 
 // Elk onderdeel een eigen icoonkleur, zodat het menu in één oogopslag leesbaar is.
 const NAV: { to: string; label: string; icon: IconName; tint: string; end?: boolean }[] = [
@@ -109,15 +109,16 @@ export function Sidebar() {
         </ul>
       </nav>
 
-      <div className="mt-auto space-y-2 border-t border-line p-4">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <ThemeToggle labels />
-          </div>
-          <button onClick={() => supabase.auth.signOut()} className={iconButton} aria-label="Uitloggen" title="Uitloggen">
-            <Icon name="logout" className="size-[18px]" />
-          </button>
-        </div>
+      <div className="mx-4 mt-auto space-y-1 border-t border-line py-4">
+        <DarkModeSwitch />
+        <button
+          type="button"
+          onClick={() => supabase.auth.signOut()}
+          className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-fg-2 transition hover:bg-danger/10 hover:text-danger focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
+        >
+          <Icon name="logout" className="size-5" />
+          Uitloggen
+        </button>
       </div>
     </aside>
   )
