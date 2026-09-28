@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom'
 import { BadgesCard } from '../components/Badges'
 import { Card } from '../components/Card'
 import { CompleteDialog } from '../components/CompleteDialog'
+import { EmptyState } from '../components/EmptyState'
+import { Icon } from '../components/Icon'
+import { PageHeader } from '../components/PageHeader'
 import { WeekReport } from '../components/WeekReport'
 import { useBadges } from '../lib/badges'
 import { DoneToggle } from '../components/DoneToggle'
@@ -12,10 +15,20 @@ import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
 import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Sport } from '../lib/types'
-import { errorMessage } from '../lib/ui'
+import { errorMessage, eyebrowClass, linkClass, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 import { usePlan } from '../lib/usePlan'
 import { useWorkouts } from '../lib/useWorkouts'
+
+/** Tekstlink met pijltje, voor "Alles bekijken" in kaartkoppen. */
+function MoreLink({ to, children }: { to: string; children: string }) {
+  return (
+    <Link to={to} className={`${linkClass} inline-flex items-center gap-1`}>
+      {children}
+      <Icon name="arrow-right" className="size-4" />
+    </Link>
+  )
+}
 
 export function Dashboard() {
   const { workouts, loading, error, refresh } = useWorkouts()
@@ -41,17 +54,80 @@ export function Dashboard() {
   const reportProps = { workouts, goals, goalMinutes, badges }
 
   return (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-      {!loading && isSunday && <WeekReport start={thisWeek} {...reportProps} />}
-      {!loading && !isSunday && showPrevReport && (
-        <WeekReport start={addDays(thisWeek, -7)} {...reportProps} onClose={() => setShowPrevReport(false)} />
-      )}
-      <Hero />
-      <TodayCard
-        planned={plan.planned.filter((p) => p.date === todayISO())}
-        onToggle={toggle}
-        onShowReport={isSunday || showPrevReport ? undefined : () => setShowPrevReport(true)}
+    <div>
+      <PageHeader
+        title="Dashboard"
+        description="Jouw voortgang richting de race: wat er vandaag op het schema staat, hoe je week loopt en hoe ver je al staat."
+        actions={
+          <Link to="/goals" className={secondaryButton}>
+            <Icon name="target" className="size-4" />
+            Doelen
+          </Link>
+        }
       />
+
+      <div className="space-y-4 sm:space-y-6">
+        {!loading && isSunday && <WeekReport start={thisWeek} {...reportProps} />}
+        {!loading && !isSunday && showPrevReport && (
+          <WeekReport start={addDays(thisWeek, -7)} {...reportProps} onClose={() => setShowPrevReport(false)} />
+        )}
+
+        {(error || plan.error) && (
+          <Card>
+            <p className="text-sm text-danger">Kon data niet laden: {error ?? plan.error}</p>
+          </Card>
+        )}
+
+        {/* Race-countdown + vandaag */}
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+          <Hero />
+          <TodayCard
+            planned={plan.planned.filter((p) => p.date === todayISO())}
+            onToggle={toggle}
+            onShowReport={isSunday || showPrevReport ? undefined : () => setShowPrevReport(true)}
+          />
+        </div>
+
+        {/* Weekdoelen per sport */}
+        <section aria-labelledby="week-heading">
+          <h2 id="week-heading" className={`mb-3 px-1 ${eyebrowClass}`}>
+            Deze week
+          </h2>
+          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+            {SPORTS.map((s) => {
+              const done = plan.done.filter((w) => w.sport === s)
+              const open = plan.planned.filter((p) => p.sport === s && !p.workout_id)
+              return (
+                <GoalTile
+                  key={s}
+                  sport={s}
+                  doneMin={sumMinutes(done)}
+                  doneKm={sumKm(done)}
+                  plannedMin={sumMinutes(open)}
+                  goalMin={goals[s]?.minutes ?? 0}
+                  goalKm={goals[s]?.distance_km ?? null}
+                />
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Grafiek + zijkolom */}
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+          <Card title="Volume per week" description="Trainingsuren van de laatste 12 weken, per sport." className="min-w-0 lg:col-span-2">
+            {loading ? <div className="h-60 animate-pulse rounded-xl bg-muted" /> : <WeeklyChart workouts={workouts} goalMinutes={goalMinutes} />}
+          </Card>
+
+          <div className="min-w-0 space-y-4 sm:space-y-6">
+            <BadgesCard results={badges} />
+            <LongestCard workouts={workouts} />
+            <Card title="Recente trainingen" action={<MoreLink to="/workouts">Alles</MoreLink>}>
+              <WorkoutList workouts={workouts.slice(0, 5)} />
+            </Card>
+          </div>
+        </div>
+      </div>
+
       {completing && (
         <CompleteDialog
           item={completing}
@@ -59,55 +135,6 @@ export function Dashboard() {
           onClose={() => setCompleting(null)}
         />
       )}
-
-      {(error || plan.error) && (
-        <Card className="lg:col-span-3">
-          <p className="text-sm text-red-400">Kon data niet laden: {error ?? plan.error}</p>
-        </Card>
-      )}
-
-      <div className="-mb-2 flex items-center justify-between px-1 lg:col-span-3">
-        <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Deze week</h2>
-        <Link to="/goals" className="text-xs font-semibold text-brand hover:underline">
-          Doelen →
-        </Link>
-      </div>
-      <div className="grid grid-cols-2 gap-4 lg:col-span-3 lg:grid-cols-4">
-        {SPORTS.map((s) => {
-          const done = plan.done.filter((w) => w.sport === s)
-          const open = plan.planned.filter((p) => p.sport === s && !p.workout_id)
-          return (
-            <GoalTile
-              key={s}
-              sport={s}
-              doneMin={sumMinutes(done)}
-              doneKm={sumKm(done)}
-              plannedMin={sumMinutes(open)}
-              goalMin={goals[s]?.minutes ?? 0}
-              goalKm={goals[s]?.distance_km ?? null}
-            />
-          )
-        })}
-      </div>
-
-      <Card title="Volume per week" className="lg:col-span-2">
-        {loading ? <p className="text-sm text-zinc-500">Laden…</p> : <WeeklyChart workouts={workouts} goalMinutes={goalMinutes} />}
-      </Card>
-
-      <div className="space-y-4">
-        <BadgesCard results={badges} />
-        <LongestCard workouts={workouts} />
-        <Card
-          title="Recent"
-          action={
-            <Link to="/workouts" className="text-xs font-semibold text-brand hover:underline">
-              Alles →
-            </Link>
-          }
-        >
-          <WorkoutList workouts={workouts.slice(0, 5)} />
-        </Card>
-      </div>
     </div>
   )
 }
@@ -117,35 +144,39 @@ function Hero() {
   const phase = currentPhase()
   return (
     <Card className="relative overflow-hidden lg:col-span-2">
-      <div className="pointer-events-none absolute -top-20 -right-20 size-64 rounded-full bg-brand/20 blur-3xl" />
-      <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">
-        {RACE.name} · {RACE.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
-      </p>
-      <div className="mt-3 flex flex-wrap items-end gap-x-8 gap-y-2">
-        <div>
-          <span className="text-7xl leading-none font-black tracking-tighter sm:text-8xl">{days}</span>
-          <span className="ml-2 text-lg font-semibold text-zinc-400">dagen</span>
+      <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-brand/15 blur-3xl" aria-hidden />
+      <div className="relative">
+        <p className={eyebrowClass}>
+          {RACE.name} · {RACE.date.toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+        <div className="mt-3 flex flex-wrap items-end gap-x-10 gap-y-3">
+          <div className="flex items-baseline gap-2">
+            <span className="text-7xl leading-none font-black tracking-tighter text-fg tabular-nums sm:text-8xl">{days}</span>
+            <span className="text-lg font-semibold text-fg-3">dagen</span>
+          </div>
+          <dl className="flex gap-8 pb-2 text-sm">
+            <div>
+              <dt className="text-fg-3">Weken</dt>
+              <dd className="text-lg font-semibold text-fg tabular-nums">{Math.floor(days / 7)}</dd>
+            </div>
+            <div>
+              <dt className="text-fg-3">Fase</dt>
+              <dd className="text-lg font-semibold text-fg">{phase.name}</dd>
+            </div>
+          </dl>
         </div>
-        <div className="pb-2 text-sm text-zinc-400">
-          <p>
-            <span className="font-semibold text-white">{Math.floor(days / 7)}</span> weken
-          </p>
-          <p>
-            Fase <span className="font-semibold text-white">{phase.name}</span>
-          </p>
+        <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          {(['swim', 'bike', 'run'] as const).map((s) => (
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-subtle px-2.5 py-1 font-medium text-fg-2">
+              <span className={`size-1.5 rounded-full ${SPORT_BG[s]}`} />
+              {RACE.distances[s]} km {SPORT_LABEL[s].toLowerCase()}
+            </span>
+          ))}
         </div>
-      </div>
-      <div className="mt-3 flex flex-wrap gap-2 text-xs">
-        {(['swim', 'bike', 'run'] as const).map((s) => (
-          <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-zinc-300">
-            <span className={`size-1.5 rounded-full ${SPORT_BG[s]}`} />
-            {RACE.distances[s]} km {SPORT_LABEL[s].toLowerCase()}
-          </span>
-        ))}
-      </div>
-      <div className="mt-6">
-        <PhaseTimeline />
-        <p className="mt-3 text-sm text-zinc-400">{phase.description}</p>
+        <div className="mt-6 border-t border-line pt-5">
+          <PhaseTimeline />
+          <p className="mt-3 text-sm text-fg-3">{phase.description}</p>
+        </div>
       </div>
     </Card>
   )
@@ -161,53 +192,53 @@ function TodayCard({
   onShowReport?: () => void
 }) {
   return (
-    <Card
-      className="flex flex-col"
-      title="Vandaag"
-      action={
-        <Link to="/plan" className="text-xs font-semibold text-brand hover:underline">
-          Schema →
-        </Link>
-      }
-    >
+    <Card className="flex flex-col" title="Vandaag" action={<MoreLink to="/plan">Schema</MoreLink>}>
       {planned.length ? (
         <ul className="space-y-2">
           {planned.map((p) => (
-            <li key={p.id} className="flex items-start gap-3 rounded-xl bg-zinc-800/60 p-3">
+            <li key={p.id} className="flex items-start gap-3 rounded-xl bg-subtle p-3">
               <DoneToggle sport={p.sport} checked={Boolean(p.workout_id)} onClick={() => onToggle(p)} />
               <div className="min-w-0">
-                <p className={`font-semibold ${p.workout_id ? 'text-zinc-500 line-through' : 'text-white'}`}>
-                  {p.title || SPORT_LABEL[p.sport]}
-                </p>
-                <p className="text-sm text-zinc-400">
+                <p className={`font-semibold ${p.workout_id ? 'text-fg-3 line-through' : 'text-fg'}`}>{p.title || SPORT_LABEL[p.sport]}</p>
+                <p className="text-sm text-fg-3">
                   {SPORT_LABEL[p.sport]} · {formatSessionDuration(p.duration_min)}
                   {p.distance_km ? ` · ${p.distance_km} km` : ''}
                 </p>
-                {p.notes && <p className="mt-1 text-xs text-zinc-500">{p.notes}</p>}
+                {p.notes && <p className="mt-1 text-xs text-fg-3">{p.notes}</p>}
               </div>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="py-6 text-center">
-          <p className="text-2xl font-black text-zinc-300">Rustdag</p>
-          <p className="mt-1 text-sm text-zinc-500">Niets gepland voor vandaag.</p>
-          <Link to="/plan" className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
-            Sessie plannen
-          </Link>
-        </div>
+        <EmptyState
+          icon="calendar"
+          title="Rustdag"
+          action={
+            <Link to="/plan" className={secondaryButton}>
+              <Icon name="plus" className="size-4" />
+              Sessie plannen
+            </Link>
+          }
+        >
+          Niets gepland voor vandaag.
+        </EmptyState>
       )}
       {onShowReport && (
-        <button
-          onClick={onShowReport}
-          className="mt-auto flex items-center justify-between rounded-xl border border-white/5 px-3 py-2.5 text-left text-sm text-zinc-300 transition hover:bg-white/5"
-        >
-          <span>
-            📊 Weekrapport van vorige week
-            <span className="block text-xs text-zinc-500">Het nieuwe rapport verschijnt zondag</span>
-          </span>
-          <span className="text-zinc-500">→</span>
-        </button>
+        <div className="mt-auto pt-4">
+          <button
+            onClick={onShowReport}
+            className="flex w-full items-center gap-3 rounded-xl border border-line px-3 py-2.5 text-left text-sm transition hover:bg-hover"
+          >
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+              <Icon name="chart" className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-medium text-fg">Weekrapport van vorige week</span>
+              <span className="block text-xs text-fg-3">Het nieuwe rapport verschijnt zondag</span>
+            </span>
+            <Icon name="chevron-right" className="size-4 text-fg-3" />
+          </button>
+        </div>
       )}
     </Card>
   )
@@ -230,44 +261,50 @@ function GoalTile({
 }) {
   const pct = goalMin ? Math.round((doneMin / goalMin) * 100) : null
   return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-2 text-sm font-medium text-zinc-300">
-          <span className={`h-4 w-1 rounded-full ${SPORT_BG[sport]}`} />
-          {SPORT_LABEL[sport]}
+    <section className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="inline-flex min-w-0 items-center gap-2 text-sm font-medium text-fg-2">
+          <span className={`h-4 w-1 shrink-0 rounded-full ${SPORT_BG[sport]}`} />
+          <span className="truncate">{SPORT_LABEL[sport]}</span>
         </span>
-        {pct !== null && <span className="text-sm font-bold text-white tabular-nums">{pct}%</span>}
+        {pct !== null && <span className="text-sm font-semibold text-fg tabular-nums">{pct}%</span>}
       </div>
-      <p className="mt-3 text-3xl font-black tracking-tight">
-        {doneMin ? formatDuration(doneMin) : '0'}
-        {goalMin > 0 && <span className="text-base font-semibold text-zinc-500"> / {formatDuration(goalMin)}</span>}
+      <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
+        <span className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">{doneMin ? formatDuration(doneMin) : '0'}</span>
+        {goalMin > 0 && <span className="text-sm font-medium text-fg-3">/ {formatDuration(goalMin)}</span>}
       </p>
       <div className="mt-3">
         <ProgressBar value={doneMin} max={goalMin || doneMin + plannedMin} planned={plannedMin} color={SPORT_BG[sport]} />
       </div>
-      <p className="mt-2 text-xs text-zinc-400">
+      <p className="mt-2.5 text-xs text-fg-3">
         {doneKm > 0 && `${doneKm}${goalKm ? ` / ${goalKm}` : ''} km · `}
-        {plannedMin ? `nog ${formatDuration(plannedMin)} gepland` : goalMin ? 'deze week' : (
-          <Link to="/goals" className="hover:text-white">Stel een doel in →</Link>
+        {plannedMin ? (
+          `nog ${formatDuration(plannedMin)} gepland`
+        ) : goalMin ? (
+          'deze week'
+        ) : (
+          <Link to="/goals" className="font-medium text-brand hover:underline">
+            Stel een doel in
+          </Link>
         )}
       </p>
-    </Card>
+    </section>
   )
 }
 
 function LongestCard({ workouts }: { workouts: { sport: Sport; distance_km: number | null }[] }) {
   return (
-    <Card title="Langste sessie vs. race">
+    <Card title="Langste sessie vs. race" description="Je langste afstand tot nu toe, tegenover de race-afstand.">
       <div className="space-y-4">
         {(['swim', 'bike', 'run'] as const).map((s) => {
           const longest = Math.max(0, ...workouts.filter((w) => w.sport === s).map((w) => Number(w.distance_km ?? 0)))
           const target = RACE.distances[s]
           return (
             <div key={s}>
-              <div className="mb-1.5 flex justify-between text-sm">
-                <span className="text-zinc-300">{SPORT_LABEL[s]}</span>
-                <span className="text-zinc-400 tabular-nums">
-                  <span className="font-semibold text-white">{longest || 0}</span> / {target} km
+              <div className="mb-1.5 flex justify-between gap-2 text-sm">
+                <span className="text-fg-2">{SPORT_LABEL[s]}</span>
+                <span className="text-fg-3 tabular-nums">
+                  <span className="font-semibold text-fg">{longest || 0}</span> / {target} km
                 </span>
               </div>
               <ProgressBar value={longest} max={target} color={SPORT_BG[s]} />

@@ -1,13 +1,17 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '../components/Avatar'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
+import { Icon } from '../components/Icon'
+import { PageHeader } from '../components/PageHeader'
 import { Segmented } from '../components/Segmented'
-import { useAuth } from '../lib/auth'
-import { compliance, formatIronman, ironmanFraction, useLeaderboard, useProfile, type LeaderboardRow, type Profile, type ProfileFields } from '../lib/leaderboard'
+import { compliance, formatIronman, ironmanFraction, useLeaderboard, type LeaderboardRow } from '../lib/leaderboard'
 import { usePlayerSearch } from '../lib/players'
+import { useMe } from '../lib/profile'
 import { RACE, addDays, formatDuration, toISODate, todayISO, weekStart } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL } from '../lib/types'
-import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
+import { inputClass, pillClass, secondaryButton } from '../lib/ui'
 
 type Period = 'week' | 'month' | 'all'
 type Metric = 'hours' | 'ironman' | 'days' | 'compliance'
@@ -91,15 +95,11 @@ function barSegments(r: LeaderboardRow, metric: Metric): { cls: string; value: n
 }
 
 export function Leaderboard() {
-  const { session } = useAuth()
-  const { profile, loading: profileLoading, save } = useProfile()
+  const { me } = useMe()
   const [period, setPeriod] = useState<Period>('week')
   const [metric, setMetric] = useState<Metric>('hours')
   const [from, to] = periodRange(period)
-  const { rows, loading, error } = useLeaderboard(from, to, profile)
-
-  if (profileLoading) return <p className="text-sm text-zinc-500">Laden…</p>
-  if (!profile) return <JoinCard defaultName={session!.user.email!.split('@')[0]} onSave={save} />
+  const { rows, loading, error } = useLeaderboard(from, to, me)
 
   const ranked = [...rows].sort((a, b) => metricValue(b, metric) - metricValue(a, metric))
   const max = metric === 'compliance' ? 1 : Math.max(0, ...ranked.map((r) => metricValue(r, metric)))
@@ -112,88 +112,133 @@ export function Leaderboard() {
     }
   }
   const metricInfo = METRICS.find((m) => m.key === metric)!
+  const legend = metric === 'hours' ? (['swim', 'bike', 'run', 'strength'] as const) : metric === 'ironman' ? (['swim', 'bike', 'run'] as const) : null
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <PlayerSearch />
-      <div className="flex flex-wrap gap-2">
-        <Segmented options={PERIODS} value={period} onChange={setPeriod} />
-        <Segmented options={METRICS} value={metric} onChange={setMetric} />
-      </div>
+    <div>
+      <PageHeader
+        title="Leaderboard"
+        description="Vergelijk je training met de groep: per week, maand of sinds de start, op uren, afstand, actieve dagen of schema-trouw."
+        actions={
+          <Link to="/instellingen" className={secondaryButton}>
+            <Icon name="shield" className="size-4" />
+            Profiel & privacy
+          </Link>
+        }
+      />
 
-      <Card title={`Leaderboard · ${PERIODS.find((p) => p.key === period)!.label}`}>
-        <p className="-mt-2 mb-4 text-sm text-zinc-400">{metricInfo.hint}</p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        {!loading && ranked.length === 0 && <p className="text-sm text-zinc-500">Nog niemand op het leaderboard.</p>}
-        <ol className={`space-y-3 ${loading ? 'opacity-50' : ''}`}>
-          {ranked.map((r, i) => {
-            const isMe = r.user_id === session!.user.id
-            const value = Math.max(0, metricValue(r, metric))
-            const { main, sub } = formatMetric(r, metric)
-            const segments = barSegments(r, metric).filter((s) => s.value > 0)
-            return (
-              <li key={r.user_id}>
-                <Link
-                  to={`/leaderboard/${r.user_id}`}
-                  className={`block rounded-xl border p-4 transition hover:brightness-125 ${isMe ? 'border-brand/40 bg-brand/5' : 'border-white/5 bg-zinc-800/40'}`}
-                >
-                <div className="flex items-center gap-4">
-                  <span className={`w-8 shrink-0 text-center text-3xl font-black italic ${i === 0 ? 'text-brand' : 'text-zinc-600'}`}>{i + 1}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="flex items-center gap-2 font-semibold text-white">
-                      <span className="truncate">{r.display_name}</span>
-                      {isMe && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-300 uppercase">jij</span>}
-                    </p>
-                    {titles.get(r.user_id) && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {titles.get(r.user_id)!.map((t) => (
-                          <span key={t.name} title={t.hint} className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] font-medium text-zinc-300">
-                            {t.name}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-2xl font-black tracking-tight text-white tabular-nums">{main}</p>
-                    <p className="text-xs text-zinc-400">{sub}</p>
-                  </div>
-                </div>
-                <div className="mt-3 h-2 rounded-full bg-zinc-800">
-                  <div className="flex h-full gap-[2px] overflow-hidden rounded-full" style={{ width: `${max > 0 ? (value / max) * 100 : 0}%` }}>
-                    {segments.map((s) => (
-                      <div key={s.cls} className={s.cls} style={{ flexGrow: s.value }} title={s.label} />
-                    ))}
-                  </div>
-                </div>
-                </Link>
-              </li>
-            )
-          })}
-        </ol>
-        {(metric === 'hours' || metric === 'ironman') && (
-          <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
-            {(metric === 'hours' ? (['swim', 'bike', 'run', 'strength'] as const) : (['swim', 'bike', 'run'] as const)).map((s) => (
-              <span key={s} className="inline-flex items-center gap-1.5">
-                <span className={`size-2 rounded-sm ${SPORT_BG[s]}`} />
-                {SPORT_LABEL[s]}
-              </span>
-            ))}
+      {/* Mobiel: zoeken, ranking, titels onder elkaar. Desktop: ranking links, zoeken en titels rechts. */}
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr] xl:items-start">
+        <div className="xl:col-start-2 xl:row-start-1">
+          <PlayerSearch />
+        </div>
+
+        <div className="min-w-0 space-y-4 xl:col-start-1 xl:row-span-2 xl:row-start-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <Segmented options={PERIODS} value={period} onChange={setPeriod} />
+            <Segmented options={METRICS} value={metric} onChange={setMetric} />
           </div>
-        )}
-      </Card>
 
-      <Card title="Titels">
-        <ul className="grid gap-2 text-sm sm:grid-cols-2">
-          {TITLES.map((t) => (
-            <li key={t.name}>
-              <span className="font-semibold text-white">{t.name}</span> <span className="text-zinc-400">· {t.hint}</span>
-            </li>
-          ))}
-        </ul>
-      </Card>
+          <Card flush title={`Ranking · ${PERIODS.find((p) => p.key === period)!.label}`} description={metricInfo.hint}>
+            {error && <p className="px-5 pb-4 text-sm text-danger sm:px-6">{error}</p>}
+            {!loading && ranked.length === 0 && !error && (
+              <EmptyState icon="trophy" title="Nog niemand op het leaderboard">
+                Zodra spelers zichtbaar zijn en trainen, verschijnen ze hier.
+              </EmptyState>
+            )}
+            {loading && ranked.length === 0 && (
+              <div className="space-y-2 px-5 pb-5 sm:px-6">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+                ))}
+              </div>
+            )}
+            <ol className={`divide-y divide-line border-t border-line ${ranked.length ? '' : 'hidden'} ${loading ? 'opacity-50' : ''}`}>
+              {ranked.map((r, i) => {
+                const isMe = r.user_id === me.id
+                const value = Math.max(0, metricValue(r, metric))
+                const { main, sub } = formatMetric(r, metric)
+                const segments = barSegments(r, metric).filter((s) => s.value > 0)
+                const rowTitles = titles.get(r.user_id)
+                return (
+                  <li key={r.user_id}>
+                    <Link
+                      to={`/leaderboard/${r.user_id}`}
+                      className={`block px-5 py-4 transition sm:px-6 ${isMe ? 'bg-brand/5 hover:bg-brand/10' : 'hover:bg-hover'}`}
+                    >
+                      <div className="flex items-center gap-3 sm:gap-4">
+                        <span
+                          className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums ${
+                            i === 0 ? 'bg-brand text-white' : i < 3 ? 'bg-brand/10 text-brand' : 'bg-muted text-fg-3'
+                          }`}
+                        >
+                          {i + 1}
+                        </span>
+                        <Avatar name={r.display_name} highlight={isMe} />
+                        <div className="min-w-0 flex-1">
+                          <p className="flex min-w-0 items-center gap-2 font-semibold text-fg">
+                            <span className="truncate">{r.display_name}</span>
+                            {isMe && <span className={pillClass}>jij</span>}
+                          </p>
+                          {rowTitles && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {rowTitles.map((t) => (
+                                <span key={t.name} title={t.hint} className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
+                                  <Icon name="trophy" className="size-3" />
+                                  {t.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <p className="text-lg font-semibold tracking-tight text-fg tabular-nums sm:text-xl">{main}</p>
+                          <p className="text-xs text-fg-3">{sub}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 h-2 rounded-full bg-muted sm:ml-12">
+                        <div className="flex h-full gap-[2px] overflow-hidden rounded-full" style={{ width: `${max > 0 ? (value / max) * 100 : 0}%` }}>
+                          {segments.map((s) => (
+                            <div key={s.cls} className={s.cls} style={{ flexGrow: s.value }} title={s.label} />
+                          ))}
+                        </div>
+                      </div>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ol>
+            {legend && ranked.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-5 py-3 text-xs text-fg-3 sm:px-6">
+                {legend.map((s) => (
+                  <span key={s} className="inline-flex items-center gap-1.5">
+                    <span className={`size-2 rounded-sm ${SPORT_BG[s]}`} />
+                    {SPORT_LABEL[s]}
+                  </span>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
 
-      <ProfileCard profile={profile} onSave={save} />
+        <aside className="xl:col-start-2 xl:row-start-2">
+          <Card title="Titels" description="De beste in elke categorie krijgt een titel (vanaf twee spelers).">
+            <ul className="divide-y divide-line">
+              {TITLES.map((t) => (
+                <li key={t.name} className="flex items-center gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                    <Icon name="trophy" className="size-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-medium text-fg">{t.name}</p>
+                    <p className="text-xs text-fg-3">{t.hint.charAt(0).toUpperCase() + t.hint.slice(1)}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </aside>
+      </div>
     </div>
   )
 }
@@ -203,115 +248,32 @@ function PlayerSearch() {
   const { hits, loading } = usePlayerSearch(query)
 
   return (
-    <div>
-      <input
-        type="search"
-        className={inputClass}
-        placeholder="Zoek een speler…"
-        aria-label="Zoek een speler"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
+    <Card title="Spelers zoeken">
+      <div className="relative">
+        <Icon name="search" className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-fg-4" />
+        <input
+          type="search"
+          className={`${inputClass} pl-10`}
+          placeholder="Zoek een speler…"
+          aria-label="Zoek een speler"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
       {query.trim() && (
-        <ul className={`mt-2 overflow-hidden rounded-xl border border-white/5 bg-zinc-900/70 ${loading ? 'opacity-50' : ''}`}>
+        <ul className={`-mx-2 mt-3 ${loading ? 'opacity-50' : ''}`}>
           {hits.map((h) => (
             <li key={h.id}>
-              <Link to={`/leaderboard/${h.id}`} className="flex items-center justify-between px-4 py-2.5 text-sm text-white transition hover:bg-white/5">
-                {h.display_name}
-                <span className="text-zinc-600" aria-hidden>
-                  ›
-                </span>
+              <Link to={`/leaderboard/${h.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm text-fg transition hover:bg-hover">
+                <Avatar name={h.display_name} size="sm" />
+                <span className="min-w-0 flex-1 truncate font-medium">{h.display_name}</span>
+                <Icon name="chevron-right" className="size-4 text-fg-4" />
               </Link>
             </li>
           ))}
-          {!loading && !hits.length && <li className="px-4 py-2.5 text-sm text-zinc-500">Geen spelers gevonden.</li>}
+          {!loading && !hits.length && <li className="px-2 py-2 text-sm text-fg-3">Geen spelers gevonden.</li>}
         </ul>
       )}
-    </div>
-  )
-}
-
-type SaveProfile = (p: ProfileFields) => Promise<void>
-
-function JoinCard({ defaultName, onSave }: { defaultName: string; onSave: SaveProfile }) {
-  const [name, setName] = useState(defaultName)
-  const [error, setError] = useState<string | null>(null)
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    try {
-      await onSave({ display_name: name.trim(), show_on_leaderboard: true })
-    } catch (err) {
-      setError(errorMessage(err))
-    }
-  }
-
-  return (
-    <div className="mx-auto max-w-md">
-      <Card>
-        <h1 className="text-2xl font-black">Doe mee met het leaderboard</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          Anderen zien je naam, totalen, records en weekgrafiek. Losse trainingen deel je pas als je dat zelf aanzet; notities en RPE
-          blijven altijd privé.
-        </p>
-        <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <label className="block">
-            <span className={labelClass}>Naam op het leaderboard</span>
-            <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} maxLength={30} required />
-          </label>
-          <button type="submit" className={primaryButton}>
-            Meedoen
-          </button>
-          {error && <p className="text-sm text-red-400">{error}</p>}
-        </form>
-      </Card>
-    </div>
-  )
-}
-
-function ProfileCard({ profile, onSave }: { profile: Profile; onSave: SaveProfile }) {
-  const [name, setName] = useState(profile.display_name)
-  const [visible, setVisible] = useState(profile.show_on_leaderboard)
-  const [share, setShare] = useState(profile.share_workouts)
-  const [status, setStatus] = useState<string | null>(null)
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    try {
-      await onSave({ display_name: name.trim(), show_on_leaderboard: visible, share_workouts: share })
-      setStatus('Opgeslagen.')
-    } catch (err) {
-      setStatus(errorMessage(err))
-    }
-  }
-
-  return (
-    <Card
-      title="Jouw profiel"
-      action={
-        <Link to={`/leaderboard/${profile.id}`} className="text-xs font-semibold text-brand hover:underline">
-          Bekijk →
-        </Link>
-      }
-    >
-      <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
-        <label className="min-w-48 flex-1">
-          <span className={labelClass}>Naam</span>
-          <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} maxLength={30} required />
-        </label>
-        <label className="flex items-center gap-2 pb-2 text-sm text-zinc-300">
-          <input type="checkbox" checked={visible} onChange={(e) => setVisible(e.target.checked)} className="size-4 accent-brand" />
-          Zichtbaar op leaderboard
-        </label>
-        <label className="flex items-center gap-2 pb-2 text-sm text-zinc-300" title="Datum, sport, duur en afstand. Notities en RPE nooit.">
-          <input type="checkbox" checked={share} onChange={(e) => setShare(e.target.checked)} className="size-4 accent-brand" />
-          Trainingen delen op profiel
-        </label>
-        <button type="submit" className={primaryButton}>
-          Opslaan
-        </button>
-        {status && <span className="pb-2 text-sm text-zinc-400">{status}</span>}
-      </form>
     </Card>
   )
 }

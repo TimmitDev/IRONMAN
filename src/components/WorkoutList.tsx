@@ -1,24 +1,31 @@
 import { formatPace, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
+import { EmptyState } from './EmptyState'
+import { Icon } from './Icon'
 
 /** Lijst met trainingen; met `onEdit` is elke rij aanklikbaar om te bewerken. */
 export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?: (w: Workout) => void }) {
-  if (!workouts.length) return <p className="text-sm text-zinc-500">Nog geen trainingen gelogd.</p>
+  if (!workouts.length)
+    return (
+      <EmptyState icon="activity" title="Nog geen trainingen">
+        Gelogde trainingen verschijnen hier.
+      </EmptyState>
+    )
 
   return (
-    <ul className="divide-y divide-white/5">
+    <ul className="divide-y divide-line">
       {workouts.map((w) => {
         const pace = formatPace(w.sport, w.duration_min, w.distance_km)
         const content = (
           <>
-            <span className={`h-8 w-1 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
+            <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
-                <span className="font-medium text-white">{SPORT_LABEL[w.sport]}</span>
-                <span className="text-xs text-zinc-500">{formatShortDate(w.date)}</span>
+                <span className="truncate font-medium text-fg">{SPORT_LABEL[w.sport]}</span>
+                <span className="shrink-0 text-xs text-fg-3">{formatShortDate(w.date)}</span>
               </div>
               {(w.rpe || w.notes) && (
-                <p className="truncate text-xs text-zinc-400">
+                <p className="mt-0.5 truncate text-xs text-fg-3">
                   {w.rpe ? `RPE ${w.rpe}` : ''}
                   {w.rpe && w.notes ? ' · ' : ''}
                   {w.notes}
@@ -26,11 +33,11 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
               )}
             </div>
             <div className="shrink-0 text-right tabular-nums">
-              <div className="font-semibold text-white">{formatSessionDuration(w.duration_min)}</div>
+              <div className="font-semibold tracking-tight text-fg">{formatSessionDuration(w.duration_min)}</div>
               {w.distance_km ? (
-                <div className="text-xs text-zinc-400">
+                <div className="mt-0.5 text-xs text-fg-3">
                   {w.distance_km} km
-                  {pace && <span className="text-zinc-500"> · {pace}</span>}
+                  {pace && <span className="text-fg-4"> · {pace}</span>}
                 </div>
               ) : null}
             </div>
@@ -41,16 +48,14 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
             {onEdit ? (
               <button
                 onClick={() => onEdit(w)}
-                className="-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-lg px-2 py-2.5 text-left text-sm transition hover:bg-white/5"
+                className="group -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-hover focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
                 aria-label={`${SPORT_LABEL[w.sport]} ${formatShortDate(w.date)} bewerken`}
               >
                 {content}
-                <span className="text-zinc-600" aria-hidden>
-                  ›
-                </span>
+                <Icon name="chevron-right" className="size-4 text-fg-4 transition group-hover:text-fg-3" />
               </button>
             ) : (
-              <div className="flex items-center gap-3 py-2.5 text-sm">{content}</div>
+              <div className="flex items-center gap-3 py-3 text-sm">{content}</div>
             )}
           </li>
         )

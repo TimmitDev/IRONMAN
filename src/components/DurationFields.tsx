@@ -8,8 +8,9 @@ export interface DurationValue {
 
 export const emptyDuration: DurationValue = { hours: '', minutes: '', seconds: '' }
 
+// Zelfde look als inputClass, met ruimte rechts voor het achtervoegsel (u/min/s).
 const partClass =
-  'w-full min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 py-2 pr-8 pl-3 text-sm text-zinc-100 placeholder:text-zinc-600 focus:border-brand focus:outline-none'
+  'block h-11 w-full min-w-0 rounded-xl border border-line-strong bg-surface pr-10 pl-3.5 text-base text-fg tabular-nums placeholder:text-fg-4 transition focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none sm:text-sm'
 
 /** Duur als uren/minuten/seconden in één veld; gedeeld door het trainings- en het planformulier. */
 export function DurationFields({
@@ -29,9 +30,9 @@ export function DurationFields({
   return (
     <fieldset className={className}>
       <legend className={labelClass}>Duur</legend>
-      <div className="grid grid-cols-3 gap-1.5">
+      <div className="grid grid-cols-3 gap-2">
         {parts.map((p) => (
-          <label key={p.key} className="relative">
+          <label key={p.key} className="relative block">
             <input
               type="number"
               min="0"
@@ -43,7 +44,7 @@ export function DurationFields({
               value={value[p.key]}
               onChange={(e) => onChange({ ...value, [p.key]: e.target.value })}
             />
-            <span className="pointer-events-none absolute inset-y-0 right-2.5 flex items-center text-xs text-zinc-500">{p.suffix}</span>
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-fg-3">{p.suffix}</span>
           </label>
         ))}
       </div>

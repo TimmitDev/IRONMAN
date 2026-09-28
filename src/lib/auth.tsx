@@ -5,18 +5,28 @@ import { supabase } from './supabase'
 interface AuthState {
   session: Session | null
   loading: boolean
+  /** Ingelogd via een wachtwoord-herstellink: eerst een nieuw wachtwoord kiezen. */
+  recovery: boolean
+  endRecovery: () => void
 }
 
-const AuthContext = createContext<AuthState>({ session: null, loading: true })
+const AuthContext = createContext<AuthState>({ session: null, loading: true, recovery: false, endRecovery: () => {} })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({ session: null, loading: true })
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [recovery, setRecovery] = useState(false)
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setState({ session: data.session, loading: false }))
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setState({ session, loading: false })
-      // Na e-mailbevestiging de ?code= uit de URL halen.
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setLoading(false)
+    })
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+      setLoading(false)
+      if (event === 'PASSWORD_RECOVERY') setRecovery(true)
+      // Na e-mailbevestiging of herstellink de ?code= uit de URL halen.
       if (window.location.search.includes('code=')) {
         window.history.replaceState(null, '', window.location.pathname + window.location.hash)
       }
@@ -24,7 +34,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => data.subscription.unsubscribe()
   }, [])
 
-  return <AuthContext.Provider value={state}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ session, loading, recovery, endRecovery: () => setRecovery(false) }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)
+
+/** Terugkeer-URL voor mails (bevestiging, herstel): de app zelf, zonder hash. */
+export const appUrl = () => window.location.origin + window.location.pathname

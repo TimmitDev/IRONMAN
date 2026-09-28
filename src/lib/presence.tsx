@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
 import { supabase } from './supabase'
-import { useAuth } from './auth'
+import { useProfile } from './profile'
 
 const PresenceContext = createContext<Set<string>>(new Set())
 
@@ -9,8 +9,9 @@ const PresenceContext = createContext<Set<string>>(new Set())
  * Iedereen luistert mee; alleen spelers die zichtbaar zijn op het leaderboard melden zichzelf aan.
  */
 export function PresenceProvider({ children }: { children: ReactNode }) {
-  const { session } = useAuth()
-  const userId = session?.user.id
+  const { profile } = useProfile()
+  const userId = profile?.id
+  const visible = Boolean(profile?.show_on_leaderboard)
   const [online, setOnline] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -20,15 +21,13 @@ export function PresenceProvider({ children }: { children: ReactNode }) {
     channel
       .on('presence', { event: 'sync' }, () => setOnline(new Set(Object.keys(channel.presenceState()))))
       .subscribe(async (status) => {
-        if (status !== 'SUBSCRIBED') return
-        const { data } = await supabase.from('profiles').select('show_on_leaderboard').eq('id', userId).maybeSingle()
-        if (data?.show_on_leaderboard) await channel.track({ since: new Date().toISOString() })
+        if (status === 'SUBSCRIBED' && visible) await channel.track({ since: new Date().toISOString() })
       })
 
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [userId])
+  }, [userId, visible])
 
   return <PresenceContext.Provider value={online}>{children}</PresenceContext.Provider>
 }

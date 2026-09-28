@@ -1,7 +1,7 @@
 {
   "name": "IRONMAN Training",
   "short_name": "IRONMAN",
-  "description": "Trainingsdashboard richting IRONMAN België.",
+  "description": "Trainingsplatform richting IRONMAN België: schema, logboek, doelen en je trainingsgroep.",
   "lang": "nl",
   "start_url": "./",
   "scope": "./",

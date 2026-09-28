@@ -3,18 +3,20 @@ import { Link } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { BadgesCard } from '../components/Badges'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { FeedCard, ago } from '../components/FeedCard'
 import { FollowButton } from '../components/FollowButton'
+import { Icon } from '../components/Icon'
 import { Segmented } from '../components/Segmented'
 import { WorkoutList } from '../components/WorkoutList'
-import { useAuth } from '../lib/auth'
 import { useBadges } from '../lib/badges'
-import { useLeaderboard, useProfile, type Profile, type ProfileFields } from '../lib/leaderboard'
+import { useLeaderboard } from '../lib/leaderboard'
 import { useOnline } from '../lib/presence'
+import { useMe, type Profile, type ProfileFields } from '../lib/profile'
 import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, sumMinutes, weekStart } from '../lib/race'
 import { useFeed, useFollows, useInbox, usePlayers, type FeedPerson, type Follows, type InboxItem } from '../lib/social'
 import type { Sport, Workout } from '../lib/types'
-import { errorMessage, ghostButton, primaryButton } from '../lib/ui'
+import { eyebrowClass, errorMessage, ghostButton, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 import { useWorkouts } from '../lib/useWorkouts'
 
@@ -39,9 +41,8 @@ function greeting() {
 }
 
 export function Hub() {
-  const { session } = useAuth()
-  const meId = session!.user.id
-  const { profile, loading: profileLoading, save } = useProfile()
+  const { me, save } = useMe()
+  const meId = me.id
   const [filter, setFilter] = useState<FeedFilter>('all')
   const feed = useFeed(filter === 'following')
   const follows = useFollows(meId)
@@ -52,32 +53,30 @@ export function Hub() {
   const badges = useBadges(workouts, goals)
   const [tab, setTab] = useState<MobileTab>('feed')
 
-  const name = profile?.display_name ?? session!.user.email!.split('@')[0]
   const onlineFriends = follows.following.filter((f) => online.has(f.user_id))
   const tabs: { key: MobileTab; label: string }[] = [
     { key: 'feed', label: 'Feed' },
     { key: 'me', label: 'Jij' },
     { key: 'friends', label: onlineFriends.length ? `Vrienden · ${onlineFriends.length} online` : 'Vrienden' },
   ]
-  // Mobiel: één kolom tegelijk via tabs. Vanaf lg staan de drie kolommen naast elkaar.
-  const column = (t: MobileTab) => `${tab === t ? '' : 'hidden'} lg:block`
+  // Mobiel en tablet: één kolom tegelijk via tabs. Vanaf xl (naast de zijbalk) staan de drie kolommen naast elkaar.
+  const column = (t: MobileTab) => `${tab === t ? '' : 'hidden'} xl:block`
 
   return (
-    <div className="space-y-4">
-      <HubHeader name={name} />
+    <div className="space-y-6">
+      <HubHeader name={me.display_name} />
 
-      <div className="lg:hidden">
-        <Segmented options={tabs} value={tab} onChange={setTab} />
+      <div className="xl:hidden">
+        <Segmented options={tabs} value={tab} onChange={setTab} full />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[15rem_minmax(0,1fr)_15rem] lg:items-start xl:grid-cols-[17rem_minmax(0,1fr)_16rem]">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:items-start 2xl:grid-cols-[17rem_minmax(0,1fr)_17rem]">
         {/* Links: jouw profiel, vrienden, sessies en badges. */}
         <aside className={`space-y-4 ${column('me')}`}>
-          {!profileLoading && !profile && <JoinCta />}
-          {profile && <ProfileCard profile={profile} follows={follows} workouts={workouts} />}
-          {profile && !profile.share_workouts && (
+          <ProfileCard profile={me} follows={follows} workouts={workouts} />
+          {!me.share_workouts && (
             <ShareCta
-              profile={profile}
+              profile={me}
               onSave={async (fields) => {
                 await save(fields)
                 await feed.refresh()
@@ -88,59 +87,71 @@ export function Hub() {
           <Card
             title="Recente sessies"
             action={
-              <Link to="/workouts" className="text-xs font-semibold text-brand hover:underline">
-                Log →
+              <Link to="/workouts" className={`${linkClass} inline-flex items-center gap-1`}>
+                Log <Icon name="arrow-right" className="size-3.5" />
               </Link>
             }
           >
-            {workoutsLoading ? <p className="text-sm text-zinc-500">Laden…</p> : <WorkoutList workouts={workouts.slice(0, 4)} />}
+            {workoutsLoading ? <p className="text-sm text-fg-3">Laden…</p> : <WorkoutList workouts={workouts.slice(0, 4)} />}
           </Card>
           <BadgesCard results={badges} />
         </aside>
 
         {/* Midden: de feed. */}
-        <section className={`space-y-3 ${column('feed')}`} aria-label="Activiteit">
+        <section className={`space-y-4 ${column('feed')}`} aria-label="Activiteit">
           <OnlineStrip friends={onlineFriends} />
           <div className="flex items-center justify-between gap-2">
             <Segmented options={FILTERS} value={filter} onChange={setFilter} />
-            <button onClick={feed.refresh} disabled={feed.loading} className={`${ghostButton} disabled:opacity-50`}>
-              Vernieuwen
+            <button type="button" onClick={feed.refresh} disabled={feed.loading} className={ghostButton}>
+              <Icon name="refresh" className={`size-4 ${feed.loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Vernieuwen</span>
+              <span className="sr-only sm:hidden">Vernieuwen</span>
             </button>
           </div>
 
           {feed.error && (
             <Card>
-              <p className="text-sm text-red-400">Kon de feed niet laden: {feed.error}</p>
-              <p className="mt-1 text-xs text-zinc-500">Zijn migraties 007_social.sql en 008_follows.sql al uitgevoerd in Supabase?</p>
+              <p className="text-sm text-danger">Kon de feed niet laden: {feed.error}</p>
+              <p className="mt-1 text-xs text-fg-3">Zijn migraties 007_social.sql en 008_follows.sql al uitgevoerd in Supabase?</p>
             </Card>
           )}
-          {feed.loading && !feed.items.length && <p className="px-1 text-sm text-zinc-500">Laden…</p>}
+          {feed.loading && !feed.items.length && (
+            <div className="space-y-4" aria-label="Laden…">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="h-44 animate-pulse rounded-2xl bg-muted" />
+              ))}
+            </div>
+          )}
           {!feed.loading && !feed.error && !feed.items.length && (
             <Card>
-              <p className="text-center text-sm text-zinc-400">
-                {filter === 'following'
-                  ? 'Nog geen trainingen van spelers die je volgt. Volg iemand via Vrienden of hun profiel.'
-                  : 'Nog geen gedeelde trainingen. Zodra spelers hun trainingen delen, verschijnen ze hier.'}
-              </p>
+              {filter === 'following' ? (
+                <EmptyState icon="users" title="Nog niets van wie je volgt">
+                  Nog geen trainingen van spelers die je volgt. Volg iemand via Vrienden of hun profiel.
+                </EmptyState>
+              ) : (
+                <EmptyState icon="activity" title="Nog geen gedeelde trainingen">
+                  Zodra spelers hun trainingen delen, verschijnen ze hier.
+                </EmptyState>
+              )}
             </Card>
           )}
 
           {feed.items.map((item) => (
-            <FeedCard key={item.id} item={item} me={profile} online={online.has(item.user_id)} onPatch={(fn) => feed.patch(item.id, fn)} />
+            <FeedCard key={item.id} item={item} me={me} online={online.has(item.user_id)} onPatch={(fn) => feed.patch(item.id, fn)} />
           ))}
 
           {feed.hasMore && (
-            <button onClick={feed.loadMore} disabled={feed.loading} className={`w-full ${ghostButton} py-2.5 disabled:opacity-50`}>
+            <button type="button" onClick={feed.loadMore} disabled={feed.loading} className={`w-full ${secondaryButton}`}>
               {feed.loading ? 'Laden…' : 'Meer laden'}
             </button>
           )}
         </section>
 
         {/* Rechts: wie er online is, suggesties, weektop en meldingen. Op desktop blijft deze balk staan. */}
-        <aside className={`space-y-4 ${column('friends')} lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto`}>
-          <OnlineCard meId={meId} follows={follows} online={online} players={players} canFollow={Boolean(profile)} />
-          <SuggestionsCard meId={meId} follows={follows} players={players} canFollow={Boolean(profile)} />
-          <WeekPodium profile={profile} meId={meId} />
+        <aside className={`space-y-4 ${column('friends')} xl:sticky xl:top-10 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto`}>
+          <OnlineCard meId={meId} follows={follows} online={online} players={players} />
+          <SuggestionsCard meId={meId} follows={follows} players={players} />
+          <WeekPodium profile={me} meId={meId} />
           <InboxCard />
         </aside>
       </div>
@@ -153,28 +164,31 @@ function HubHeader({ name }: { name: string }) {
   const phase = currentPhase()
   return (
     <Card className="relative overflow-hidden">
-      <div className="pointer-events-none absolute -top-20 -right-20 size-64 rounded-full bg-brand/20 blur-3xl" />
-      <div className="flex flex-wrap items-end justify-between gap-4">
+      <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-brand/15 blur-3xl" aria-hidden />
+      <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">{greeting()}</p>
-          <h1 className="mt-1 truncate text-3xl font-black tracking-tight sm:text-4xl">{name}</h1>
+          <p className={eyebrowClass}>{greeting()}</p>
+          <h1 className="mt-1 truncate text-3xl font-bold tracking-tight text-fg sm:text-4xl">{name}</h1>
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
-            <Link to="/dashboard" className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-zinc-300 transition hover:bg-white/10">
-              <span className="font-bold text-white tabular-nums">{days}</span> dagen tot {RACE.name}
+            <Link
+              to="/dashboard"
+              className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2 transition hover:bg-hover"
+            >
+              <Icon name="flag" className="size-3.5 text-brand" />
+              <span className="font-semibold text-fg tabular-nums">{days}</span> dagen tot {RACE.name}
             </Link>
-            <span className="inline-flex items-center rounded-full bg-white/5 px-2.5 py-1 text-zinc-300">
-              Fase <span className="ml-1 font-semibold text-white">{phase.name}</span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-subtle px-3 py-1 text-fg-2">
+              <Icon name="target" className="size-3.5 text-fg-3" />
+              Fase <span className="font-semibold text-fg">{phase.name}</span>
             </span>
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
-          <Link to="/workouts" className={`${primaryButton} text-center`}>
-            + Training loggen
+          <Link to="/workouts" className={primaryButton}>
+            <Icon name="plus" className="size-4" />
+            Training loggen
           </Link>
-          <Link
-            to="/dashboard"
-            className="rounded-lg border border-white/10 px-4 py-2 text-center text-sm font-semibold text-zinc-200 transition hover:bg-white/5"
-          >
+          <Link to="/dashboard" className={secondaryButton}>
             Mijn dashboard
           </Link>
         </div>
@@ -197,26 +211,26 @@ function ProfileCard({ profile, follows, workouts }: { profile: Profile; follows
       <div className="flex items-center gap-3">
         <Avatar name={profile.display_name} size="lg" highlight />
         <div className="min-w-0">
-          <p className="truncate text-lg font-black text-white">{profile.display_name}</p>
-          <Link to={`/leaderboard/${profile.id}`} className="text-xs font-semibold text-brand hover:underline">
-            Bekijk profiel →
+          <p className="truncate text-lg font-semibold text-fg">{profile.display_name}</p>
+          <Link to={`/leaderboard/${profile.id}`} className={`${linkClass} inline-flex items-center gap-1 text-xs`}>
+            Bekijk profiel <Icon name="arrow-right" className="size-3.5" />
           </Link>
         </div>
       </div>
-      <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
+      <dl className="mt-5 grid grid-cols-3 gap-2 text-center">
         {stats.map((s) => (
-          <div key={s.label} className="flex flex-col-reverse rounded-xl bg-zinc-800/50 py-2">
-            <dt className="text-[11px] text-zinc-400">{s.label}</dt>
-            <dd className="text-lg font-black text-white tabular-nums">{s.value}</dd>
+          <div key={s.label} className="flex flex-col-reverse rounded-xl bg-subtle py-2.5">
+            <dt className="text-xs text-fg-3">{s.label}</dt>
+            <dd className="text-lg font-semibold tracking-tight text-fg tabular-nums">{s.value}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-3 text-sm text-zinc-400">
-        Deze week: <span className="font-semibold text-white">{week.length}</span> {week.length === 1 ? 'sessie' : 'sessies'}
+      <p className="mt-4 text-sm text-fg-3">
+        Deze week: <span className="font-semibold text-fg tabular-nums">{week.length}</span> {week.length === 1 ? 'sessie' : 'sessies'}
         {week.length > 0 && (
           <>
             {' · '}
-            <span className="font-semibold text-white">{formatDuration(sumMinutes(week))}</span>
+            <span className="font-semibold text-fg tabular-nums">{formatDuration(sumMinutes(week))}</span>
           </>
         )}
       </p>
@@ -229,26 +243,30 @@ function FriendsCard({ follows, online, onFindFriends }: { follows: Follows; onl
   const friends = [...follows.following].sort((a, b) => Number(online.has(b.user_id)) - Number(online.has(a.user_id)))
 
   return (
-    <Card title={`Vrienden · ${friends.length}`}>
+    <Card title="Vrienden" action={friends.length > 0 && <span className="text-sm text-fg-3 tabular-nums">{friends.length}</span>}>
       {follows.loading ? (
-        <p className="text-sm text-zinc-500">Laden…</p>
+        <p className="text-sm text-fg-3">Laden…</p>
       ) : friends.length ? (
-        <ul className="grid grid-cols-4 gap-2">
+        <ul className="-mx-1 grid grid-cols-4 gap-1">
           {friends.slice(0, 12).map((f) => (
-            <li key={f.user_id}>
-              <Link to={`/leaderboard/${f.user_id}`} className="flex flex-col items-center gap-1 rounded-lg p-1 text-center transition hover:bg-white/5" title={f.display_name}>
+            <li key={f.user_id} className="min-w-0">
+              <Link
+                to={`/leaderboard/${f.user_id}`}
+                className="flex flex-col items-center gap-1 rounded-xl p-1.5 text-center transition hover:bg-hover"
+                title={f.display_name}
+              >
                 <Avatar name={f.display_name} online={online.has(f.user_id)} />
-                <span className="w-full truncate text-[11px] text-zinc-300">{f.display_name}</span>
+                <span className="w-full truncate text-[11px] text-fg-2">{f.display_name}</span>
               </Link>
             </li>
           ))}
         </ul>
       ) : (
-        <div className="text-sm text-zinc-500">
+        <div className="text-sm text-fg-3">
           <p>Je volgt nog niemand.</p>
-          {/* Op desktop staan de suggesties al rechts; op mobiel springt dit naar de Vrienden-tab. */}
-          <button onClick={onFindFriends} className="mt-1 font-semibold text-brand hover:underline lg:hidden">
-            Vind spelers →
+          {/* Op desktop staan de suggesties al rechts; op mobiel en tablet springt dit naar de Vrienden-tab. */}
+          <button type="button" onClick={onFindFriends} className={`${linkClass} mt-1 inline-flex items-center gap-1 xl:hidden`}>
+            Vind spelers <Icon name="arrow-right" className="size-3.5" />
           </button>
         </div>
       )}
@@ -256,15 +274,15 @@ function FriendsCard({ follows, online, onFindFriends }: { follows: Follows; onl
   )
 }
 
-/** Mobiel, boven de feed: wie van je vrienden nu online is, horizontaal scrollbaar. */
+/** Mobiel en tablet, boven de feed: wie van je vrienden nu online is, horizontaal scrollbaar. */
 function OnlineStrip({ friends }: { friends: FeedPerson[] }) {
   if (!friends.length) return null
   return (
-    <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 lg:hidden">
+    <div className="no-scrollbar -mx-4 flex gap-3 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 xl:hidden">
       {friends.map((f) => (
-        <Link key={f.user_id} to={`/leaderboard/${f.user_id}`} className="flex w-14 shrink-0 flex-col items-center gap-1 text-center">
+        <Link key={f.user_id} to={`/leaderboard/${f.user_id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center">
           <Avatar name={f.display_name} size="lg" online />
-          <span className="w-full truncate text-[11px] text-zinc-300">{f.display_name}</span>
+          <span className="w-full truncate text-[11px] text-fg-2">{f.display_name}</span>
         </Link>
       ))}
     </div>
@@ -273,12 +291,12 @@ function OnlineStrip({ friends }: { friends: FeedPerson[] }) {
 
 function PersonRow({ person, online, sub, action }: { person: FeedPerson; online?: boolean; sub?: string; action?: ReactNode }) {
   return (
-    <li className="flex items-center gap-3">
-      <Link to={`/leaderboard/${person.user_id}`} className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:brightness-125">
+    <li className="flex items-center gap-2">
+      <Link to={`/leaderboard/${person.user_id}`} className="-mx-2 flex min-w-0 flex-1 items-center gap-3 rounded-xl px-2 py-1.5 transition hover:bg-hover">
         <Avatar name={person.display_name} size="sm" online={online} />
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium text-white">{person.display_name}</p>
-          {sub && <p className="truncate text-[11px] text-zinc-500">{sub}</p>}
+          <p className="truncate text-sm font-medium text-fg">{person.display_name}</p>
+          {sub && <p className="truncate text-xs text-fg-3">{sub}</p>}
         </div>
       </Link>
       {action}
@@ -286,50 +304,46 @@ function PersonRow({ person, online, sub, action }: { person: FeedPerson; online
   )
 }
 
-function OnlineCard({
-  meId,
-  follows,
-  online,
-  players,
-  canFollow,
-}: {
-  meId: string
-  follows: Follows
-  online: Set<string>
-  players: FeedPerson[]
-  canFollow: boolean
-}) {
+function OnlineCard({ meId, follows, online, players }: { meId: string; follows: Follows; online: Set<string>; players: FeedPerson[] }) {
   const friendsOnline = follows.following.filter((f) => online.has(f.user_id))
   const friendsOffline = follows.following.filter((f) => !online.has(f.user_id))
   const othersOnline = players.filter((p) => p.user_id !== meId && online.has(p.user_id) && !follows.isFollowing(p.user_id))
 
   return (
-    <Card title={`Online · ${friendsOnline.length}`}>
+    <Card
+      title="Online"
+      action={
+        <span className="inline-flex items-center gap-1.5 text-sm text-fg-3 tabular-nums">
+          <span className={`size-2 rounded-full ${friendsOnline.length ? 'bg-success' : 'bg-line-strong'}`} aria-hidden />
+          {friendsOnline.length}
+        </span>
+      }
+    >
       {friendsOnline.length ? (
-        <ul className="space-y-3">
+        <ul className="space-y-1">
           {friendsOnline.map((f) => (
             <PersonRow key={f.user_id} person={f} online sub="Nu online" />
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-zinc-500">{follows.following.length ? 'Geen vrienden online.' : 'Volg spelers om te zien wie er online is.'}</p>
+        <p className="text-sm text-fg-3">{follows.following.length ? 'Geen vrienden online.' : 'Volg spelers om te zien wie er online is.'}</p>
       )}
 
       {othersOnline.length > 0 && (
-        <div className="mt-4 border-t border-white/5 pt-3">
-          <p className="mb-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Ook online</p>
-          <ul className="space-y-3">
+        <div className="mt-4 border-t border-line pt-4">
+          <p className={`${eyebrowClass} mb-2`}>Ook online</p>
+          <ul className="space-y-1">
             {othersOnline.slice(0, 5).map((p) => (
-              <PersonRow key={p.user_id} person={p} online action={<FollowButton person={p} follows={follows} disabled={!canFollow} />} />
+              <PersonRow key={p.user_id} person={p} online action={<FollowButton person={p} follows={follows} />} />
             ))}
           </ul>
         </div>
       )}
 
       {friendsOffline.length > 0 && (
-        <div className="mt-4 border-t border-white/5 pt-3">
-          <p className="mb-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">Offline</p>
-          <ul className="space-y-3 opacity-60">
+        <div className="mt-4 border-t border-line pt-4">
+          <p className={`${eyebrowClass} mb-2`}>Offline</p>
+          <ul className="space-y-1 opacity-70">
             {friendsOffline.slice(0, 8).map((f) => (
               <PersonRow key={f.user_id} person={f} />
             ))}
@@ -340,7 +354,7 @@ function OnlineCard({
   )
 }
 
-function SuggestionsCard({ meId, follows, players, canFollow }: { meId: string; follows: Follows; players: FeedPerson[]; canFollow: boolean }) {
+function SuggestionsCard({ meId, follows, players }: { meId: string; follows: Follows; players: FeedPerson[] }) {
   const followsMe = new Set(follows.followers.map((f) => f.user_id))
   // Wie jou al volgt eerst: die volg je waarschijnlijk graag terug.
   const suggestions = players
@@ -351,28 +365,16 @@ function SuggestionsCard({ meId, follows, players, canFollow }: { meId: string; 
 
   return (
     <Card title="Wie volgen?">
-      <ul className="space-y-3">
+      <ul className="space-y-1">
         {suggestions.map((p) => (
           <PersonRow
             key={p.user_id}
             person={p}
             sub={followsMe.has(p.user_id) ? 'Volgt jou' : undefined}
-            action={<FollowButton person={p} follows={follows} disabled={!canFollow} />}
+            action={<FollowButton person={p} follows={follows} />}
           />
         ))}
       </ul>
-    </Card>
-  )
-}
-
-function JoinCta() {
-  return (
-    <Card>
-      <p className="font-semibold text-white">Doe mee met de groep</p>
-      <p className="mt-1 text-sm text-zinc-400">Kies een naam om spelers te volgen, kudos te geven, te reageren en op het leaderboard te komen.</p>
-      <Link to="/leaderboard" className={`mt-3 inline-block ${primaryButton}`}>
-        Meedoen
-      </Link>
     </Card>
   )
 }
@@ -392,20 +394,27 @@ function ShareCta({ profile, onSave }: { profile: Profile; onSave: (f: ProfileFi
   }
 
   return (
-    <Card>
-      <p className="font-semibold text-white">Deel je trainingen in de feed</p>
-      <p className="mt-1 text-sm text-zinc-400">
-        Anderen zien datum, sport, duur en afstand en kunnen kudos geven. Notities en RPE blijven privé.
-        {!profile.show_on_leaderboard && ' Je komt dan ook op het leaderboard.'}
-      </p>
-      <button onClick={enable} disabled={busy} className={`mt-3 ${primaryButton}`}>
-        {busy ? 'Bezig…' : 'Delen aanzetten'}
-      </button>
+    <Card className="border-brand/30 bg-brand/5">
+      <div className="flex gap-3">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+          <Icon name="users" className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="font-semibold text-fg">Deel je trainingen in de feed</p>
+          <p className="mt-1 text-sm text-fg-3">
+            Anderen zien datum, sport, duur en afstand en kunnen kudos geven. Notities en RPE blijven privé.
+            {!profile.show_on_leaderboard && ' Je komt dan ook op het leaderboard.'}
+          </p>
+          <button type="button" onClick={enable} disabled={busy} className={`mt-4 ${primaryButton}`}>
+            {busy ? 'Bezig…' : 'Delen aanzetten'}
+          </button>
+        </div>
+      </div>
     </Card>
   )
 }
 
-function WeekPodium({ profile, meId }: { profile: Profile | null; meId: string }) {
+function WeekPodium({ profile, meId }: { profile: Profile; meId: string }) {
   const start = weekStart(new Date())
   const { rows, loading } = useLeaderboard(start, addDays(start, 6), profile)
   const ranked = rows.filter((r) => r.total_min > 0).sort((a, b) => b.total_min - a.total_min)
@@ -418,30 +427,36 @@ function WeekPodium({ profile, meId }: { profile: Profile | null; meId: string }
     <Card
       title="Top deze week"
       action={
-        <Link to="/leaderboard" className="text-xs font-semibold text-brand hover:underline">
-          Ranking →
+        <Link to="/leaderboard" className={`${linkClass} inline-flex items-center gap-1`}>
+          Ranking <Icon name="arrow-right" className="size-3.5" />
         </Link>
       }
     >
       {loading && !rows.length ? (
-        <p className="text-sm text-zinc-500">Laden…</p>
+        <p className="text-sm text-fg-3">Laden…</p>
       ) : !shown.length ? (
-        <p className="text-sm text-zinc-500">Nog niemand getraind deze week. Wees de eerste!</p>
+        <p className="text-sm text-fg-3">Nog niemand getraind deze week. Wees de eerste!</p>
       ) : (
-        <ol className="space-y-3">
+        <ol className="space-y-1">
           {shown.map(({ r, rank }) => {
             const isMe = r.user_id === meId
             return (
               <li key={r.user_id}>
-                <Link to={`/leaderboard/${r.user_id}`} className="flex items-center gap-3 rounded-lg transition hover:brightness-125">
-                  <span className={`w-5 shrink-0 text-center text-lg font-black italic ${rank === 1 ? 'text-brand' : 'text-zinc-600'}`}>{rank}</span>
+                <Link to={`/leaderboard/${r.user_id}`} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-hover">
+                  <span
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-semibold tabular-nums ${
+                      rank === 1 ? 'bg-brand text-white' : 'bg-muted text-fg-2'
+                    }`}
+                  >
+                    {rank}
+                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline justify-between gap-2 text-sm">
-                      <span className={`truncate font-semibold ${isMe ? 'text-brand' : 'text-white'}`}>{isMe ? 'Jij' : r.display_name}</span>
-                      <span className="shrink-0 font-semibold text-white tabular-nums">{formatDuration(r.total_min)}</span>
+                      <span className={`truncate font-medium ${isMe ? 'text-brand' : 'text-fg'}`}>{isMe ? 'Jij' : r.display_name}</span>
+                      <span className="shrink-0 font-semibold text-fg tabular-nums">{formatDuration(r.total_min)}</span>
                     </div>
-                    <div className="mt-1 h-1.5 rounded-full bg-zinc-800">
-                      <div className={`h-full rounded-full ${isMe ? 'bg-brand' : 'bg-zinc-400'}`} style={{ width: `${max ? (r.total_min / max) * 100 : 0}%` }} />
+                    <div className="mt-1.5 h-1.5 rounded-full bg-muted">
+                      <div className={`h-full rounded-full ${isMe ? 'bg-brand' : 'bg-fg-3'}`} style={{ width: `${max ? (r.total_min / max) * 100 : 0}%` }} />
                     </div>
                   </div>
                 </Link>
@@ -459,8 +474,8 @@ function InboxCard() {
   if (!items.length) return null
 
   return (
-    <Card title="Voor jou">
-      <ul className="space-y-3">
+    <Card title="Voor jou" action={<Icon name="bell" className="size-4 text-fg-3" />}>
+      <ul className="divide-y divide-line">
         {items.slice(0, 5).map((i) => (
           <InboxRow key={`${i.kind}-${i.user_id}-${i.created_at}`} item={i} />
         ))}
@@ -471,16 +486,21 @@ function InboxCard() {
 
 function InboxRow({ item }: { item: InboxItem }) {
   return (
-    <li className="flex gap-3 text-sm">
-      <Avatar name={item.display_name} size="sm" />
+    <li className="flex gap-3 py-3 text-sm first:pt-0 last:pb-0">
+      <span className="relative shrink-0">
+        <Avatar name={item.display_name} size="sm" />
+        <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-surface text-brand ring-2 ring-surface">
+          <Icon name={item.kind === 'kudos' ? 'heart' : 'message'} className={`size-3 ${item.kind === 'kudos' ? 'fill-current' : ''}`} />
+        </span>
+      </span>
       <div className="min-w-0 flex-1">
-        <p className="text-zinc-300">
-          <span className="font-semibold text-white">{item.display_name}</span>{' '}
-          {item.kind === 'kudos' ? 'gaf kudos op' : 'reageerde op'} je {SPORT_NOUN[item.sport]} van {formatShortDate(item.date)}
+        <p className="text-fg-2">
+          <span className="font-semibold text-fg">{item.display_name}</span> {item.kind === 'kudos' ? 'gaf kudos op' : 'reageerde op'} je{' '}
+          {SPORT_NOUN[item.sport]} van {formatShortDate(item.date)}
         </p>
-        {item.body && <p className="mt-0.5 truncate text-zinc-400">“{item.body}”</p>}
+        {item.body && <p className="mt-0.5 truncate text-fg-3">“{item.body}”</p>}
       </div>
-      <span className="shrink-0 text-xs text-zinc-500">{ago(item.created_at)}</span>
+      <span className="shrink-0 text-xs text-fg-4">{ago(item.created_at)}</span>
     </li>
   )
 }

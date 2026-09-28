@@ -4,9 +4,12 @@ import type { BadgeResult } from '../lib/badges'
 import { useLeaderboard } from '../lib/leaderboard'
 import { addDays, currentPhase, daysUntilRace, formatDuration, formatPace, formatSessionDuration, formatShortDate, parseISODate, sumKm, sumMinutes } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
+import { eyebrowClass, iconButton } from '../lib/ui'
 import type { Goals } from '../lib/useGoals'
 import { usePlan } from '../lib/usePlan'
+import { Icon } from './Icon'
 import { ProgressBar } from './ProgressBar'
+import { Stat } from './Stat'
 
 function headline(goalPct: number | null, delta: number | null, total: number): [string, string] {
   if (total === 0) return ['Rustweek', 'Geen trainingen gelogd. Soms is rust precies wat je lichaam nodig heeft.']
@@ -23,8 +26,8 @@ function headline(goalPct: number | null, delta: number | null, total: number): 
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl bg-zinc-950/50 p-4">
-      <h3 className="mb-3 text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">{title}</h3>
+    <div className="rounded-xl bg-subtle p-4">
+      <h3 className={`mb-3 ${eyebrowClass}`}>{title}</h3>
       {children}
     </div>
   )
@@ -84,23 +87,23 @@ export function WeekReport({
   const nextTotal = sumMinutes(next.planned)
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/15 via-zinc-900/80 to-zinc-900/80 p-5 lg:col-span-3">
+    <section className="relative overflow-hidden rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 to-surface p-5 shadow-card sm:p-6">
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-widest text-brand uppercase">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold tracking-wide text-brand uppercase">
             Weekrapport · {formatShortDate(start)} – {formatShortDate(end)}
           </p>
-          <h2 className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">{title}</h2>
-          <p className="mt-1 text-zinc-300">{subtitle}</p>
+          <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h2>
+          <p className="mt-1 text-fg-2">{subtitle}</p>
         </div>
         {onClose && (
-          <button onClick={onClose} className="rounded-lg px-2 py-1 text-zinc-400 hover:bg-white/5 hover:text-white" aria-label="Sluiten">
-            ×
+          <button onClick={onClose} className={`${iconButton} -mt-1 -mr-2`} aria-label="Sluiten">
+            <Icon name="close" />
           </button>
         )}
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-x-8 gap-y-3">
+      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
         <Stat label="Totaal" value={formatDuration(total)} sub={goalMinutes ? `doel ${formatDuration(goalMinutes)}` : undefined} />
         <Stat
           label="Vs. vorige week"
@@ -111,7 +114,7 @@ export function WeekReport({
         <Stat label="Schema" value={plan.planned.length ? `${doneCount}/${plan.planned.length}` : '–'} sub="sessies afgevinkt" />
       </div>
 
-      <div className="mt-5 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         <Section title="Per sport">
           <div className="space-y-3">
             {SPORTS.map((s) => {
@@ -121,10 +124,10 @@ export function WeekReport({
               const dist = sumKm(items)
               return (
                 <div key={s}>
-                  <div className="mb-1 flex justify-between text-sm">
-                    <span className="text-zinc-300">{SPORT_LABEL[s]}</span>
-                    <span className="text-zinc-400 tabular-nums">
-                      <span className="font-semibold text-white">{min ? formatDuration(min) : '0'}</span>
+                  <div className="mb-1.5 flex justify-between gap-2 text-sm">
+                    <span className="text-fg-2">{SPORT_LABEL[s]}</span>
+                    <span className="text-fg-3 tabular-nums">
+                      <span className="font-semibold text-fg">{min ? formatDuration(min) : '0'}</span>
                       {goal ? ` / ${formatDuration(goal)}` : ''}
                       {dist ? ` · ${dist} km` : ''}
                     </span>
@@ -140,8 +143,8 @@ export function WeekReport({
           <ul className="space-y-2.5 text-sm">
             {longest && (
               <li>
-                <span className="text-zinc-400">Langste sessie:</span>{' '}
-                <span className="font-semibold text-white">
+                <span className="text-fg-3">Langste sessie:</span>{' '}
+                <span className="font-semibold text-fg">
                   {SPORT_LABEL[longest.sport]} {formatSessionDuration(longest.duration_min)}
                   {longest.distance_km
                     ? ` (${[`${longest.distance_km} km`, formatPace(longest.sport, longest.duration_min, longest.distance_km)].filter(Boolean).join(' · ')})`
@@ -151,22 +154,22 @@ export function WeekReport({
             )}
             {newBadges.length > 0 ? (
               <li>
-                <span className="text-zinc-400">Nieuwe badges:</span>
+                <span className="text-fg-3">Nieuwe badges:</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {newBadges.map((b) => (
-                    <span key={b.badge.id} className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-300">
+                    <span key={b.badge.id} className="rounded-full bg-warning/12 px-2.5 py-1 text-xs font-medium text-warning">
                       {b.badge.emoji} {b.badge.name}
                     </span>
                   ))}
                 </div>
               </li>
             ) : (
-              <li className="text-zinc-500">Geen nieuwe badges deze week.</li>
+              <li className="text-fg-3">Geen nieuwe badges deze week.</li>
             )}
             {missed.length > 0 && (
               <li>
-                <span className="text-zinc-400">Gemist:</span>{' '}
-                <span className="text-zinc-300">
+                <span className="text-fg-3">Gemist:</span>{' '}
+                <span className="text-fg-2">
                   {missed
                     .slice(0, 3)
                     .map((p) => p.title || SPORT_LABEL[p.sport])
@@ -175,38 +178,28 @@ export function WeekReport({
                 </span>
               </li>
             )}
-            {rivalry && <li className="font-medium text-white">{rivalry}</li>}
+            {rivalry && <li className="font-medium text-fg">{rivalry}</li>}
           </ul>
         </Section>
 
         <Section title="Volgende week">
-          <p className="text-2xl font-black">
+          <p className="text-2xl font-semibold tracking-tight text-fg tabular-nums">
             {nextTotal ? formatDuration(nextTotal) : '–'}
-            <span className="ml-1 text-sm font-semibold text-zinc-400">gepland</span>
+            <span className="ml-1.5 text-sm font-medium text-fg-3">gepland</span>
           </p>
-          <p className="text-sm text-zinc-400">
+          <p className="mt-0.5 text-sm text-fg-3">
             {next.planned.length ? `${next.planned.length} sessies ingepland` : 'Nog niets ingepland. Plan je week!'}
           </p>
           {phaseNext !== phaseNow && (
-            <p className="mt-3 rounded-lg bg-brand/15 px-3 py-2 text-sm font-medium text-white">
-              Nieuwe fase: <span className="font-bold">{phaseNext.name}</span>. {phaseNext.description}
+            <p className="mt-3 rounded-lg bg-brand/10 px-3 py-2 text-sm text-fg">
+              Nieuwe fase: <span className="font-semibold text-brand">{phaseNext.name}</span>. {phaseNext.description}
             </p>
           )}
-          <p className="mt-3 text-sm text-zinc-400">
-            Nog <span className="font-semibold text-white">{daysUntilRace()}</span> dagen tot race-dag.
+          <p className="mt-3 text-sm text-fg-3">
+            Nog <span className="font-semibold text-fg">{daysUntilRace()}</span> dagen tot race-dag.
           </p>
         </Section>
       </div>
     </section>
-  )
-}
-
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div>
-      <p className="text-[11px] font-semibold tracking-widest text-zinc-500 uppercase">{label}</p>
-      <p className="text-2xl font-black tracking-tight tabular-nums">{value}</p>
-      {sub && <p className="text-xs text-zinc-400">{sub}</p>}
-    </div>
   )
 }

@@ -1,11 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
-import type { Profile } from '../lib/leaderboard'
+import type { Profile } from '../lib/profile'
 import { formatPace, formatSessionDuration, formatShortDate, parseISODate, todayISO } from '../lib/race'
 import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type FeedPerson } from '../lib/social'
 import { SPORT_BG, SPORT_LABEL } from '../lib/types'
-import { errorMessage } from '../lib/ui'
+import { errorMessage, iconButton, pillClass } from '../lib/ui'
 import { Avatar } from './Avatar'
+import { Icon } from './Icon'
 
 const DAY = 86_400_000
 
@@ -28,7 +29,7 @@ export function ago(ts: string) {
 }
 
 /** "Jij en Piet", "Jan, Piet en 3 anderen". */
-function kudosText(kudos: FeedPerson[], meId?: string) {
+function kudosText(kudos: FeedPerson[], meId: string) {
   const names = [...kudos].sort((a, b) => Number(b.user_id === meId) - Number(a.user_id === meId)).map((k) => (k.user_id === meId ? 'jij' : k.display_name))
   const rest = names.length - 2
   const text = rest > 0 ? `${names[0]}, ${names[1]} en ${rest} ${rest === 1 ? 'ander' : 'anderen'}` : names.join(' en ')
@@ -42,12 +43,12 @@ export function FeedCard({
   onPatch,
 }: {
   item: FeedItem
-  me: Profile | null
+  me: Profile
   online: boolean
   onPatch: (fn: (i: FeedItem) => FeedItem) => void
 }) {
-  const isOwn = item.user_id === me?.id
-  const gave = Boolean(me && item.kudos.some((k) => k.user_id === me.id))
+  const isOwn = item.user_id === me.id
+  const gave = item.kudos.some((k) => k.user_id === me.id)
   const [busy, setBusy] = useState(false)
   const [showAll, setShowAll] = useState(false)
   const [replying, setReplying] = useState(false)
@@ -61,7 +62,7 @@ export function FeedCard({
   ].filter((s) => s !== null)
 
   async function toggleKudos() {
-    if (!me || isOwn || busy) return
+    if (isOwn || busy) return
     const before = item.kudos
     setBusy(true)
     onPatch((i) => ({
@@ -89,60 +90,66 @@ export function FeedCard({
   }
 
   const actionClass = (active: boolean) =>
-    `inline-flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium transition disabled:opacity-40 sm:flex-none sm:px-3 ${
-      active ? 'text-brand' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+    `inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-medium transition disabled:opacity-40 sm:flex-none sm:px-3 ${
+      active ? 'bg-brand/10 text-brand' : 'text-fg-3 hover:bg-hover hover:text-fg'
     }`
 
   return (
-    <article className="rounded-2xl border border-white/5 bg-zinc-900/70 p-4 backdrop-blur sm:p-5">
+    <article className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5">
       <header className="flex items-center gap-3">
         <Avatar name={item.display_name} highlight={isOwn} online={online} />
         <div className="min-w-0 flex-1">
-          <p className="flex items-center gap-2">
-            <Link to={`/leaderboard/${item.user_id}`} className="truncate font-semibold text-white hover:underline">
+          <p className="flex min-w-0 items-center gap-2">
+            <Link to={`/leaderboard/${item.user_id}`} className="truncate font-semibold text-fg hover:underline">
               {item.display_name}
             </Link>
-            {isOwn && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-300 uppercase">jij</span>}
+            {isOwn && <span className={pillClass}>jij</span>}
           </p>
-          <p className="text-xs text-zinc-500">
-            {relativeDay(item.date)} · {SPORT_LABEL[item.sport]}
+          <p className="flex items-center gap-1.5 text-xs text-fg-3">
+            <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} aria-hidden />
+            {SPORT_LABEL[item.sport]} · {relativeDay(item.date)}
           </p>
         </div>
       </header>
 
-      <div className="mt-3 flex gap-3">
-        <span className={`w-1 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} />
-        <dl className="flex flex-wrap gap-x-6 gap-y-2">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <dt className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase">{s.label}</dt>
-              <dd className="text-xl font-black text-white tabular-nums">{s.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </div>
+      <dl className="mt-4 flex flex-wrap gap-x-8 gap-y-2 rounded-xl bg-subtle p-3 sm:px-4">
+        {stats.map((s) => (
+          <div key={s.label} className="min-w-0">
+            <dt className="text-xs font-medium text-fg-3">{s.label}</dt>
+            <dd className="mt-0.5 truncate text-lg font-semibold tracking-tight text-fg tabular-nums">{s.value}</dd>
+          </div>
+        ))}
+      </dl>
 
-      {item.kudos.length > 0 && <p className="mt-3 text-xs text-zinc-400">👏 {kudosText(item.kudos, me?.id)}</p>}
+      {item.kudos.length > 0 && (
+        <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-3">
+          <Icon name="heart" className="size-3.5 fill-current text-brand" />
+          <span className="min-w-0 truncate">{kudosText(item.kudos, me.id)}</span>
+        </p>
+      )}
 
-      <div className="mt-3 flex gap-1 border-t border-white/5 pt-2">
+      <div className="mt-3 flex gap-1 border-t border-line pt-2">
         <button
+          type="button"
           onClick={toggleKudos}
-          disabled={!me || isOwn || busy}
+          disabled={isOwn || busy}
           aria-pressed={gave}
           className={actionClass(gave)}
           title={isOwn ? 'Je kan geen kudos geven op je eigen training' : undefined}
         >
-          👏 Kudos{item.kudos.length > 0 && <span className="tabular-nums">· {item.kudos.length}</span>}
+          <Icon name="heart" className={`size-4 ${gave ? 'fill-current' : ''}`} />
+          Kudos{item.kudos.length > 0 && <span className="tabular-nums">· {item.kudos.length}</span>}
         </button>
-        <button onClick={() => setReplying((v) => !v)} disabled={!me} aria-expanded={replying} className={actionClass(replying)}>
-          💬 Reageer{item.comments.length > 0 && <span className="tabular-nums">· {item.comments.length}</span>}
+        <button type="button" onClick={() => setReplying((v) => !v)} aria-expanded={replying} className={actionClass(replying)}>
+          <Icon name="message" className="size-4" />
+          Reageer{item.comments.length > 0 && <span className="tabular-nums">· {item.comments.length}</span>}
         </button>
       </div>
 
       {item.comments.length > 0 && (
         <div className="mt-2 space-y-2">
           {!showAll && item.comments.length > 2 && (
-            <button onClick={() => setShowAll(true)} className="text-xs font-medium text-zinc-400 hover:text-white">
+            <button type="button" onClick={() => setShowAll(true)} className="text-xs font-medium text-fg-3 hover:text-fg">
               Alle {item.comments.length} reacties tonen
             </button>
           )}
@@ -150,18 +157,18 @@ export function FeedCard({
             {comments.map((c) => (
               <li key={c.id} className="flex items-start gap-2 text-sm">
                 <Avatar name={c.display_name} size="sm" />
-                <div className="min-w-0 flex-1 rounded-xl bg-zinc-800/60 px-3 py-2">
+                <div className="min-w-0 flex-1 rounded-xl bg-subtle px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">
-                    <Link to={`/leaderboard/${c.user_id}`} className="truncate text-xs font-semibold text-white hover:underline">
+                    <Link to={`/leaderboard/${c.user_id}`} className="truncate text-xs font-semibold text-fg hover:underline">
                       {c.display_name}
                     </Link>
-                    <span className="shrink-0 text-[11px] text-zinc-500">{ago(c.created_at)}</span>
+                    <span className="shrink-0 text-[11px] text-fg-4">{ago(c.created_at)}</span>
                   </div>
-                  <p className="break-words whitespace-pre-line text-zinc-200">{c.body}</p>
+                  <p className="break-words whitespace-pre-line text-fg-2">{c.body}</p>
                 </div>
-                {me && (c.user_id === me.id || isOwn) && (
-                  <button onClick={() => removeComment(c.id)} className="shrink-0 p-2 text-zinc-600 hover:text-red-400" aria-label="Reactie verwijderen">
-                    ×
+                {(c.user_id === me.id || isOwn) && (
+                  <button type="button" onClick={() => removeComment(c.id)} className={`${iconButton} hover:bg-danger/10 hover:text-danger`} aria-label="Reactie verwijderen">
+                    <Icon name="trash" className="size-4" />
                   </button>
                 )}
               </li>
@@ -170,7 +177,7 @@ export function FeedCard({
         </div>
       )}
 
-      {replying && me && (
+      {replying && (
         <CommentForm
           onSubmit={async (body) => {
             const c = await addComment(item.id, body)
@@ -213,9 +220,13 @@ function CommentForm({ onSubmit }: { onSubmit: (body: string) => Promise<void> }
         enterKeyHint="send"
         placeholder="Schrijf een reactie…"
         aria-label="Reactie"
-        className="min-w-0 flex-1 rounded-full border border-zinc-700 bg-zinc-950 px-4 py-2 text-base text-zinc-100 placeholder:text-zinc-600 focus:border-brand focus:outline-none sm:text-sm"
+        className="h-10 min-w-0 flex-1 rounded-full border border-line-strong bg-surface px-4 text-base text-fg placeholder:text-fg-4 transition focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none sm:text-sm"
       />
-      <button type="submit" disabled={busy || !text.trim()} className="shrink-0 rounded-full bg-brand px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50">
+      <button
+        type="submit"
+        disabled={busy || !text.trim()}
+        className="inline-flex h-10 shrink-0 items-center rounded-full bg-brand px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
+      >
         Plaats
       </button>
     </form>

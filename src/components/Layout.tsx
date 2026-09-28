@@ -1,109 +1,196 @@
-import { Suspense, type ReactNode } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { Suspense } from 'react'
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { PresenceProvider } from '../lib/presence'
-import { ghostButton } from '../lib/ui'
-
-const icon = (path: ReactNode) => (
-  <svg viewBox="0 0 24 24" className="size-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-    {path}
-  </svg>
-)
+import { useMe } from '../lib/profile'
+import { supabase } from '../lib/supabase'
+import { iconButton, primaryButton } from '../lib/ui'
+import { Avatar } from './Avatar'
+import { Icon, type IconName } from './Icon'
+import { ThemeSwitchButton, ThemeToggle } from './ThemeToggle'
 
 interface NavItem {
   to: string
   label: string
-  short: string
-  icon: ReactNode
+  icon: IconName
   end?: boolean
-  /** Niet in de mobiele tabbalk (max. 5 tabs); bereikbaar via een link op een andere pagina. */
-  desktopOnly?: boolean
-  /** Andere paden waarbij de mobiele tab ook actief oplicht. */
-  alsoActive?: string[]
 }
 
-const NAV: NavItem[] = [
-  { to: '/', label: 'Home', short: 'Home', end: true, icon: icon(<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />) },
-  { to: '/dashboard', label: 'Dashboard', short: 'Mijn', alsoActive: ['/goals'], icon: icon(<path d="M22 12h-4l-3 9L9 3l-3 9H2" />) },
-  { to: '/plan', label: 'Schema', short: 'Schema', icon: icon(<><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>) },
-  { to: '/workouts', label: 'Trainingen', short: 'Log', icon: icon(<><path d="M12 5v14M5 12h14" /><circle cx="12" cy="12" r="9" /></>) },
-  { to: '/goals', label: 'Doelen', short: 'Doelen', desktopOnly: true, icon: icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>) },
-  { to: '/leaderboard', label: 'Leaderboard', short: 'Ranking', icon: icon(<path d="M8 21V11H3v10zM15 21V4h-5v17zM21 21v-7h-5v7z" />) },
+const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
+  {
+    title: 'Overzicht',
+    items: [
+      { to: '/', label: 'Home', icon: 'home', end: true },
+      { to: '/dashboard', label: 'Dashboard', icon: 'chart' },
+    ],
+  },
+  {
+    title: 'Training',
+    items: [
+      { to: '/plan', label: 'Schema', icon: 'calendar' },
+      { to: '/workouts', label: 'Trainingen', icon: 'activity' },
+      { to: '/goals', label: 'Doelen', icon: 'target' },
+    ],
+  },
+  {
+    title: 'Community',
+    items: [{ to: '/leaderboard', label: 'Leaderboard', icon: 'trophy' }],
+  },
 ]
 
-const topLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium transition lg:px-3 ${
-    isActive ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
-  }`
-
-const tabClass = ({ isActive }: { isActive: boolean }) =>
-  `flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition ${
-    isActive ? 'text-white' : 'text-zinc-500 active:text-zinc-300'
-  }`
+/** Mobiele tabbalk: vier tabs met in het midden een opvallende knop om te loggen. */
+const TABS: (NavItem & { alsoActive?: string[] })[] = [
+  { to: '/', label: 'Home', icon: 'home', end: true },
+  { to: '/plan', label: 'Schema', icon: 'calendar' },
+  { to: '/leaderboard', label: 'Ranking', icon: 'trophy' },
+  { to: '/dashboard', label: 'Mijn', icon: 'chart', alsoActive: ['/goals', '/instellingen'] },
+]
 
 export function PageLoader() {
   return (
-    <div className="flex justify-center p-12" role="status" aria-label="Laden">
-      <span className="size-6 animate-spin rounded-full border-2 border-zinc-700 border-t-brand" />
+    <div className="flex justify-center p-16" role="status" aria-label="Laden">
+      <span className="size-6 animate-spin rounded-full border-2 border-line-strong border-t-brand" />
     </div>
+  )
+}
+
+function Logo() {
+  return (
+    <Link to="/" className="text-xl font-black tracking-tight text-fg italic">
+      IRON<span className="text-brand">MAN</span>
+    </Link>
   )
 }
 
 export function Layout() {
   const { session } = useAuth()
+  const { me } = useMe()
   const { pathname } = useLocation()
 
   return (
-    <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
-          <span className="mr-2 shrink-0 text-lg font-black tracking-tight italic lg:mr-6">
-            IRON<span className="text-brand">MAN</span>
-          </span>
-          <nav className="hidden min-w-0 gap-1 overflow-x-auto md:flex">
-            {NAV.map((n) => (
-              <NavLink key={n.to} to={n.to} end={n.end} className={topLinkClass}>
-                {n.label}
-              </NavLink>
+    <PresenceProvider>
+      <div className="min-h-screen lg:pl-72">
+        {/* Desktop: vaste zijbalk. */}
+        <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-line bg-surface lg:flex">
+          <div className="flex h-16 shrink-0 items-center px-6">
+            <Logo />
+          </div>
+
+          <div className="px-4 pt-2">
+            <Link to="/workouts" className={`w-full ${primaryButton}`}>
+              <Icon name="plus" className="size-4" />
+              Training loggen
+            </Link>
+          </div>
+
+          <nav className="mt-6 flex-1 space-y-6 overflow-y-auto px-4" aria-label="Hoofdmenu">
+            {NAV_GROUPS.map((g) => (
+              <div key={g.title}>
+                <p className="mb-2 px-3 text-xs font-semibold tracking-wide text-fg-4 uppercase">{g.title}</p>
+                <ul className="space-y-0.5">
+                  {g.items.map((n) => (
+                    <li key={n.to}>
+                      <NavLink
+                        to={n.to}
+                        end={n.end}
+                        className={({ isActive }) =>
+                          `flex h-10 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
+                            isActive ? 'bg-brand/10 text-brand' : 'text-fg-2 hover:bg-hover hover:text-fg'
+                          }`
+                        }
+                      >
+                        <Icon name={n.icon} className="size-[18px]" />
+                        {n.label}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ))}
           </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-3">
-            <span className="hidden text-sm text-zinc-500 lg:inline">{session?.user.email}</span>
-            <button onClick={() => supabase.auth.signOut()} className={ghostButton}>
-              Uitloggen
-            </button>
-          </div>
-        </div>
-      </header>
 
-      <main className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
-        {/* Binnen de layout, zodat header en tabbalk blijven staan terwijl een pagina laadt. */}
-        <PresenceProvider>
+          <div className="space-y-3 border-t border-line p-4">
+            <ThemeToggle labels />
+            <div className="flex items-center gap-3 rounded-xl p-2">
+              <Link to="/instellingen" className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:opacity-80">
+                <Avatar name={me.display_name} size="sm" />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-semibold text-fg">{me.display_name}</span>
+                  <span className="block truncate text-xs text-fg-3">{session?.user.email}</span>
+                </span>
+              </Link>
+              <NavLink to="/instellingen" className={iconButton} aria-label="Instellingen">
+                <Icon name="settings" className="size-[18px]" />
+              </NavLink>
+              <button onClick={() => supabase.auth.signOut()} className={iconButton} aria-label="Uitloggen" title="Uitloggen">
+                <Icon name="logout" className="size-[18px]" />
+              </button>
+            </div>
+          </div>
+        </aside>
+
+        {/* Mobiel en tablet: compacte bovenbalk. */}
+        <header className="sticky top-0 z-20 border-b border-line bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
+          <div className="flex h-14 items-center gap-2 px-4 sm:px-6">
+            <Logo />
+            <div className="ml-auto flex items-center gap-1">
+              <ThemeSwitchButton />
+              <Link to="/instellingen" className="ml-1 rounded-full" aria-label="Instellingen">
+                <Avatar name={me.display_name} size="sm" />
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        <main className="mx-auto max-w-[88rem] px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-12">
+          {/* Binnen de layout, zodat zijbalk en tabbalk blijven staan terwijl een pagina laadt. */}
           <Suspense fallback={<PageLoader />}>
             <Outlet />
           </Suspense>
-        </PresenceProvider>
-      </main>
+        </main>
 
-      {/* Mobiel: vaste tabbalk onderaan, binnen duimbereik. */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-zinc-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
-        <div className="flex">
-          {NAV.filter((n) => !n.desktopOnly).map((n) => {
-            const active = (isActive: boolean) => isActive || Boolean(n.alsoActive?.some((p) => pathname.startsWith(p)))
-            return (
-              <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => tabClass({ isActive: active(isActive) })}>
-                {({ isActive }) => (
-                  <>
-                    <span className={`rounded-full px-4 py-0.5 transition ${active(isActive) ? 'bg-brand/20 text-brand' : ''}`}>{n.icon}</span>
-                    {n.short}
-                  </>
-                )}
-              </NavLink>
-            )
-          })}
-        </div>
-      </nav>
-    </div>
+        {/* Mobiel: vaste tabbalk onderaan, binnen duimbereik. */}
+        <nav
+          className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
+          aria-label="Hoofdmenu"
+        >
+          <div className="mx-auto flex max-w-lg items-end">
+            {TABS.slice(0, 2).map((t) => (
+              <Tab key={t.to} item={t} pathname={pathname} />
+            ))}
+            <div className="flex flex-1 justify-center">
+              <Link
+                to="/workouts"
+                className="-mt-5 flex size-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/30 transition active:scale-95"
+                aria-label="Training loggen"
+              >
+                <Icon name="plus" className="size-6" strokeWidth={2.5} />
+              </Link>
+            </div>
+            {TABS.slice(2).map((t) => (
+              <Tab key={t.to} item={t} pathname={pathname} />
+            ))}
+          </div>
+        </nav>
+      </div>
+    </PresenceProvider>
+  )
+}
+
+function Tab({ item, pathname }: { item: (typeof TABS)[number]; pathname: string }) {
+  const also = item.alsoActive?.some((p) => pathname.startsWith(p)) ?? false
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) =>
+        `flex flex-1 flex-col items-center gap-1 pt-2 pb-1.5 text-[11px] font-medium transition ${
+          isActive || also ? 'text-brand' : 'text-fg-3 active:text-fg'
+        }`
+      }
+    >
+      <Icon name={item.icon} className="size-6" />
+      {item.label}
+    </NavLink>
   )
 }

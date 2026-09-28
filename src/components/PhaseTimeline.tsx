@@ -21,13 +21,13 @@ export function PhaseTimeline() {
               key={phase.name}
               style={{ flexGrow: weeks }}
               className={`first:rounded-l-full last:rounded-r-full ${
-                state === 'current' ? 'bg-brand' : state === 'past' ? 'bg-zinc-500' : 'bg-zinc-800'
+                state === 'current' ? 'bg-brand' : state === 'past' ? 'bg-fg-4' : 'bg-muted'
               }`}
             />
           ))}
         </div>
         <div
-          className="absolute -top-1 h-4.5 w-1 -translate-x-1/2 rounded-full bg-white shadow-[0_0_8px_rgb(255_255_255/0.6)]"
+          className="absolute -top-1 h-4.5 w-1.5 -translate-x-1/2 rounded-full bg-fg ring-2 ring-surface"
           style={{ left: `${position}%` }}
           title="Vandaag"
         />
@@ -36,7 +36,7 @@ export function PhaseTimeline() {
         {segments.map(({ phase, weeks, state }) => (
           <div key={phase.name} style={{ flexGrow: weeks, flexBasis: 0 }} className="min-w-0">
             <span
-              className={`block truncate ${state === 'current' ? 'font-semibold text-white' : 'text-zinc-500'} ${
+              className={`block truncate ${state === 'current' ? 'font-semibold text-fg' : 'text-fg-3'} ${
                 weeks < 6 ? 'hidden sm:block' : ''
               }`}
             >

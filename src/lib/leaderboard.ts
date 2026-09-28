@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from './supabase'
-import { useAuth } from './auth'
 import { RACE } from './race'
-
-export interface Profile {
-  id: string
-  display_name: string
-  show_on_leaderboard: boolean
-  share_workouts: boolean
-}
-
-export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> & Partial<Pick<Profile, 'share_workouts'>>
 
 export interface LeaderboardRow {
   user_id: string
@@ -39,36 +29,6 @@ export const compliance = (r: Pick<LeaderboardRow, 'planned' | 'planned_done'>) 
 /** "1,25×" vanaf een volledige afstand, anders een percentage. */
 export function formatIronman(x: number) {
   return x >= 1 ? `${x.toFixed(2).replace('.', ',')}×` : `${Math.round(x * 100)}%`
-}
-
-export function useProfile() {
-  const { session } = useAuth()
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    supabase
-      .from('profiles')
-      .select('id, display_name, show_on_leaderboard, share_workouts')
-      .eq('id', session!.user.id)
-      .maybeSingle()
-      .then(({ data }) => {
-        setProfile(data as Profile | null)
-        setLoading(false)
-      })
-  }, [session])
-
-  const save = async (fields: ProfileFields) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert({ id: session!.user.id, ...fields })
-      .select('id, display_name, show_on_leaderboard, share_workouts')
-      .single()
-    if (error) throw error
-    setProfile(data as Profile)
-  }
-
-  return { profile, loading, save }
 }
 
 export function useLeaderboard(from: string, to: string, reloadKey: unknown) {

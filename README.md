@@ -1,7 +1,8 @@
-# IRONMAN Training Dashboard
+# IRONMAN Training
 
-Trainingsdashboard richting IRONMAN België (5 september 2027): countdown, periodiseringsfase,
-weekvolume per sport en een trainingslog. Vite + React + TypeScript + Tailwind v4, met Supabase voor
+Trainingsplatform richting IRONMAN België (5 september 2027): een social hub met feed, kudos en vrienden,
+een persoonlijk dashboard, IRONMAN-plan en weekschema, trainingslog, doelen en een leaderboard. Met
+onboarding na het aanmelden en light/dark mode. Vite + React + TypeScript + Tailwind v4, met Supabase voor
 login en data. Wordt gehost op GitHub Pages.
 
 ## 1. Supabase
@@ -52,6 +53,17 @@ na een nieuwe deploy haalt de app bij de volgende start automatisch de nieuwe ve
 
 ## Structuur
 
+**Ontwerp.** Kleuren zijn thematokens in `src/index.css` (`bg-surface`, `text-fg-3`, `border-line` …) die per
+thema wisselen; gebruik die in plaats van vaste tinten, dan kloppen light en dark vanzelf. Gedeelde
+bouwstenen: `src/lib/ui.ts` (knop- en invoerklassen), `Card`, `PageHeader`, `Stat`, `EmptyState`, `Switch`,
+`Icon`, `Segmented`, `Modal`, `Avatar` in `src/components/`.
+
+- `src/lib/theme.tsx` – licht/donker/systeem (bewaard in de browser; `index.html` zet het vóór de eerste paint)
+- `src/lib/profile.tsx` – eigen profiel voor de hele app; zonder profiel stuurt de router naar de onboarding
+- `src/pages/Onboarding.tsx` – welkom, profiel en privacy, trainingsweek (plan), weekdoelen, spelers volgen
+- `src/pages/Settings.tsx` – profiel, privacy, weergave, account (wachtwoord, uitloggen)
+- `src/components/Layout.tsx` – app-shell: zijbalk op desktop, bovenbalk en tabbalk op mobiel
+
 - `src/lib/race.ts` – racedatum, afstanden en trainingsfases (pas hier aan)
 - `src/lib/useWorkouts.ts` – CRUD op de `workouts`-tabel
 - `src/lib/usePlan.ts` – weekschema: plannen, afvinken (logt de training), vorige week kopiëren
@@ -62,5 +74,5 @@ na een nieuwe deploy haalt de app bij de volgende start automatisch de nieuwe ve
 - `src/lib/players.ts` – spelers zoeken en een spelersprofiel ophalen (`player_profile`)
 - `src/lib/social.ts` – feed, meldingen, kudos, reacties en volgen (`social_feed`, `social_inbox`, `my_follows`)
 - `src/lib/presence.tsx` – wie er online is (Supabase Realtime Presence, geen tabel)
-- `src/pages/` – Login, Hub (home), Dashboard, Schema, Trainingen, Doelen, Leaderboard, Speler
+- `src/pages/` – Login, ResetPassword, Onboarding, Hub (home), Dashboard, Schema, Trainingen, Doelen, Leaderboard, Speler, Instellingen
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

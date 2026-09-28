@@ -4,7 +4,9 @@ import { Card } from '../components/Card'
 import { ClearScheduleDialog } from '../components/ClearScheduleDialog'
 import { CompleteDialog } from '../components/CompleteDialog'
 import { DoneToggle } from '../components/DoneToggle'
+import { Icon } from '../components/Icon'
 import { Modal } from '../components/Modal'
+import { PageHeader } from '../components/PageHeader'
 import { PlanForm } from '../components/PlanForm'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
@@ -21,7 +23,7 @@ import {
   weekStart,
 } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Workout } from '../lib/types'
-import { errorMessage, ghostButton } from '../lib/ui'
+import { dangerOutlineButton, errorMessage, ghostButton, iconButton, primaryButton, secondaryButton } from '../lib/ui'
 import { usePlan } from '../lib/usePlan'
 
 const TABS = [
@@ -38,9 +40,12 @@ export function Plan() {
   const setTab = (t: Tab) => setParams(t === 'week' ? {} : { tab: t })
 
   return (
-    <div className="space-y-4">
-      <Segmented options={[...TABS]} value={tab} onChange={setTab} />
-      {tab === 'week' ? <WeekSchedule /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}
+    <div>
+      <PageHeader title="Schema" description="Plan je sessies per week en vink ze af, of volg een opbouwschema richting je IRONMAN." />
+      <div className="space-y-6">
+        <Segmented options={[...TABS]} value={tab} onChange={setTab} />
+        {tab === 'week' ? <WeekSchedule /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}
+      </div>
     </div>
   )
 }
@@ -93,64 +98,79 @@ function WeekSchedule() {
   })
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center rounded-xl border border-white/5 bg-zinc-900/70">
-          <button onClick={() => setStart(addDays(start, -7))} className="px-3 py-2 text-zinc-400 hover:text-white" aria-label="Vorige week">
-            ‹
-          </button>
-          <span className="min-w-40 text-center text-sm font-semibold">
-            {formatShortDate(start)} – {formatShortDate(addDays(start, 6))}
-          </span>
-          <button onClick={() => setStart(addDays(start, 7))} className="px-3 py-2 text-zinc-400 hover:text-white" aria-label="Volgende week">
-            ›
-          </button>
+    <div className="space-y-6">
+      {/* Werkbalk: weeknavigatie links, acties rechts (op mobiel eronder). */}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-0.5 rounded-xl border border-line bg-surface p-0.5 shadow-card">
+            <button onClick={() => setStart(addDays(start, -7))} className={iconButton} aria-label="Vorige week">
+              <Icon name="chevron-left" />
+            </button>
+            <span className="min-w-36 px-1 text-center text-sm font-semibold text-fg tabular-nums">
+              {formatShortDate(start)} – {formatShortDate(addDays(start, 6))}
+            </span>
+            <button onClick={() => setStart(addDays(start, 7))} className={iconButton} aria-label="Volgende week">
+              <Icon name="chevron-right" />
+            </button>
+          </div>
+          {!isCurrentWeek && (
+            <button onClick={() => setStart(weekStart(new Date()))} className={ghostButton}>
+              Deze week
+            </button>
+          )}
         </div>
-        {!isCurrentWeek && (
-          <button onClick={() => setStart(weekStart(new Date()))} className={ghostButton}>
-            Deze week
-          </button>
-        )}
-        <div className="ml-auto flex flex-wrap justify-end gap-2">
-          <button onClick={() => setClearing(true)} className={`${ghostButton} text-zinc-400 hover:text-red-400`}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => setClearing(true)} className={`${ghostButton} hover:text-danger`}>
+            <Icon name="trash" className="size-4" />
             Leegmaken
           </button>
-          <button onClick={() => run(handleCopy)} className={ghostButton}>
+          <button onClick={() => run(handleCopy)} className={secondaryButton}>
+            <Icon name="refresh" className="size-4" />
             Vorige week kopiëren
           </button>
-          <button
-            onClick={() => setAddDate(start <= today && today <= days[6] ? today : start)}
-            className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:brightness-110"
-          >
-            + Sessie plannen
+          <button onClick={() => setAddDate(start <= today && today <= days[6] ? today : start)} className={primaryButton}>
+            <Icon name="plus" className="size-4" />
+            Sessie plannen
           </button>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-danger">{error}</p>}
       {notice && (
-        <p className="flex items-center justify-between gap-2 rounded-xl border border-white/5 bg-zinc-900/70 px-4 py-2.5 text-sm text-zinc-300">
-          {notice}
-          <button onClick={() => setNotice(null)} className="text-zinc-500 hover:text-white" aria-label="Sluiten">
-            ×
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-subtle py-1.5 pr-1.5 pl-4 text-sm text-fg-2">
+          <span className="inline-flex items-center gap-2">
+            <Icon name="check" className="size-4 text-success" />
+            {notice}
+          </span>
+          <button onClick={() => setNotice(null)} className={iconButton} aria-label="Sluiten">
+            <Icon name="close" className="size-4" />
           </button>
-        </p>
+        </div>
       )}
 
-      <Card title="Gepland vs. gedaan">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+      <Card
+        title="Gepland vs. gedaan"
+        description={
+          <>
+            <span className="font-semibold text-fg tabular-nums">{formatDuration(sumMinutes(done))}</span> gedaan van{' '}
+            <span className="tabular-nums">{formatDuration(sumMinutes(planned))}</span> gepland
+            <span className="hidden md:inline"> · sleep een sessie naar een andere dag om te verplaatsen</span>
+          </>
+        }
+      >
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
           {SPORTS.map((s) => {
             const plannedMin = sumMinutes(planned.filter((p) => p.sport === s))
             const doneMin = sumMinutes(done.filter((w) => w.sport === s))
             return (
-              <div key={s}>
-                <div className="mb-1.5 flex items-center justify-between text-sm">
-                  <span className="inline-flex items-center gap-1.5 text-zinc-300">
-                    <span className={`size-2 rounded-full ${SPORT_BG[s]}`} />
-                    {SPORT_LABEL[s]}
+              <div key={s} className="min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2 text-sm">
+                  <span className="inline-flex min-w-0 items-center gap-1.5 text-fg-2">
+                    <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[s]}`} />
+                    <span className="truncate">{SPORT_LABEL[s]}</span>
                   </span>
-                  <span className="whitespace-nowrap text-zinc-400 tabular-nums">
-                    <span className="font-semibold text-white">{doneMin ? formatDuration(doneMin) : '0'}</span>
+                  <span className="whitespace-nowrap text-fg-3 tabular-nums">
+                    <span className="font-semibold text-fg">{doneMin ? formatDuration(doneMin) : '0'}</span>
                     {plannedMin ? ` / ${formatDuration(plannedMin)}` : ''}
                   </span>
                 </div>
@@ -159,32 +179,40 @@ function WeekSchedule() {
             )
           })}
         </div>
-        <p className="mt-4 text-sm text-zinc-400">
-          Totaal <span className="font-semibold text-white">{formatDuration(sumMinutes(done))}</span> gedaan van{' '}
-          {formatDuration(sumMinutes(planned))} gepland
-          <span className="hidden text-zinc-600 md:inline"> · sleep een sessie naar een andere dag om te verplaatsen</span>
-        </p>
       </Card>
 
-      <div className={`grid grid-cols-1 gap-3 md:grid-cols-7 ${loading ? 'opacity-50' : ''}`}>
+      <div className={`grid grid-cols-1 gap-3 transition-opacity md:grid-cols-7 md:gap-2 lg:gap-3 ${loading ? 'opacity-50' : ''}`}>
         {days.map((d) => {
           const dayPlanned = planned.filter((p) => p.date === d)
           const dayExtras = extras.filter((w) => w.date === d)
           const isToday = d === today
           const isOver = overDay === d
+          const isRest = !dayPlanned.length && !dayExtras.length
           return (
             <div
               key={d}
               {...dropHandlers(d)}
-              className={`flex flex-col rounded-2xl border p-3 transition ${
-                isOver ? 'border-white/40 bg-white/5' : isToday ? 'border-brand/60 bg-brand/5' : 'border-white/5 bg-zinc-900/70'
+              className={`flex min-w-0 flex-col rounded-2xl border p-3 transition ${
+                isOver
+                  ? 'border-brand border-dashed bg-brand/5'
+                  : isToday
+                    ? 'border-brand/60 bg-surface shadow-card ring-1 ring-brand/20'
+                    : isRest
+                      ? 'border-line bg-subtle'
+                      : 'border-line bg-surface shadow-card'
               }`}
             >
-              <div className="mb-2 flex items-baseline justify-between">
-                <span className={`text-xs font-semibold tracking-wider uppercase ${isToday ? 'text-brand' : 'text-zinc-500'}`}>
+              <div className="mb-2.5 flex items-center justify-between gap-2">
+                <span className={`text-xs font-semibold tracking-wide uppercase ${isToday ? 'text-brand' : 'text-fg-3'}`}>
                   {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short' })}
                 </span>
-                <span className="text-lg font-bold">{parseISODate(d).getDate()}</span>
+                <span
+                  className={`flex size-7 items-center justify-center rounded-full text-sm font-semibold tabular-nums ${
+                    isToday ? 'bg-brand text-white' : 'text-fg'
+                  }`}
+                >
+                  {parseISODate(d).getDate()}
+                </span>
               </div>
 
               <div className="flex flex-1 flex-col gap-1.5">
@@ -206,23 +234,24 @@ function WeekSchedule() {
                 {dayExtras.map((w) => {
                   const pace = formatPace(w.sport, w.duration_min, w.distance_km)
                   return (
-                    <div key={w.id} className="rounded-lg border border-dashed border-zinc-700 p-2">
-                      <p className="flex items-center gap-1.5 text-sm font-medium">
-                        <span className={`size-2 rounded-full ${SPORT_BG[w.sport]}`} />
+                    <div key={w.id} className="rounded-xl border border-dashed border-line-strong p-2.5">
+                      <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
+                        <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
                         {SPORT_LABEL[w.sport]}
                       </p>
                       <SessionMeta parts={[formatSessionDuration(w.duration_min), pace, 'niet gepland']} />
                     </div>
                   )
                 })}
-                {!dayPlanned.length && !dayExtras.length && <p className="text-xs text-zinc-600 md:py-2">Rust</p>}
+                {isRest && <p className="text-xs text-fg-4 md:py-2">Rust</p>}
               </div>
 
               <button
                 onClick={() => setAddDate(d)}
-                className="mt-2 w-full rounded-lg border border-dashed border-zinc-700 py-1 text-xs text-zinc-500 transition hover:border-zinc-500 hover:text-zinc-200"
+                className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-line-strong text-xs font-medium text-fg-3 transition hover:border-brand/50 hover:bg-brand/5 hover:text-brand focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none md:h-8"
               >
-                + plannen
+                <Icon name="plus" className="size-3.5" />
+                plannen
               </button>
             </div>
           )
@@ -238,16 +267,18 @@ function WeekSchedule() {
       {editing && (
         <Modal title="Sessie bewerken" onClose={() => setEditing(null)}>
           <PlanForm defaultDate={editing.date} initial={editing} onSubmit={(patch) => update(editing, patch)} onCancel={() => setEditing(null)} />
-          <button
-            onClick={() => {
-              if (!confirm('Geplande sessie verwijderen?')) return
-              run(() => remove(editing.id))
-              setEditing(null)
-            }}
-            className="mt-4 w-full rounded-lg border border-red-500/30 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
-          >
-            Sessie verwijderen
-          </button>
+          <div className="mt-5 border-t border-line pt-5">
+            <button
+              onClick={() => {
+                if (!confirm('Geplande sessie verwijderen?')) return
+                run(() => remove(editing.id))
+                setEditing(null)
+              }}
+              className={`${dangerOutlineButton} w-full`}
+            >
+              Sessie verwijderen
+            </button>
+          </div>
         </Modal>
       )}
 
@@ -269,7 +300,7 @@ function WeekSchedule() {
 /** Duur, afstand, tempo: elk deel blijft heel en breekt als geheel af in smalle dagkolommen. */
 function SessionMeta({ parts }: { parts: (string | null)[] }) {
   return (
-    <p className="mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-zinc-400">
+    <p className="mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-fg-3 tabular-nums">
       {parts.filter(Boolean).map((part, i) => (
         <span key={i} className="whitespace-nowrap">
           {part}
@@ -310,19 +341,23 @@ function PlannedItem({
         onDragStart()
       }}
       onDragEnd={onDragEnd}
-      className={`overflow-hidden rounded-lg bg-zinc-800/60 p-2 transition md:cursor-grab md:active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+      className={`overflow-hidden rounded-xl border border-line bg-subtle p-2.5 transition hover:border-line-strong md:cursor-grab md:active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
     >
       <div className="flex items-start gap-2">
         <DoneToggle sport={item.sport} checked={isDone} onClick={onToggle} />
-        <button onClick={onEdit} className="min-w-0 flex-1 text-left" aria-label={`${item.title || SPORT_LABEL[item.sport]} bewerken`}>
-          <p className={`text-sm leading-tight font-medium break-words ${isDone ? 'text-zinc-500 line-through' : 'text-white'}`}>
+        <button
+          onClick={onEdit}
+          className="min-w-0 flex-1 rounded-md text-left focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
+          aria-label={`${item.title || SPORT_LABEL[item.sport]} bewerken`}
+        >
+          <p className={`text-sm leading-tight font-medium break-words ${isDone ? 'text-fg-3 line-through' : 'text-fg'}`}>
             {item.title || SPORT_LABEL[item.sport]}
           </p>
           <SessionMeta parts={[formatSessionDuration(shown.duration_min), shown.distance_km ? `${shown.distance_km} km` : null, pace]} />
           {isDone && actual && actual.duration_min !== item.duration_min && (
-            <p className="mt-0.5 text-[11px] text-zinc-500">gepland {formatSessionDuration(item.duration_min)}</p>
+            <p className="mt-0.5 text-[11px] text-fg-4">gepland {formatSessionDuration(item.duration_min)}</p>
           )}
-          {item.notes && <p className="mt-0.5 text-xs text-zinc-500">{item.notes}</p>}
+          {item.notes && <p className="mt-1 text-xs text-fg-3">{item.notes}</p>}
         </button>
       </div>
     </div>

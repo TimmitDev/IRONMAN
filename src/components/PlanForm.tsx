@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { formatPace } from '../lib/race'
 import type { NewPlanned, Sport } from '../lib/types'
-import { errorMessage, ghostButton, inputClass, labelClass, primaryButton } from '../lib/ui'
+import { errorMessage, inputClass, labelClass, primaryButton, secondaryButton } from '../lib/ui'
 import { DurationFields, emptyDuration, fromMinutes, toMinutes, type DurationValue } from './DurationFields'
 import { SportPicker } from './SportPicker'
 
@@ -51,7 +51,7 @@ export function PlanForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-3">
+    <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-x-3 gap-y-4">
       <div className="col-span-2">
         <SportPicker value={sport} onChange={setSport} />
       </div>
@@ -68,19 +68,23 @@ export function PlanForm({
         <input type="number" min="0" step="0.01" inputMode="decimal" className={inputClass} value={distance} onChange={(e) => setDistance(e.target.value)} />
       </label>
       <DurationFields value={duration} onChange={setDuration} className="col-span-2" />
-      {pace && <p className="col-span-2 -mt-1 text-xs text-zinc-400">Doeltempo: <span className="font-semibold text-zinc-200">{pace}</span></p>}
+      {pace && (
+        <p className="col-span-2 -mt-1 text-xs text-fg-3">
+          Doeltempo: <span className="font-semibold text-fg tabular-nums">{pace}</span>
+        </p>
+      )}
       <label className="col-span-2">
         <span className={labelClass}>Notities</span>
         <input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="bv. 3x10' tempo, 5' rust" />
       </label>
-      <div className="col-span-2 flex items-center gap-2 pt-1">
+      {error && <p className="col-span-2 text-sm text-danger">{error}</p>}
+      <div className="col-span-2 flex flex-wrap items-center gap-2 pt-2">
         <button type="submit" disabled={busy} className={primaryButton}>
           {busy ? 'Opslaan…' : initial ? 'Opslaan' : 'Inplannen'}
         </button>
-        <button type="button" onClick={onCancel} className={ghostButton}>
+        <button type="button" onClick={onCancel} className={secondaryButton}>
           Annuleren
         </button>
-        {error && <span className="text-sm text-red-400">{error}</span>}
       </div>
     </form>
   )

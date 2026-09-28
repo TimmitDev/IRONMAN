@@ -3,6 +3,7 @@ import { formatPace, todayISO } from '../lib/race'
 import type { NewWorkout, Sport } from '../lib/types'
 import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
 import { DurationFields, emptyDuration, fromMinutes, toMinutes, type DurationValue } from './DurationFields'
+import { Icon } from './Icon'
 import { SportPicker } from './SportPicker'
 
 /**
@@ -59,7 +60,7 @@ export function WorkoutForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`grid grid-cols-2 gap-3 ${lg('lg:grid-cols-6')}`}>
+    <form onSubmit={handleSubmit} className={`grid grid-cols-2 gap-x-3 gap-y-4 ${lg('lg:grid-cols-6')}`}>
       <div className={`col-span-2 ${lg('lg:col-span-3')}`}>
         <SportPicker value={sport} onChange={setSport} />
       </div>
@@ -77,19 +78,20 @@ export function WorkoutForm({
         <input type="number" min="1" max="10" inputMode="numeric" className={inputClass} value={rpe} onChange={(e) => setRpe(e.target.value)} />
       </label>
       {pace && (
-        <p className={`col-span-2 -mt-1 text-xs text-zinc-400 ${lg('lg:col-span-6')}`}>
-          Tempo: <span className="font-semibold text-zinc-200">{pace}</span>
+        <p className={`col-span-2 -mt-1 text-xs text-fg-3 ${lg('lg:col-span-6')}`}>
+          Tempo: <span className="font-semibold text-fg tabular-nums">{pace}</span>
         </p>
       )}
       <label className={`col-span-2 ${lg('lg:col-span-6')}`}>
         <span className={labelClass}>Notities</span>
         <input className={inputClass} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="bv. 4x8' op FTP" />
       </label>
-      <div className={`col-span-2 flex items-center gap-3 ${lg('lg:col-span-6')}`}>
-        <button type="submit" disabled={busy} className={primaryButton}>
+      {error && <p className={`col-span-2 text-sm text-danger ${lg('lg:col-span-6')}`}>{error}</p>}
+      <div className={`col-span-2 flex flex-wrap items-center gap-2 pt-2 ${lg('lg:col-span-6')}`}>
+        <button type="submit" disabled={busy} className={`${primaryButton} ${inDialog ? '' : 'w-full sm:w-auto'}`}>
+          {!busy && !initial && <Icon name="plus" className="size-4" />}
           {busy ? 'Opslaan…' : initial ? 'Opslaan' : 'Training toevoegen'}
         </button>
-        {error && <span className="text-sm text-red-400">{error}</span>}
       </div>
     </form>
   )

@@ -3,40 +3,50 @@ import { Link, useParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { BadgesGrid } from '../components/Badges'
 import { Card } from '../components/Card'
+import { EmptyState } from '../components/EmptyState'
 import { FollowButton } from '../components/FollowButton'
+import { Icon } from '../components/Icon'
+import { Stat } from '../components/Stat'
 import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
-import { useAuth } from '../lib/auth'
 import { evaluateBadges } from '../lib/badges'
-import { compliance, formatIronman, ironmanFraction, useProfile } from '../lib/leaderboard'
+import { compliance, formatIronman, ironmanFraction } from '../lib/leaderboard'
 import { usePlayerProfile, type PlayerProfile } from '../lib/players'
 import { useOnline } from '../lib/presence'
+import { useMe } from '../lib/profile'
 import { useFollows } from '../lib/social'
 import { formatDuration, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
-import { ghostButton } from '../lib/ui'
+import { ghostButton, linkClass, pillClass } from '../lib/ui'
 
 const fmtKm = (km: number) => (Math.round(km * 10) / 10).toLocaleString('nl-BE')
 
 export function Player() {
   const { userId } = useParams()
-  const { session } = useAuth()
+  const { me } = useMe()
   const { player, loading, error } = usePlayerProfile(userId!)
 
-  if (loading) return <p className="text-sm text-zinc-500">Laden…</p>
-
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <Link to="/leaderboard" className="inline-block text-sm text-zinc-400 hover:text-white">
-        ← Leaderboard
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Link to="/leaderboard" className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 text-sm font-medium text-fg-3 transition hover:text-fg">
+        <Icon name="chevron-left" className="size-4" />
+        Leaderboard
       </Link>
-      {error && <p className="text-sm text-red-400">{error}</p>}
-      {!player && !error && (
-        <Card>
-          <p className="text-sm text-zinc-400">Deze speler bestaat niet of staat niet op het leaderboard.</p>
-        </Card>
+      {loading ? (
+        <p className="text-sm text-fg-3">Laden…</p>
+      ) : (
+        <>
+          {error && <p className="text-sm text-danger">{error}</p>}
+          {!player && !error && (
+            <Card>
+              <EmptyState icon="user" title="Speler niet gevonden">
+                Deze speler bestaat niet of staat niet op het leaderboard.
+              </EmptyState>
+            </Card>
+          )}
+          {player && <PlayerView player={player} meId={me.id} />}
+        </>
       )}
-      {player && <PlayerView player={player} meId={session!.user.id} />}
     </div>
   )
 }
@@ -44,7 +54,6 @@ export function Player() {
 function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
   const isMe = player.id === meId
   const follows = useFollows(meId)
-  const { profile } = useProfile()
   const online = useOnline().has(player.id)
   const t = player.totals
   const c = compliance(player)
@@ -61,69 +70,97 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
   return (
     <>
       <Card>
-        <div className="flex items-center gap-3">
-          <Avatar name={player.display_name} size="lg" highlight={isMe} online={online} />
-          <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h1 className="truncate text-3xl font-black tracking-tight">{player.display_name}</h1>
-            {isMe && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-300 uppercase">jij</span>}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Avatar name={player.display_name} size="xl" highlight={isMe} online={online} />
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="truncate text-2xl font-bold tracking-tight text-fg sm:text-3xl">{player.display_name}</h1>
+              {isMe && <span className={pillClass}>jij</span>}
+            </div>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-fg-3">
+              <span className={`size-2 rounded-full ${online ? 'bg-success' : 'bg-line-strong'}`} aria-hidden />
+              {online ? 'Nu online' : 'Offline'}
+            </p>
+            <p className="mt-1 text-sm text-fg-3">
+              {t.first_date ? `Traint sinds ${formatShortDate(t.first_date)} · laatste training ${formatShortDate(t.last_date!)}` : 'Nog geen trainingen gelogd.'}
+            </p>
           </div>
           {!isMe && !follows.loading && (
-            <FollowButton person={{ user_id: player.id, display_name: player.display_name }} follows={follows} disabled={!profile} />
+            <div className="shrink-0">
+              <FollowButton person={{ user_id: player.id, display_name: player.display_name }} follows={follows} />
+            </div>
           )}
         </div>
-        <p className="mt-1 text-sm text-zinc-400">
-          {t.first_date ? `Traint sinds ${formatShortDate(t.first_date)} · laatste training ${formatShortDate(t.last_date!)}` : 'Nog geen trainingen gelogd.'}
-        </p>
-        {isMe && <p className="mt-1 text-xs text-zinc-500">Zo zien anderen je profiel. Delen pas je aan onderaan het leaderboard.</p>}
-        <dl className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-xl bg-zinc-800/50 p-3">
-              <dt className="text-[11px] font-semibold tracking-wider text-zinc-500 uppercase">{s.label}</dt>
-              <dd className="mt-1 text-xl font-black text-white tabular-nums">{s.value}</dd>
+        {isMe && (
+          <p className="mt-4 flex items-start gap-2 rounded-xl bg-subtle px-3 py-2.5 text-sm text-fg-3">
+            <Icon name="eye" className="mt-0.5 size-4 text-fg-4" />
+            <span>
+              Zo zien anderen je profiel. Delen pas je aan in{' '}
+              <Link to="/instellingen" className={linkClass}>
+                Instellingen
+              </Link>
+              .
+            </span>
+          </p>
+        )}
+        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {stats.map((s, i) => (
+            <div key={s.label} className={i === stats.length - 1 ? 'col-span-2 sm:col-span-1' : ''}>
+              <Stat tile label={s.label} value={s.value} />
             </div>
           ))}
-        </dl>
+        </div>
       </Card>
 
-      <Card title="Per sport">
-        <ul className="divide-y divide-white/5">
-          {SPORTS.map((s) => {
-            const record = player.records[s]
-            const km = s === 'strength' ? null : t[`${s}_km`]
-            return (
-              <li key={s} className="flex items-center gap-3 py-2.5 text-sm">
-                <span className={`h-8 w-1 shrink-0 rounded-full ${SPORT_BG[s]}`} />
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium text-white">{SPORT_LABEL[s]}</p>
-                  {record && (
-                    <p className="text-xs text-zinc-400">
-                      Langste: {record.km ? `${fmtKm(record.km)} km` : formatSessionDuration(record.min)}
-                    </p>
-                  )}
-                </div>
-                <div className="shrink-0 text-right tabular-nums">
-                  <p className="font-semibold text-white">{t[`${s}_min`] ? formatDuration(t[`${s}_min`]) : '–'}</p>
-                  {km ? <p className="text-xs text-zinc-400">{fmtKm(km)} km</p> : null}
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-      </Card>
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start">
+        <Card title="Per sport">
+          <ul className="-my-3 divide-y divide-line">
+            {SPORTS.map((s) => {
+              const record = player.records[s]
+              const km = s === 'strength' ? null : t[`${s}_km`]
+              return (
+                <li key={s} className="flex items-center gap-3 py-3 text-sm">
+                  <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[s]}`} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-fg">{SPORT_LABEL[s]}</p>
+                    {record && <p className="text-xs text-fg-3">Langste: {record.km ? `${fmtKm(record.km)} km` : formatSessionDuration(record.min)}</p>}
+                  </div>
+                  <div className="shrink-0 text-right tabular-nums">
+                    <p className="font-semibold text-fg">{t[`${s}_min`] ? formatDuration(t[`${s}_min`]) : '–'}</p>
+                    {km ? <p className="text-xs text-fg-3">{fmtKm(km)} km</p> : null}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        </Card>
 
-      <Card title="Weekvolume · laatste 12 weken">
-        <WeeklyChart workouts={chartItems} />
-      </Card>
+        <Card title="Weekvolume" description="Laatste 12 weken">
+          <WeeklyChart workouts={chartItems} />
+        </Card>
+      </div>
 
       {player.workouts ? (
         <SharedActivity player={player} workouts={player.workouts} />
       ) : (
         <Card title="Trainingen">
-          <p className="text-sm text-zinc-500">
-            {isMe
-              ? 'Je deelt je losse trainingen niet. Zet "Trainingen delen op profiel" aan onderaan het leaderboard.'
-              : `${player.display_name} deelt geen losse trainingen.`}
-          </p>
+          {isMe ? (
+            <EmptyState
+              icon="lock"
+              title="Je deelt je losse trainingen niet"
+              action={
+                <Link to="/instellingen" className={linkClass}>
+                  Delen aanzetten in Instellingen
+                </Link>
+              }
+            >
+              Zet "Trainingen delen" aan om ze hier en in de feed te tonen.
+            </EmptyState>
+          ) : (
+            <EmptyState icon="lock" title="Trainingen zijn privé">
+              {player.display_name} deelt geen losse trainingen.
+            </EmptyState>
+          )}
         </Card>
       )}
     </>
@@ -138,10 +175,10 @@ function SharedActivity({ player, workouts }: { player: PlayerProfile; workouts:
   return (
     <>
       <BadgesGrid results={badges} />
-      <Card title={`Trainingen · ${workouts.length}`}>
+      <Card title="Trainingen" action={<span className="text-sm text-fg-3 tabular-nums">{workouts.length}</span>}>
         <WorkoutList workouts={showAll ? workouts : workouts.slice(0, 10)} />
         {workouts.length > 10 && (
-          <button onClick={() => setShowAll((v) => !v)} className={`mt-2 ${ghostButton}`}>
+          <button type="button" onClick={() => setShowAll((v) => !v)} className={`mt-3 w-full ${ghostButton}`}>
             {showAll ? 'Minder tonen' : `Alle ${workouts.length} tonen`}
           </button>
         )}

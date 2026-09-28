@@ -12,7 +12,7 @@ export function ProgressBar({
 }) {
   const pct = (n: number) => (max > 0 ? Math.min(100, (n / max) * 100) : 0)
   return (
-    <div className="relative h-2 overflow-hidden rounded-full bg-zinc-800">
+    <div className="relative h-2 overflow-hidden rounded-full bg-muted">
       {planned > 0 && (
         <div className={`absolute inset-y-0 left-0 rounded-full opacity-30 ${color}`} style={{ width: `${pct(value + planned)}%` }} />
       )}
