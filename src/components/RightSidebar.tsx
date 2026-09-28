@@ -4,7 +4,7 @@ import { useSharedFollows } from '../lib/follows'
 import { usePlayerSearch } from '../lib/players'
 import { useOnline } from '../lib/presence'
 import { useMe } from '../lib/profile'
-import { useInbox, type FeedPerson, type InboxItem } from '../lib/social'
+import type { FeedPerson, InboxItem } from '../lib/social'
 import { SPORT_NOUN, SPORT_SOFT, SPORT_TEXT } from '../lib/types'
 import { errorMessage, iconButton } from '../lib/ui'
 import { Avatar } from './Avatar'
@@ -14,8 +14,7 @@ import { Icon } from './Icon'
 type FriendsTab = 'following' | 'followers'
 
 /** Rechter zijbalk (vanaf xl): je vrienden met online-status, daaronder recente activiteit. */
-export function RightSidebar() {
-  const inbox = useInbox()
+export function RightSidebar({ inbox }: { inbox: InboxItem[] }) {
   return (
     // Zwevende kaart, gespiegeld aan de linker zijbalk.
     <aside

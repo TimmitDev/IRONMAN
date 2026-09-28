@@ -1,79 +1,18 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { useSharedFollows } from '../lib/follows'
 import { LEVELS, usePlanSettings } from '../lib/ironmanPlan'
+import { NAV, useSessionCount } from '../lib/nav'
 import { useMe } from '../lib/profile'
 import { currentPhase, daysUntilRace, racePassed } from '../lib/race'
 import { useRace } from '../lib/raceContext'
-import { useInbox, type InboxItem } from '../lib/social'
 import { supabase } from '../lib/supabase'
 import { iconButton } from '../lib/ui'
-import { useWorkoutsChanged } from '../lib/useWorkouts'
 import { Avatar } from './Avatar'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
 import { DarkModeSwitch } from './ThemeToggle'
 
-// Elk onderdeel een eigen icoonkleur, zodat het menu in één oogopslag leesbaar is.
-const NAV: { to: string; label: string; icon: IconName; tint: string; end?: boolean }[] = [
-  { to: '/', label: 'Home', icon: 'home', tint: 'text-brand', end: true },
-  { to: '/dashboard', label: 'Dashboard', icon: 'chart', tint: 'text-swim' },
-  { to: '/plan', label: 'Schema', icon: 'calendar', tint: 'text-bike' },
-  { to: '/workouts', label: 'Trainingen', icon: 'activity', tint: 'text-run' },
-  { to: '/goals', label: 'Doelen', icon: 'target', tint: 'text-strength' },
-  { to: '/records', label: 'Records', icon: 'sparkles', tint: 'text-brand' },
-  { to: '/leaderboard', label: 'Leaderboard', icon: 'trophy', tint: 'text-warning' },
-  { to: '/uitdagingen', label: 'Uitdagingen', icon: 'flag', tint: 'text-swim' },
-  { to: '/instellingen', label: 'Instellingen', icon: 'settings', tint: 'text-fg-3' },
-]
-
-/** Aantal gelogde trainingen, bijgewerkt zodra er ergens trainingen bijkomen of verdwijnen. */
-function useSessionCount(userId: string) {
-  const [count, setCount] = useState<number | null>(null)
-  const load = useCallback(() => {
-    supabase
-      .from('workouts')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .then(({ count }) => setCount(count ?? 0))
-  }, [userId])
-  useEffect(load, [load])
-  useWorkoutsChanged(load)
-  return count
-}
-
-/** Meldingen die nieuwer zijn dan je laatste bezoek aan Home (per toestel bijgehouden). */
-function useUnread(meId: string, items: InboxItem[]) {
-  const { pathname } = useLocation()
-  const key = `inbox_seen_${meId}`
-  const [seen, setSeen] = useState(() => {
-    try {
-      return localStorage.getItem(key) ?? ''
-    } catch {
-      return ''
-    }
-  })
-
-  // Op Home zie je "Voor jou", dus dan telt alles als gelezen.
-  useEffect(() => {
-    const latest = items[0]?.created_at
-    if (pathname !== '/' || !latest || latest <= seen) return
-    setSeen(latest)
-    try {
-      localStorage.setItem(key, latest)
-    } catch {
-      // Opslag geblokkeerd: dan telt het alleen voor deze sessie.
-    }
-  }, [pathname, items, seen, key])
-
-  return items.filter((i) => i.created_at > seen).length
-}
-
 /** Desktop-zijbalk: profiel bovenaan, dan het menu. Vrienden en activiteit staan rechts (RightSidebar). */
-export function Sidebar() {
-  const { me } = useMe()
-  const inbox = useInbox()
-  const unread = useUnread(me.id, inbox)
-
+export function Sidebar({ unread }: { unread: number }) {
   return (
     // Zwevende kaart: los van de rand van het scherm, met eigen afronding en schaduw.
     <aside className="no-scrollbar fixed top-4 bottom-4 left-4 z-30 hidden w-72 flex-col overflow-y-auto rounded-3xl border border-line bg-surface shadow-xl shadow-black/5 lg:flex dark:shadow-black/40">
