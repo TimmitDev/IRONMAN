@@ -14,7 +14,8 @@ import { useLeaderboard } from '../lib/leaderboard'
 import { useOnline } from '../lib/presence'
 import { useMe, type Profile, type ProfileFields } from '../lib/profile'
 import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, sumMinutes, weekStart } from '../lib/race'
-import { useFeed, useFollows, useInbox, usePlayers, type FeedPerson, type Follows, type InboxItem } from '../lib/social'
+import { useSharedFollows } from '../lib/follows'
+import { useFeed, useInbox, usePlayers, type FeedPerson, type Follows, type InboxItem } from '../lib/social'
 import type { Sport, Workout } from '../lib/types'
 import { eyebrowClass, errorMessage, ghostButton, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
@@ -45,7 +46,7 @@ export function Hub() {
   const meId = me.id
   const [filter, setFilter] = useState<FeedFilter>('all')
   const feed = useFeed(filter === 'following')
-  const follows = useFollows(meId)
+  const follows = useSharedFollows()
   const online = useOnline()
   const players = usePlayers()
   const { workouts, loading: workoutsLoading } = useWorkouts()
@@ -71,9 +72,11 @@ export function Hub() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:items-start 2xl:grid-cols-[17rem_minmax(0,1fr)_17rem]">
-        {/* Links: jouw profiel, vrienden, sessies en badges. */}
+        {/* Links: jouw profiel, vrienden, sessies en badges. De profielkaart staat vanaf lg al in de zijbalk. */}
         <aside className={`space-y-4 ${column('me')}`}>
-          <ProfileCard profile={me} follows={follows} workouts={workouts} />
+          <div className="lg:hidden">
+            <ProfileCard profile={me} follows={follows} workouts={workouts} />
+          </div>
           {!me.share_workouts && (
             <ShareCta
               profile={me}

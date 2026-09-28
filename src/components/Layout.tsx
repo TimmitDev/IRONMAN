@@ -1,9 +1,11 @@
-import { Suspense } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '../lib/auth'
+import { FollowsProvider, useSharedFollows } from '../lib/follows'
 import { PresenceProvider } from '../lib/presence'
 import { useMe } from '../lib/profile'
+import { useStravaAutoSync } from '../lib/strava'
 import { supabase } from '../lib/supabase'
+import { useWorkoutsChanged } from '../lib/useWorkouts'
 import { iconButton, primaryButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { Icon, type IconName } from './Icon'
@@ -62,21 +64,82 @@ function Logo() {
   )
 }
 
-export function Layout() {
-  const { session } = useAuth()
+/** Aantal gelogde trainingen, bijgewerkt zodra er ergens trainingen bijkomen of verdwijnen. */
+function useSessionCount(userId: string) {
+  const [count, setCount] = useState<number | null>(null)
+  const load = useCallback(() => {
+    supabase
+      .from('workouts')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .then(({ count }) => setCount(count ?? 0))
+  }, [userId])
+  useEffect(load, [load])
+  useWorkoutsChanged(load)
+  return count
+}
+
+/** Bovenaan de zijbalk: wie je bent, met volgers, volgend en sessies. */
+function SidebarProfile() {
   const { me } = useMe()
-  const { pathname } = useLocation()
+  const follows = useSharedFollows()
+  const sessions = useSessionCount(me.id)
+  const stats = [
+    { label: 'Volgers', value: follows.loading ? '–' : follows.followers.length },
+    { label: 'Volgend', value: follows.loading ? '–' : follows.following.length },
+    { label: 'Sessies', value: sessions ?? '–' },
+  ]
 
   return (
+    <div className="rounded-2xl border border-line bg-subtle p-4">
+      <Link to={`/leaderboard/${me.id}`} className="group flex items-center gap-3">
+        <Avatar name={me.display_name} size="md" />
+        <span className="min-w-0">
+          <span className="block truncate font-semibold text-fg group-hover:underline">{me.display_name}</span>
+          <span className="block text-xs text-fg-3">Bekijk je profiel</span>
+        </span>
+      </Link>
+      <dl className="mt-4 grid grid-cols-3 divide-x divide-line text-center">
+        {stats.map((s) => (
+          <div key={s.label} className="flex flex-col-reverse px-1">
+            <dt className="text-[11px] text-fg-3">{s.label}</dt>
+            <dd className="text-lg font-semibold tracking-tight text-fg tabular-nums">{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  )
+}
+
+export function Layout() {
+  const { me } = useMe()
+  return (
     <PresenceProvider>
+      <FollowsProvider meId={me.id}>
+        <Shell />
+      </FollowsProvider>
+    </PresenceProvider>
+  )
+}
+
+function Shell() {
+  const { me } = useMe()
+  const { pathname } = useLocation()
+  useStravaAutoSync()
+
+  return (
       <div className="min-h-screen lg:pl-72">
-        {/* Desktop: vaste zijbalk. */}
+        {/* Desktop: vaste zijbalk met je profiel bovenaan en daaronder het menu. */}
         <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 flex-col border-r border-line bg-surface lg:flex">
           <div className="flex h-16 shrink-0 items-center px-6">
             <Logo />
           </div>
 
-          <div className="px-4 pt-2">
+          <div className="px-4">
+            <SidebarProfile />
+          </div>
+
+          <div className="px-4 pt-4">
             <Link to="/workouts" className={`w-full ${primaryButton}`}>
               <Icon name="plus" className="size-4" />
               Training loggen
@@ -111,16 +174,17 @@ export function Layout() {
 
           <div className="space-y-3 border-t border-line p-4">
             <ThemeToggle labels />
-            <div className="flex items-center gap-3 rounded-xl p-2">
-              <Link to="/instellingen" className="flex min-w-0 flex-1 items-center gap-3 rounded-lg transition hover:opacity-80">
-                <Avatar name={me.display_name} size="sm" />
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-semibold text-fg">{me.display_name}</span>
-                  <span className="block truncate text-xs text-fg-3">{session?.user.email}</span>
-                </span>
-              </Link>
-              <NavLink to="/instellingen" className={iconButton} aria-label="Instellingen">
+            <div className="flex items-center gap-1">
+              <NavLink
+                to="/instellingen"
+                className={({ isActive }) =>
+                  `flex h-10 flex-1 items-center gap-3 rounded-xl px-3 text-sm font-medium transition ${
+                    isActive ? 'bg-brand/10 text-brand' : 'text-fg-2 hover:bg-hover hover:text-fg'
+                  }`
+                }
+              >
                 <Icon name="settings" className="size-[18px]" />
+                Instellingen
               </NavLink>
               <button onClick={() => supabase.auth.signOut()} className={iconButton} aria-label="Uitloggen" title="Uitloggen">
                 <Icon name="logout" className="size-[18px]" />
@@ -173,7 +237,6 @@ export function Layout() {
           </div>
         </nav>
       </div>
-    </PresenceProvider>
   )
 }
 

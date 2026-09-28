@@ -1,5 +1,5 @@
 // Service worker: app-shell offline beschikbaar. Supabase-verkeer (andere origin) wordt nooit gecachet.
-const CACHE = 'ironman-v1'
+const CACHE = 'ironman-v2'
 
 self.addEventListener('install', () => self.skipWaiting())
 
@@ -16,6 +16,9 @@ self.addEventListener('fetch', (event) => {
   const { request } = event
   const url = new URL(request.url)
   if (request.method !== 'GET' || url.origin !== self.location.origin) return
+
+  // Losse HTML-pagina's (zoals strava-callback.html) niet als app-shell cachen.
+  if (request.mode === 'navigate' && url.pathname.endsWith('.html') && !url.pathname.endsWith('/index.html')) return
 
   // Pagina: altijd eerst het netwerk (nieuwe deploys), bij offline de laatst geziene versie.
   if (request.mode === 'navigate') {

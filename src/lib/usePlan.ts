@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from './supabase'
 import { addDays } from './race'
+import { useWorkoutsChanged } from './useWorkouts'
 import { normalizeRow, type NewPlanned, type NewWorkout, type PlannedWorkout, type Workout } from './types'
 
 const byDate = <T extends { date: string; created_at: string }>(a: T, b: T) =>
@@ -40,6 +41,9 @@ export function usePlan(start: string) {
     }
   }, [load, version])
 
+  // Een Strava-import kan sessies afvinken; ook trainingen die elders gelogd worden tellen mee.
+  const notify = useWorkoutsChanged(reload)
+
   const add = async (item: NewPlanned) => {
     const { data, error } = await supabase.from('planned_workouts').insert(item).select().single()
     if (error) throw error
@@ -75,6 +79,7 @@ export function usePlan(start: string) {
     // FK staat op "on delete set null", dus de planning is in de database al losgekoppeld.
     setDone((prev) => prev.filter((w) => w.id !== item.workout_id))
     setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, workout_id: null } : p)))
+    notify()
   }
 
   /** Afvinken logt de sessie als training, met wat er echt gedaan is. */
@@ -92,6 +97,7 @@ export function usePlan(start: string) {
     if (linkError) throw linkError
     setDone((prev) => [...prev, normalizeRow(workout as Workout)].sort(byDate))
     setPlanned((prev) => prev.map((p) => (p.id === item.id ? { ...p, workout_id: workout.id } : p)))
+    notify()
   }
 
   /** Kopieert de planning van de vorige week naar deze week (zonder afvinkstatus). */

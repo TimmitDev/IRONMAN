@@ -17,6 +17,7 @@ login en data. Wordt gehost op GitHub Pages.
    - `006_player_profiles.sql`: spelersprofielen (totalen, records, weekgrafiek; losse trainingen alleen met opt-in)
    - `007_social.sql`: social hub: feed van gedeelde trainingen, kudos, reacties en meldingen
    - `008_follows.sql`: spelers volgen ("vrienden") en de feed filteren op gevolgde spelers
+   - `009_strava.sql`: Strava-koppeling (tokens, alleen server-side leesbaar) en `strava_activity_id` op trainingen
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`
@@ -42,6 +43,38 @@ npm run dev
 
 De publishable key komt in de gebundelde JavaScript terecht; dat is zo bedoeld. De data is beschermd door
 de RLS-policies: elke gebruiker ziet alleen zijn eigen trainingen.
+
+## 4. Strava-koppeling (optioneel)
+
+Spelers koppelen hun Strava in **Instellingen → Koppelingen**. Zwem-, fiets-, loop- en krachtactiviteiten komen
+dan als training binnen (de eerste keer de laatste 90 dagen) en vinken de bijhorende geplande sessie af. Stond
+dezelfde sessie er al met de hand in, dan komt er geen dubbel bij. Het client secret en de tokens blijven
+server-side in de Edge Functions (`supabase/functions/`); de browser kan ze niet lezen.
+
+1. **Strava-app aanmaken** op [strava.com/settings/api](https://www.strava.com/settings/api).
+   *Authorization Callback Domain*: `timmitdev.github.io` (localhost werkt altijd voor lokaal testen).
+   Noteer het **Client ID** en **Client Secret**.
+   Let op: een nieuwe Strava-app staat in "single player mode" (alleen jijzelf kan koppelen). Vraag via
+   hetzelfde scherm een review aan om andere spelers te laten koppelen.
+2. **SQL Editor** → voer `supabase/migrations/009_strava.sql` uit.
+3. **Edge Functions deployen** met de Supabase CLI (project-ref staat in je Supabase-URL):
+   ```powershell
+   npx supabase login
+   npx supabase link --project-ref <project-ref>
+   npx supabase secrets set STRAVA_CLIENT_ID=<id> STRAVA_CLIENT_SECRET=<secret> STRAVA_VERIFY_TOKEN=<zelf-gekozen-geheim>
+   npx supabase functions deploy strava --no-verify-jwt
+   npx supabase functions deploy strava-webhook --no-verify-jwt
+   ```
+   (`--no-verify-jwt`: `strava` controleert de gebruiker zelf; de webhook krijgt geen Supabase-token van Strava.)
+4. **Client ID in de app**: `VITE_STRAVA_CLIENT_ID=<id>` in `.env.local`, en als GitHub-secret `VITE_STRAVA_CLIENT_ID`.
+5. **Webhook (aanrader)**: zo komen activiteiten binnen zonder dat iemand de app opent. Eenmalig:
+   ```powershell
+   Invoke-RestMethod -Method Post -Uri https://www.strava.com/api/v3/push_subscriptions -Body @{
+     client_id = '<id>'; client_secret = '<secret>'; verify_token = '<zelf-gekozen-geheim>'
+     callback_url = 'https://<project-ref>.supabase.co/functions/v1/strava-webhook'
+   }
+   ```
+   Zonder webhook synchroniseert de app bij het openen (hooguit elk half uur) en via "Nu synchroniseren".
 
 ## Als app installeren (PWA)
 
@@ -74,5 +107,8 @@ bouwstenen: `src/lib/ui.ts` (knop- en invoerklassen), `Card`, `PageHeader`, `Sta
 - `src/lib/players.ts` – spelers zoeken en een spelersprofiel ophalen (`player_profile`)
 - `src/lib/social.ts` – feed, meldingen, kudos, reacties en volgen (`social_feed`, `social_inbox`, `my_follows`)
 - `src/lib/presence.tsx` – wie er online is (Supabase Realtime Presence, geen tabel)
+- `src/lib/follows.tsx` – gedeelde volg-toestand (zijbalk, hub en spelerspagina's lopen gelijk)
+- `src/lib/strava.ts` – Strava koppelen/synchroniseren vanuit de app; `supabase/functions/` – de server-kant
+- `public/strava-callback.html` – landingspagina na Strava-login; geeft de code door aan `#/instellingen`
 - `src/pages/` – Login, ResetPassword, Onboarding, Hub (home), Dashboard, Schema, Trainingen, Doelen, Leaderboard, Speler, Instellingen
 - `src/components/WeeklyChart.tsx` – gestapelde weekgrafiek per sport met doellijn

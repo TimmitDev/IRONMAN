@@ -14,7 +14,7 @@ import { compliance, formatIronman, ironmanFraction } from '../lib/leaderboard'
 import { usePlayerProfile, type PlayerProfile } from '../lib/players'
 import { useOnline } from '../lib/presence'
 import { useMe } from '../lib/profile'
-import { useFollows } from '../lib/social'
+import { useSharedFollows } from '../lib/follows'
 import { formatDuration, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { ghostButton, linkClass, pillClass } from '../lib/ui'
@@ -53,7 +53,7 @@ export function Player() {
 
 function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
   const isMe = player.id === meId
-  const follows = useFollows(meId)
+  const follows = useSharedFollows()
   const online = useOnline().has(player.id)
   const t = player.totals
   const c = compliance(player)

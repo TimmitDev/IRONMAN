@@ -23,6 +23,11 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
               <div className="flex items-baseline gap-2">
                 <span className="truncate font-medium text-fg">{SPORT_LABEL[w.sport]}</span>
                 <span className="shrink-0 text-xs text-fg-3">{formatShortDate(w.date)}</span>
+                {w.strava_activity_id ? (
+                  <span className="shrink-0 rounded px-1 text-[10px] font-bold text-[#FC4C02] ring-1 ring-[#FC4C02]/40 ring-inset" title="Geïmporteerd uit Strava">
+                    STRAVA
+                  </span>
+                ) : null}
               </div>
               {(w.rpe || w.notes) && (
                 <p className="mt-0.5 truncate text-xs text-fg-3">

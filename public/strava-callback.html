@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Strava koppelen…</title>
+    <script>
+      // Strava stuurt terug met ?code=…; de app zelf mag die parameter niet zien, want Supabase-auth
+      // gebruikt ?code= voor de login. Daarom de gegevens hernoemd doorgeven aan #/instellingen.
+      ;(function () {
+        var p = new URLSearchParams(location.search)
+        var out = new URLSearchParams({
+          strava_code: p.get('code') || '',
+          strava_scope: p.get('scope') || '',
+          strava_state: p.get('state') || '',
+          strava_error: p.get('error') || '',
+        })
+        location.replace(location.pathname.replace(/strava-callback\.html$/, '') + '#/instellingen?' + out.toString())
+      })()
+    </script>
+  </head>
+  <body></body>
+</html>

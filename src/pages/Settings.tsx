@@ -1,5 +1,5 @@
-import { useState, type FormEvent, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { Icon, type IconName } from '../components/Icon'
 import { PageHeader } from '../components/PageHeader'
@@ -7,8 +7,9 @@ import { Switch } from '../components/Switch'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../lib/auth'
 import { useMe } from '../lib/profile'
+import { STRAVA_ORANGE, checkStravaState, startStravaConnect, stravaEnabled, useStrava, type SyncResult } from '../lib/strava'
 import { supabase } from '../lib/supabase'
-import { errorMessage, hintClass, inputClass, labelClass, primaryButton, secondaryButton } from '../lib/ui'
+import { errorMessage, ghostButton, hintClass, inputClass, labelClass, primaryButton, secondaryButton } from '../lib/ui'
 
 type Status = { type: 'ok' | 'error'; text: string } | null
 
@@ -40,6 +41,7 @@ export function Settings() {
         <ThemeToggle labels />
       </Section>
       <TrainingSection />
+      <StravaSection />
       <AccountSection />
     </div>
   )
@@ -151,6 +153,121 @@ function TrainingSection() {
         ))}
       </ul>
     </Section>
+  )
+}
+
+const syncText = ({ imported, linked }: SyncResult) =>
+  imported || linked
+    ? `${imported} ${imported === 1 ? 'training' : 'trainingen'} geïmporteerd${linked ? `, ${linked} ${linked === 1 ? 'sessie' : 'sessies'} in je schema afgevinkt` : ''}.`
+    : 'Alles is al bijgewerkt.'
+
+function StravaSection() {
+  const strava = useStrava()
+  const [params, setParams] = useSearchParams()
+  const [busy, setBusy] = useState<'connect' | 'sync' | 'disconnect' | null>(null)
+  const [status, setStatus] = useState<Status>(null)
+  const handled = useRef(false)
+
+  // Terug van Strava (via public/strava-callback.html): code inwisselen en meteen de eerste sync.
+  useEffect(() => {
+    const code = params.get('strava_code')
+    const error = params.get('strava_error')
+    if ((!code && !error) || handled.current) return
+    handled.current = true
+    const scope = params.get('strava_scope') ?? ''
+    const validState = checkStravaState(params.get('strava_state'))
+    setParams({}, { replace: true })
+
+    if (error) return setStatus({ type: 'error', text: 'Koppelen geannuleerd.' })
+    if (!validState) return setStatus({ type: 'error', text: 'Deze koppeling kwam niet van jou. Probeer opnieuw.' })
+    if (!scope.includes('activity:read')) {
+      return setStatus({ type: 'error', text: 'Geef toegang tot je activiteiten (vink "activiteiten bekijken" aan) om te kunnen importeren.' })
+    }
+    setBusy('connect')
+    strava
+      .connect(code!)
+      .then(() => strava.sync())
+      .then((r) => setStatus({ type: 'ok', text: `Gekoppeld! ${syncText(r)}` }))
+      .catch((e) => setStatus({ type: 'error', text: errorMessage(e) }))
+      .finally(() => setBusy(null))
+    // Alleen bij binnenkomst met parameters; `handled` voorkomt dat de code twee keer ingewisseld wordt.
+  }, [params])
+
+  async function run(action: 'sync' | 'disconnect') {
+    if (action === 'disconnect' && !confirm('Strava ontkoppelen? Geïmporteerde trainingen blijven staan.')) return
+    setBusy(action)
+    setStatus(null)
+    try {
+      if (action === 'sync') setStatus({ type: 'ok', text: syncText(await strava.sync()) })
+      else {
+        await strava.disconnect()
+        setStatus({ type: 'ok', text: 'Strava is ontkoppeld.' })
+      }
+    } catch (e) {
+      setStatus({ type: 'error', text: errorMessage(e) })
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const c = strava.connection
+  return (
+    <Section title="Koppelingen" description="Importeer je activiteiten automatisch, zodat je niets meer met de hand hoeft te loggen.">
+      <div className="flex items-start gap-4">
+        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: STRAVA_ORANGE }} aria-hidden>
+          <StravaLogo />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-semibold text-fg">Strava</p>
+          {!stravaEnabled ? (
+            <p className="mt-0.5 text-sm text-fg-3">Nog niet ingesteld voor deze app (VITE_STRAVA_CLIENT_ID ontbreekt, zie README).</p>
+          ) : strava.loading ? (
+            <p className="mt-0.5 text-sm text-fg-3">Laden…</p>
+          ) : c ? (
+            <p className="mt-0.5 text-sm text-fg-3">
+              Gekoppeld{c.athlete_name ? ` als ${c.athlete_name}` : ''}
+              {' · '}
+              {c.last_synced_at ? `laatst gesynchroniseerd ${new Date(c.last_synced_at).toLocaleString('nl-BE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}` : 'nog niet gesynchroniseerd'}
+            </p>
+          ) : (
+            <p className="mt-0.5 text-sm text-fg-3">
+              Zwemmen, fietsen, lopen en kracht komen als training binnen en vinken de bijhorende sessie in je schema af. Notities en RPE vul je
+              zelf aan.
+            </p>
+          )}
+        </div>
+      </div>
+
+      {stravaEnabled && !strava.loading && (
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          {c ? (
+            <>
+              <button onClick={() => run('sync')} disabled={busy !== null} className={secondaryButton}>
+                <Icon name="refresh" className={`size-4 ${busy === 'sync' ? 'animate-spin' : ''}`} />
+                {busy === 'sync' ? 'Synchroniseren…' : 'Nu synchroniseren'}
+              </button>
+              <button onClick={() => run('disconnect')} disabled={busy !== null} className={ghostButton}>
+                Ontkoppelen
+              </button>
+            </>
+          ) : (
+            <button onClick={startStravaConnect} disabled={busy !== null} className={primaryButton} style={{ backgroundColor: STRAVA_ORANGE }}>
+              {busy === 'connect' ? 'Koppelen…' : 'Verbinden met Strava'}
+            </button>
+          )}
+          <StatusText status={status} />
+        </div>
+      )}
+      {stravaEnabled && <p className="mt-4 text-xs text-fg-4">Powered by Strava</p>}
+    </Section>
+  )
+}
+
+function StravaLogo() {
+  return (
+    <svg viewBox="0 0 24 24" className="size-5" fill="currentColor" aria-hidden>
+      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+    </svg>
   )
 }
 

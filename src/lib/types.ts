@@ -37,6 +37,8 @@ export interface Workout {
   rpe: number | null
   notes: string | null
   created_at: string
+  /** Gezet als de training uit Strava geïmporteerd is. */
+  strava_activity_id?: number | null
 }
 
 export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>
