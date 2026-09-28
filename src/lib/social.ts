@@ -23,6 +23,8 @@ export interface FeedItem extends FeedPerson {
   created_at: string
   kudos: FeedPerson[]
   comments: FeedComment[]
+  /** Ingekorte route (zonder start en finish), alleen als de speler routes deelt. */
+  route?: string | null
 }
 
 export interface InboxItem extends FeedPerson {

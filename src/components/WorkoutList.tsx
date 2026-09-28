@@ -2,6 +2,7 @@ import { formatPace, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
 import { EmptyState } from './EmptyState'
 import { Icon } from './Icon'
+import { RouteThumb } from './RouteThumb'
 
 /** Lijst met trainingen; met `onEdit` is elke rij aanklikbaar om te bewerken. */
 export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?: (w: Workout) => void }) {
@@ -18,7 +19,11 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
         const pace = formatPace(w.sport, w.duration_min, w.distance_km)
         const content = (
           <>
-            <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
+            {w.route_polyline ? (
+              <RouteThumb polyline={w.route_polyline} sport={w.sport} />
+            ) : (
+              <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
+            )}
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="truncate font-medium text-fg">{SPORT_LABEL[w.sport]}</span>

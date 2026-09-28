@@ -6,6 +6,7 @@ import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type 
 import { SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { errorMessage, iconButton, pillClass } from '../lib/ui'
 import { Avatar } from './Avatar'
+import { RouteMap } from './RouteMap'
 import { Icon } from './Icon'
 
 const DAY = 86_400_000
@@ -120,6 +121,8 @@ export function FeedCard({
           </div>
         ))}
       </dl>
+
+      {item.route && <RouteMap polyline={item.route} sport={item.sport} className="mt-3 h-48 sm:h-56" />}
 
       {item.kudos.length > 0 && (
         <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-3">

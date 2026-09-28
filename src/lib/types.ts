@@ -15,6 +15,14 @@ export const SPORT_BG: Record<Sport, string> = {
   strength: 'bg-strength',
 }
 
+/** Sportkleuren als hex, voor plekken buiten Tailwind (kaartlijnen). Zelfde waarden als in index.css. */
+export const SPORT_HEX: Record<Sport, string> = {
+  swim: '#3987e5',
+  bike: '#d95926',
+  run: '#199e70',
+  strength: '#c98500',
+}
+
 export const SPORT_TEXT: Record<Sport, string> = {
   swim: 'text-swim',
   bike: 'text-bike',
@@ -62,6 +70,8 @@ export interface Workout {
   created_at: string
   /** Gezet als de training uit Strava geïmporteerd is. */
   strava_activity_id?: number | null
+  /** Route uit Strava (encoded polyline); leeg of null zonder route. Alleen voor jezelf zichtbaar. */
+  route_polyline?: string | null
 }
 
 export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>

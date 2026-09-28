@@ -96,11 +96,18 @@ function PrivacySection() {
   const { me, save } = useMe()
   const [status, setStatus] = useState<Status>(null)
 
-  // Schakelaars slaan meteen op; delen kan alleen met een zichtbaar profiel.
-  async function update(fields: { show_on_leaderboard: boolean; share_workouts: boolean }) {
+  // Schakelaars slaan meteen op. Elk niveau vraagt het vorige: routes delen kan enkel als je trainingen deelt,
+  // en dat enkel met een zichtbaar profiel.
+  async function update(fields: { show_on_leaderboard: boolean; share_workouts: boolean; share_routes?: boolean }) {
     setStatus(null)
+    const shareWorkouts = fields.show_on_leaderboard && fields.share_workouts
     try {
-      await save({ display_name: me.display_name, ...fields, share_workouts: fields.show_on_leaderboard && fields.share_workouts })
+      await save({
+        display_name: me.display_name,
+        show_on_leaderboard: fields.show_on_leaderboard,
+        share_workouts: shareWorkouts,
+        share_routes: shareWorkouts && (fields.share_routes ?? me.share_routes),
+      })
       setStatus({ type: 'ok', text: 'Opgeslagen.' })
     } catch (err) {
       setStatus({ type: 'error', text: errorMessage(err) })
@@ -122,6 +129,13 @@ function PrivacySection() {
           onChange={(v) => update({ show_on_leaderboard: me.show_on_leaderboard, share_workouts: v })}
           label="Trainingen delen"
           description="Losse trainingen (datum, sport, duur, afstand) in de feed en op je profiel, zodat anderen kudos kunnen geven."
+        />
+        <Switch
+          checked={me.show_on_leaderboard && me.share_workouts && me.share_routes}
+          disabled={!me.show_on_leaderboard || !me.share_workouts}
+          onChange={(v) => update({ show_on_leaderboard: me.show_on_leaderboard, share_workouts: me.share_workouts, share_routes: v })}
+          label="Routes delen op de kaart"
+          description="Je Strava-routes verschijnen als kaart in de feed. De eerste en laatste 300 m worden altijd weggelaten, zodat je start en finish (bv. je huis) verborgen blijven."
         />
         <StatusText status={status} />
       </div>

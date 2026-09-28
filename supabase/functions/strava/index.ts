@@ -40,7 +40,15 @@ Deno.serve(async (req) => {
 
     if (action === 'sync') {
       const token = await validToken(conn)
-      const since = conn.last_synced_at ? new Date(conn.last_synced_at).getTime() - MARGIN_DAYS * DAY : Date.now() - FIRST_SYNC_DAYS * DAY
+      // Zijn er geïmporteerde trainingen waarvan de route nog niet opgehaald is? Dan de volle periode opnieuw bekijken.
+      const { count: withoutRoute } = await admin
+        .from('workouts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .not('strava_activity_id', 'is', null)
+        .is('route_polyline', null)
+      const since =
+        conn.last_synced_at && !withoutRoute ? new Date(conn.last_synced_at).getTime() - MARGIN_DAYS * DAY : Date.now() - FIRST_SYNC_DAYS * DAY
       const activities: StravaActivity[] = []
       for (let page = 1; page <= 10; page++) {
         const { data } = await stravaGet<StravaActivity[]>(token, `/athlete/activities?after=${Math.floor(since / 1000)}&per_page=100&page=${page}`)

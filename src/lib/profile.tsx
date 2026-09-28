@@ -7,11 +7,13 @@ export interface Profile {
   display_name: string
   show_on_leaderboard: boolean
   share_workouts: boolean
+  /** Routes (ingekort, zonder start en finish) tonen in de feed. Standaard uit. */
+  share_routes: boolean
 }
 
-export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> & Partial<Pick<Profile, 'share_workouts'>>
+export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> & Partial<Pick<Profile, 'share_workouts' | 'share_routes'>>
 
-const COLUMNS = 'id, display_name, show_on_leaderboard, share_workouts'
+const COLUMNS = 'id, display_name, show_on_leaderboard, share_workouts, share_routes'
 
 interface ProfileState {
   profile: Profile | null

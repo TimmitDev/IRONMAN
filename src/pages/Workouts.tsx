@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Card } from '../components/Card'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
+import { RouteMap } from '../components/RouteMap'
 import { WorkoutForm } from '../components/WorkoutForm'
 import { WorkoutList } from '../components/WorkoutList'
 import type { Workout } from '../lib/types'
@@ -46,6 +47,7 @@ export function Workouts() {
 
       {editing && (
         <Modal title="Training bewerken" onClose={() => setEditing(null)}>
+          {editing.route_polyline && <RouteMap polyline={editing.route_polyline} sport={editing.sport} interactive className="mb-5 h-56 sm:h-64" />}
           <WorkoutForm
             key={editing.id}
             initial={editing}

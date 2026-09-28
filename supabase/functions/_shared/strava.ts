@@ -28,6 +28,82 @@ export interface StravaActivity {
   moving_time: number
   distance: number
   start_date_local: string
+  map?: { summary_polyline?: string | null; polyline?: string | null }
+}
+
+// --- Routes (Google encoded polyline) ---
+
+type LatLng = [number, number]
+
+function decodePolyline(str: string): LatLng[] {
+  const points: LatLng[] = []
+  let i = 0
+  let lat = 0
+  let lng = 0
+  while (i < str.length) {
+    for (const axis of [0, 1]) {
+      let shift = 0
+      let result = 0
+      let b: number
+      do {
+        b = str.charCodeAt(i++) - 63
+        result |= (b & 0x1f) << shift
+        shift += 5
+      } while (b >= 0x20)
+      const delta = result & 1 ? ~(result >> 1) : result >> 1
+      if (axis === 0) lat += delta
+      else lng += delta
+    }
+    points.push([lat / 1e5, lng / 1e5])
+  }
+  return points
+}
+
+function encodePolyline(points: LatLng[]): string {
+  let out = ''
+  let prevLat = 0
+  let prevLng = 0
+  const enc = (v: number) => {
+    let n = v < 0 ? ~(v << 1) : v << 1
+    while (n >= 0x20) {
+      out += String.fromCharCode((0x20 | (n & 0x1f)) + 63)
+      n >>= 5
+    }
+    out += String.fromCharCode(n + 63)
+  }
+  for (const [la, ln] of points) {
+    const lat = Math.round(la * 1e5)
+    const lng = Math.round(ln * 1e5)
+    enc(lat - prevLat)
+    enc(lng - prevLng)
+    prevLat = lat
+    prevLng = lng
+  }
+  return out
+}
+
+function metersBetween([lat1, lng1]: LatLng, [lat2, lng2]: LatLng) {
+  const r = (d: number) => (d * Math.PI) / 180
+  const a = Math.sin(r(lat2 - lat1) / 2) ** 2 + Math.cos(r(lat1)) * Math.cos(r(lat2)) * Math.sin(r(lng2 - lng1) / 2) ** 2
+  return 2 * 6_371_000 * Math.asin(Math.sqrt(a))
+}
+
+/** Publieke versie van een route: zonder de eerste en laatste `trim` meter, zodat start en finish verborgen blijven. */
+function publicRoute(polyline: string, trim = 300): string {
+  const pts = decodePolyline(polyline)
+  if (pts.length < 2) return ''
+  const cum = [0]
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + metersBetween(pts[i - 1], pts[i]))
+  const total = cum[cum.length - 1]
+  if (total < trim * 2 + 200) return '' // te kort om zinvol in te korten
+  const kept = pts.filter((_, i) => cum[i] >= trim && cum[i] <= total - trim)
+  return kept.length >= 2 ? encodePolyline(kept) : ''
+}
+
+/** Route-kolommen voor een activiteit. Lege string = gecontroleerd, geen route (binnen, zwembad, kracht). */
+function routeFields(a: StravaActivity) {
+  const polyline = a.map?.summary_polyline || a.map?.polyline || ''
+  return { route_polyline: polyline, route_public: polyline ? publicRoute(polyline) : '' }
 }
 
 interface TokenResponse {
@@ -96,6 +172,8 @@ interface WorkoutRow {
   duration_min: number
   distance_km: number | null
   notes: string | null
+  route_polyline: string
+  route_public: string
 }
 
 function toWorkout(a: StravaActivity, userId: string): WorkoutRow | null {
@@ -110,6 +188,7 @@ function toWorkout(a: StravaActivity, userId: string): WorkoutRow | null {
     duration_min: Math.round((a.moving_time / 60) * 10000) / 10000,
     distance_km: sport === 'strength' || !a.distance ? null : Math.round(a.distance / 10) / 100,
     notes: a.name?.slice(0, 200) || null,
+    ...routeFields(a),
   }
 }
 
@@ -159,6 +238,24 @@ export async function importActivities(userId: string, activities: StravaActivit
       const { notes: _notes, ...fields } = r
       await admin.from('workouts').update(fields).eq('user_id', userId).eq('strava_activity_id', r.strava_activity_id)
     }
+  } else if (known.size) {
+    // Eerder geïmporteerd zonder route (van vóór de routes): alsnog aanvullen.
+    const { data: missing } = await admin
+      .from('workouts')
+      .select('strava_activity_id')
+      .eq('user_id', userId)
+      .in('strava_activity_id', [...known])
+      .is('route_polyline', null)
+    for (const m of missing ?? []) {
+      const r = rows.find((x) => x.strava_activity_id === Number(m.strava_activity_id))
+      if (r) {
+        await admin
+          .from('workouts')
+          .update({ route_polyline: r.route_polyline, route_public: r.route_public })
+          .eq('user_id', userId)
+          .eq('strava_activity_id', r.strava_activity_id)
+      }
+    }
   }
 
   const fresh = rows.filter((r) => !known.has(r.strava_activity_id))
@@ -180,7 +277,10 @@ export async function importActivities(userId: string, activities: StravaActivit
   for (const r of fresh) {
     const i = candidates.findIndex((m) => m.date === r.date && m.sport === r.sport && sameSession(m, r))
     if (i >= 0) {
-      await admin.from('workouts').update({ strava_activity_id: r.strava_activity_id }).eq('id', candidates[i].id)
+      await admin
+        .from('workouts')
+        .update({ strava_activity_id: r.strava_activity_id, route_polyline: r.route_polyline, route_public: r.route_public })
+        .eq('id', candidates[i].id)
       candidates.splice(i, 1)
       merged++
     } else toInsert.push(r)
