@@ -1,13 +1,17 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Avatar } from '../components/Avatar'
 import { BadgesGrid } from '../components/Badges'
 import { Card } from '../components/Card'
+import { FollowButton } from '../components/FollowButton'
 import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
 import { useAuth } from '../lib/auth'
 import { evaluateBadges } from '../lib/badges'
-import { compliance, formatIronman, ironmanFraction } from '../lib/leaderboard'
+import { compliance, formatIronman, ironmanFraction, useProfile } from '../lib/leaderboard'
 import { usePlayerProfile, type PlayerProfile } from '../lib/players'
+import { useOnline } from '../lib/presence'
+import { useFollows } from '../lib/social'
 import { formatDuration, formatSessionDuration, formatShortDate } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { ghostButton } from '../lib/ui'
@@ -32,12 +36,16 @@ export function Player() {
           <p className="text-sm text-zinc-400">Deze speler bestaat niet of staat niet op het leaderboard.</p>
         </Card>
       )}
-      {player && <PlayerView player={player} isMe={player.id === session!.user.id} />}
+      {player && <PlayerView player={player} meId={session!.user.id} />}
     </div>
   )
 }
 
-function PlayerView({ player, isMe }: { player: PlayerProfile; isMe: boolean }) {
+function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
+  const isMe = player.id === meId
+  const follows = useFollows(meId)
+  const { profile } = useProfile()
+  const online = useOnline().has(player.id)
   const t = player.totals
   const c = compliance(player)
   const chartItems = useMemo(() => player.weeks.map((w) => ({ date: w.week, sport: w.sport, duration_min: w.minutes })), [player.weeks])
@@ -53,9 +61,15 @@ function PlayerView({ player, isMe }: { player: PlayerProfile; isMe: boolean }) 
   return (
     <>
       <Card>
-        <div className="flex items-center gap-2">
-          <h1 className="truncate text-3xl font-black tracking-tight">{player.display_name}</h1>
-          {isMe && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-300 uppercase">jij</span>}
+        <div className="flex items-center gap-3">
+          <Avatar name={player.display_name} size="lg" highlight={isMe} online={online} />
+          <div className="flex min-w-0 flex-1 items-center gap-2">
+            <h1 className="truncate text-3xl font-black tracking-tight">{player.display_name}</h1>
+            {isMe && <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-zinc-300 uppercase">jij</span>}
+          </div>
+          {!isMe && !follows.loading && (
+            <FollowButton person={{ user_id: player.id, display_name: player.display_name }} follows={follows} disabled={!profile} />
+          )}
         </div>
         <p className="mt-1 text-sm text-zinc-400">
           {t.first_date ? `Traint sinds ${formatShortDate(t.first_date)} · laatste training ${formatShortDate(t.last_date!)}` : 'Nog geen trainingen gelogd.'}

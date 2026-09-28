@@ -2,6 +2,7 @@ import { Suspense, type ReactNode } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
+import { PresenceProvider } from '../lib/presence'
 import { ghostButton } from '../lib/ui'
 
 const icon = (path: ReactNode) => (
@@ -78,9 +79,11 @@ export function Layout() {
 
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6">
         {/* Binnen de layout, zodat header en tabbalk blijven staan terwijl een pagina laadt. */}
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
+        <PresenceProvider>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </PresenceProvider>
       </main>
 
       {/* Mobiel: vaste tabbalk onderaan, binnen duimbereik. */}
