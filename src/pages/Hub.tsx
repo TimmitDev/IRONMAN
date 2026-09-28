@@ -16,17 +16,10 @@ import { useMe, type Profile, type ProfileFields } from '../lib/profile'
 import { RACE, addDays, currentPhase, daysUntilRace, formatDuration, formatShortDate, sumMinutes, weekStart } from '../lib/race'
 import { useSharedFollows } from '../lib/follows'
 import { useFeed, useInbox, usePlayers, type FeedPerson, type Follows, type InboxItem } from '../lib/social'
-import type { Sport, Workout } from '../lib/types'
+import { SPORT_NOUN, type Workout } from '../lib/types'
 import { eyebrowClass, errorMessage, ghostButton, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 import { useWorkouts } from '../lib/useWorkouts'
-
-const SPORT_NOUN: Record<Sport, string> = {
-  swim: 'zwemsessie',
-  bike: 'fietsrit',
-  run: 'loopsessie',
-  strength: 'krachttraining',
-}
 
 type MobileTab = 'feed' | 'me' | 'friends'
 type FeedFilter = 'all' | 'following'
@@ -71,36 +64,12 @@ export function Hub() {
         <Segmented options={tabs} value={tab} onChange={setTab} full />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:items-start 2xl:grid-cols-[17rem_minmax(0,1fr)_17rem]">
-        {/* Links: jouw profiel, vrienden, sessies en badges. De profielkaart staat vanaf lg al in de zijbalk. */}
-        <aside className={`space-y-4 ${column('me')}`}>
-          <div className="lg:hidden">
-            <ProfileCard profile={me} follows={follows} workouts={workouts} />
-          </div>
-          {!me.share_workouts && (
-            <ShareCta
-              profile={me}
-              onSave={async (fields) => {
-                await save(fields)
-                await feed.refresh()
-              }}
-            />
-          )}
-          <FriendsCard follows={follows} online={online} onFindFriends={() => setTab('friends')} />
-          <Card
-            title="Recente sessies"
-            action={
-              <Link to="/workouts" className={`${linkClass} inline-flex items-center gap-1`}>
-                Log <Icon name="arrow-right" className="size-3.5" />
-              </Link>
-            }
-          >
-            {workoutsLoading ? <p className="text-sm text-fg-3">Laden…</p> : <WorkoutList workouts={workouts.slice(0, 4)} />}
-          </Card>
-          <BadgesCard results={badges} />
-        </aside>
-
-        {/* Midden: de feed. */}
+      {/*
+        Vanaf xl staan links en rechts de zijbalken van de app (profiel, menu, vrienden, activiteit), dus hier
+        enkel de feed met één smalle kolom ernaast. Daaronder één kolom tegelijk via de tabs.
+      */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_16rem] xl:items-start 2xl:grid-cols-[minmax(0,1fr)_18rem]">
+        {/* De feed. */}
         <section className={`space-y-4 ${column('feed')}`} aria-label="Activiteit">
           <OnlineStrip friends={onlineFriends} />
           <div className="flex items-center justify-between gap-2">
@@ -150,13 +119,51 @@ export function Hub() {
           )}
         </section>
 
-        {/* Rechts: wie er online is, suggesties, weektop en meldingen. Op desktop blijft deze balk staan. */}
-        <aside className={`space-y-4 ${column('friends')} xl:sticky xl:top-10 xl:max-h-[calc(100dvh-5rem)] xl:overflow-y-auto`}>
-          <OnlineCard meId={meId} follows={follows} online={online} players={players} />
-          <SuggestionsCard meId={meId} follows={follows} players={players} />
-          <WeekPodium profile={me} meId={meId} />
-          <InboxCard />
-        </aside>
+        {/*
+          Zijkolom. Onder xl zijn "Jij" en "Vrienden" aparte tabs (`contents` laat ze dan gewoon in de grid staan);
+          vanaf xl vormen ze samen één kolom naast de feed. Wat al in de zijbalken van de app staat, verbergt xl:hidden.
+        */}
+        <div className="contents xl:block xl:space-y-4">
+          <aside className={`space-y-4 ${column('me')}`}>
+            <div className="lg:hidden">
+              <ProfileCard profile={me} follows={follows} workouts={workouts} />
+            </div>
+            {!me.share_workouts && (
+              <ShareCta
+                profile={me}
+                onSave={async (fields) => {
+                  await save(fields)
+                  await feed.refresh()
+                }}
+              />
+            )}
+            <div className="xl:hidden">
+              <FriendsCard follows={follows} online={online} onFindFriends={() => setTab('friends')} />
+            </div>
+            <WeekPodium profile={me} meId={meId} />
+            <Card
+              title="Recente sessies"
+              action={
+                <Link to="/workouts" className={`${linkClass} inline-flex items-center gap-1`}>
+                  Log <Icon name="arrow-right" className="size-3.5" />
+                </Link>
+              }
+            >
+              {workoutsLoading ? <p className="text-sm text-fg-3">Laden…</p> : <WorkoutList workouts={workouts.slice(0, 4)} />}
+            </Card>
+            <BadgesCard results={badges} />
+          </aside>
+
+          <aside className={`space-y-4 ${column('friends')}`}>
+            <div className="xl:hidden">
+              <OnlineCard meId={meId} follows={follows} online={online} players={players} />
+            </div>
+            <SuggestionsCard meId={meId} follows={follows} players={players} />
+            <div className="xl:hidden">
+              <InboxCard />
+            </div>
+          </aside>
+        </div>
       </div>
     </div>
   )
@@ -187,12 +194,15 @@ function HubHeader({ name }: { name: string }) {
           </div>
         </div>
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
+          {/* Op mobiel korte labels: twee knoppen naast elkaar passen anders niet op een smal scherm. */}
           <Link to="/workouts" className={primaryButton}>
             <Icon name="plus" className="size-4" />
-            Training loggen
+            <span className="sm:hidden">Loggen</span>
+            <span className="hidden sm:inline">Training loggen</span>
           </Link>
           <Link to="/dashboard" className={secondaryButton}>
-            Mijn dashboard
+            <span className="sm:hidden">Dashboard</span>
+            <span className="hidden sm:inline">Mijn dashboard</span>
           </Link>
         </div>
       </div>

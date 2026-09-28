@@ -78,11 +78,22 @@ export function useFeed(following = false) {
   }
 }
 
+/** Recente kudos en reacties op je trainingen; ververst elke minuut zolang het tabblad zichtbaar is. */
 export function useInbox() {
   const [items, setItems] = useState<InboxItem[]>([])
 
   useEffect(() => {
-    supabase.rpc('social_inbox', { p_limit: 8 }).then(({ data }) => setItems((data ?? []) as InboxItem[]))
+    const load = () => {
+      if (document.visibilityState !== 'visible') return
+      supabase.rpc('social_inbox', { p_limit: 8 }).then(({ data }) => setItems((data ?? []) as InboxItem[]))
+    }
+    load()
+    const timer = setInterval(load, 60_000)
+    document.addEventListener('visibilitychange', load)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', load)
+    }
   }, [])
 
   return items

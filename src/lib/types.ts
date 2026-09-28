@@ -15,6 +15,29 @@ export const SPORT_BG: Record<Sport, string> = {
   strength: 'bg-strength',
 }
 
+export const SPORT_TEXT: Record<Sport, string> = {
+  swim: 'text-swim',
+  bike: 'text-bike',
+  run: 'text-run',
+  strength: 'text-strength',
+}
+
+/** Zachte achtergrond in de sportkleur, voor icoontegels. */
+export const SPORT_SOFT: Record<Sport, string> = {
+  swim: 'bg-swim/15',
+  bike: 'bg-bike/15',
+  run: 'bg-run/15',
+  strength: 'bg-strength/15',
+}
+
+/** Zelfstandig naamwoord voor in zinnen: "kudos op je loopsessie". */
+export const SPORT_NOUN: Record<Sport, string> = {
+  swim: 'zwemsessie',
+  bike: 'fietsrit',
+  run: 'loopsessie',
+  strength: 'krachttraining',
+}
+
 export const SPORT_BORDER: Record<Sport, string> = {
   swim: 'border-swim',
   bike: 'border-bike',

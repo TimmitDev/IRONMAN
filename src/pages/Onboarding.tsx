@@ -44,12 +44,18 @@ export function Onboarding() {
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-2xl items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
           <span className="text-lg font-black tracking-tight italic">
             IRON<span className="text-brand">MAN</span>
           </span>
+          {/* Kort op mobiel, zodat logo, teller en themaknoppen ook op 360px naast elkaar passen. */}
           <span className="ml-auto text-sm text-fg-3 tabular-nums">
-            Stap {step + 1} van {STEPS.length}
+            <span className="sm:hidden">
+              {step + 1}/{STEPS.length}
+            </span>
+            <span className="hidden sm:inline">
+              Stap {step + 1} van {STEPS.length}
+            </span>
           </span>
           <ThemeToggle />
         </div>
@@ -94,24 +100,34 @@ function StepActions({
 }) {
   return (
     <div className="sticky bottom-0 -mx-4 mt-auto border-t border-line bg-canvas/90 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-xl sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:pt-10 sm:pb-0 sm:backdrop-blur-none">
-      <div className="flex items-center gap-2">
-        {onBack && (
-          <button type="button" onClick={onBack} className={ghostButton}>
-            <Icon name="chevron-left" className="size-4" />
-            Terug
-          </button>
+      {/* Mobiel: Terug/Overslaan bovenaan en de hoofdknop over de volle breedte eronder. Vanaf sm alles op één rij. */}
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+        {(onBack || onSkip) && (
+          <div className="flex items-center justify-between gap-2 sm:contents">
+            {onBack ? (
+              <button type="button" onClick={onBack} className={ghostButton}>
+                <Icon name="chevron-left" className="size-4" />
+                Terug
+              </button>
+            ) : (
+              <span />
+            )}
+            {onSkip && (
+              <button type="button" onClick={onSkip} className={`${ghostButton} sm:ml-auto`}>
+                Overslaan
+              </button>
+            )}
+          </div>
         )}
-        <div className="ml-auto flex items-center gap-2">
-          {onSkip && (
-            <button type="button" onClick={onSkip} className={ghostButton}>
-              Overslaan
-            </button>
-          )}
-          <button type={primary.type ?? 'button'} onClick={primary.onClick} disabled={primary.busy || primary.disabled} className={`${primaryButton} min-w-32`}>
-            {primary.busy ? 'Opslaan…' : primary.label}
-            {!primary.busy && <Icon name="arrow-right" className="size-4" />}
-          </button>
-        </div>
+        <button
+          type={primary.type ?? 'button'}
+          onClick={primary.onClick}
+          disabled={primary.busy || primary.disabled}
+          className={`${primaryButton} h-11 w-full sm:h-10 sm:w-auto sm:min-w-32 ${onSkip ? '' : 'sm:ml-auto'}`}
+        >
+          {primary.busy ? 'Opslaan…' : primary.label}
+          {!primary.busy && <Icon name="arrow-right" className="size-4" />}
+        </button>
       </div>
     </div>
   )
