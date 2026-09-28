@@ -1,5 +1,5 @@
 import { Suspense, type ReactNode } from 'react'
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../lib/auth'
 import { ghostButton } from '../lib/ui'
@@ -10,16 +10,29 @@ const icon = (path: ReactNode) => (
   </svg>
 )
 
-const NAV = [
-  { to: '/', label: 'Dashboard', short: 'Home', end: true, icon: icon(<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />) },
+interface NavItem {
+  to: string
+  label: string
+  short: string
+  icon: ReactNode
+  end?: boolean
+  /** Niet in de mobiele tabbalk (max. 5 tabs); bereikbaar via een link op een andere pagina. */
+  desktopOnly?: boolean
+  /** Andere paden waarbij de mobiele tab ook actief oplicht. */
+  alsoActive?: string[]
+}
+
+const NAV: NavItem[] = [
+  { to: '/', label: 'Home', short: 'Home', end: true, icon: icon(<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />) },
+  { to: '/dashboard', label: 'Dashboard', short: 'Mijn', alsoActive: ['/goals'], icon: icon(<path d="M22 12h-4l-3 9L9 3l-3 9H2" />) },
   { to: '/plan', label: 'Schema', short: 'Schema', icon: icon(<><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" /></>) },
   { to: '/workouts', label: 'Trainingen', short: 'Log', icon: icon(<><path d="M12 5v14M5 12h14" /><circle cx="12" cy="12" r="9" /></>) },
-  { to: '/goals', label: 'Doelen', short: 'Doelen', icon: icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>) },
+  { to: '/goals', label: 'Doelen', short: 'Doelen', desktopOnly: true, icon: icon(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" /></>) },
   { to: '/leaderboard', label: 'Leaderboard', short: 'Ranking', icon: icon(<path d="M8 21V11H3v10zM15 21V4h-5v17zM21 21v-7h-5v7z" />) },
 ]
 
 const topLinkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+  `shrink-0 rounded-lg px-2.5 py-1.5 text-sm font-medium transition lg:px-3 ${
     isActive ? 'bg-white text-zinc-950' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
   }`
 
@@ -38,15 +51,16 @@ export function PageLoader() {
 
 export function Layout() {
   const { session } = useAuth()
+  const { pathname } = useLocation()
 
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 border-b border-white/5 bg-zinc-950/80 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-3">
-          <span className="mr-6 shrink-0 text-lg font-black tracking-tight italic">
+          <span className="mr-2 shrink-0 text-lg font-black tracking-tight italic lg:mr-6">
             IRON<span className="text-brand">MAN</span>
           </span>
-          <nav className="hidden gap-1 md:flex">
+          <nav className="hidden min-w-0 gap-1 overflow-x-auto md:flex">
             {NAV.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end} className={topLinkClass}>
                 {n.label}
@@ -72,16 +86,19 @@ export function Layout() {
       {/* Mobiel: vaste tabbalk onderaan, binnen duimbereik. */}
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-zinc-950/90 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden">
         <div className="flex">
-          {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.end} className={tabClass}>
-              {({ isActive }) => (
-                <>
-                  <span className={`rounded-full px-4 py-0.5 transition ${isActive ? 'bg-brand/20 text-brand' : ''}`}>{n.icon}</span>
-                  {n.short}
-                </>
-              )}
-            </NavLink>
-          ))}
+          {NAV.filter((n) => !n.desktopOnly).map((n) => {
+            const active = (isActive: boolean) => isActive || Boolean(n.alsoActive?.some((p) => pathname.startsWith(p)))
+            return (
+              <NavLink key={n.to} to={n.to} end={n.end} className={({ isActive }) => tabClass({ isActive: active(isActive) })}>
+                {({ isActive }) => (
+                  <>
+                    <span className={`rounded-full px-4 py-0.5 transition ${active(isActive) ? 'bg-brand/20 text-brand' : ''}`}>{n.icon}</span>
+                    {n.short}
+                  </>
+                )}
+              </NavLink>
+            )
+          })}
         </div>
       </nav>
     </div>

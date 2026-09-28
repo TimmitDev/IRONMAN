@@ -66,6 +66,12 @@ export function Dashboard() {
         </Card>
       )}
 
+      <div className="-mb-2 flex items-center justify-between px-1 lg:col-span-3">
+        <h2 className="text-xs font-semibold tracking-widest text-zinc-400 uppercase">Deze week</h2>
+        <Link to="/goals" className="text-xs font-semibold text-brand hover:underline">
+          Doelen →
+        </Link>
+      </div>
       <div className="grid grid-cols-2 gap-4 lg:col-span-3 lg:grid-cols-4">
         {SPORTS.map((s) => {
           const done = plan.done.filter((w) => w.sport === s)

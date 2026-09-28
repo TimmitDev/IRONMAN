@@ -6,6 +6,7 @@ import { Layout, PageLoader } from './components/Layout'
 
 // Elke pagina is een eigen chunk: de eerste keer laden haalt alleen op wat nodig is.
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const Hub = lazy(() => import('./pages/Hub').then((m) => ({ default: m.Hub })))
 const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
 const Workouts = lazy(() => import('./pages/Workouts').then((m) => ({ default: m.Workouts })))
 const Plan = lazy(() => import('./pages/Plan').then((m) => ({ default: m.Plan })))
@@ -53,7 +54,8 @@ export default function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<Dashboard />} />
+            <Route index element={<Hub />} />
+            <Route path="dashboard" element={<Dashboard />} />
             <Route path="plan" element={<Plan />} />
             <Route path="workouts" element={<Workouts />} />
             <Route path="goals" element={<Goals />} />
