@@ -184,9 +184,13 @@ function StravaSection() {
       return setStatus({ type: 'error', text: 'Geef toegang tot je activiteiten (vink "activiteiten bekijken" aan) om te kunnen importeren.' })
     }
     setBusy('connect')
+    setStatus({ type: 'ok', text: 'Koppelen met Strava…' })
     strava
       .connect(code!)
-      .then(() => strava.sync())
+      .then(() => {
+        setStatus({ type: 'ok', text: 'Gekoppeld. Activiteiten van de laatste 90 dagen importeren…' })
+        return strava.sync()
+      })
       .then((r) => setStatus({ type: 'ok', text: `Gekoppeld! ${syncText(r)}` }))
       .catch((e) => setStatus({ type: 'error', text: errorMessage(e) }))
       .finally(() => setBusy(null))

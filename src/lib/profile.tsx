@@ -28,26 +28,23 @@ const ProfileContext = createContext<ProfileState | null>(null)
 export function ProfileProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth()
   const userId = session?.user.id
-  const [profile, setProfile] = useState<Profile | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Het profiel onthoudt voor welke gebruiker het geladen is. Zo telt "net ingelogd, nog niet opgehaald" als
+  // laden, en niet als "geen profiel" — anders stuurt de router bij het opstarten even naar de onboarding
+  // en gaat het opgevraagde adres (bv. de terugkeer van Strava) verloren.
+  const [state, setState] = useState<{ userId: string | null; profile: Profile | null }>({ userId: null, profile: null })
+  const loading = Boolean(userId) && state.userId !== userId
+  const profile = userId && state.userId === userId ? state.profile : null
 
   useEffect(() => {
-    if (!userId) {
-      setProfile(null)
-      setLoading(false)
-      return
-    }
+    if (!userId) return
     let stale = false
-    setLoading(true)
     supabase
       .from('profiles')
       .select(COLUMNS)
       .eq('id', userId)
       .maybeSingle()
       .then(({ data }) => {
-        if (stale) return
-        setProfile(data as Profile | null)
-        setLoading(false)
+        if (!stale) setState({ userId, profile: data as Profile | null })
       })
     return () => {
       stale = true
@@ -62,7 +59,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .select(COLUMNS)
         .single()
       if (error) throw error
-      setProfile(data as Profile)
+      setState({ userId: userId!, profile: data as Profile })
     },
     [userId],
   )
