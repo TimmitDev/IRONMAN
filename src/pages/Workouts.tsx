@@ -8,6 +8,7 @@ import { RouteMap } from '../components/RouteMap'
 import { Segmented } from '../components/Segmented'
 import { WorkoutForm } from '../components/WorkoutForm'
 import { WorkoutList } from '../components/WorkoutList'
+import { ask, toast } from '../lib/feedback'
 import { formatDuration, formatSessionDuration, formatShortDate, parseISODate, sumMinutes, todayISO } from '../lib/race'
 import { weeklyMinutes } from '../lib/stats'
 import { SPORTS, SPORT_LABEL, type Sport, type Workout } from '../lib/types'
@@ -29,12 +30,13 @@ export function Workouts() {
   const filtered = useMemo(() => (filter === 'all' ? workouts : workouts.filter((w) => w.sport === filter)), [workouts, filter])
 
   async function handleDelete(w: Workout) {
-    if (!confirm('Training verwijderen?')) return
+    if (!(await ask({ title: 'Training verwijderen?', body: 'Dit kan niet ongedaan gemaakt worden.', confirm: 'Verwijderen', danger: true }))) return
     try {
       await remove(w.id)
       setEditing(null)
+      toast.success('Training verwijderd.')
     } catch (e) {
-      alert(errorMessage(e))
+      toast.error(errorMessage(e))
     }
   }
 
@@ -49,7 +51,13 @@ export function Workouts() {
           {/* Smal en blijvend in beeld op desktop: loggen kan terwijl je door de lijst scrolt. */}
           <Card title="Training loggen" description="Sport, duur en eventueel afstand en hoe zwaar het voelde." className="lg:sticky lg:top-20">
             {/* Tweekoloms opbouw (zoals in het bewerkvenster) past in deze smalle kolom. */}
-            <WorkoutForm onSubmit={add} inDialog />
+            <WorkoutForm
+              inDialog
+              onSubmit={async (w) => {
+                await add(w)
+                toast.success('Training toegevoegd.')
+              }}
+            />
           </Card>
 
           <Card

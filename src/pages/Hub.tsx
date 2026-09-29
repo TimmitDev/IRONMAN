@@ -9,6 +9,7 @@ import { FollowButton } from '../components/FollowButton'
 import { Icon } from '../components/Icon'
 import { Segmented } from '../components/Segmented'
 import { WeekPodium } from '../components/WeekPodium'
+import { toast } from '../lib/feedback'
 import { useOnline } from '../lib/presence'
 import { useMe, type Profile, type ProfileFields } from '../lib/profile'
 import { formatDuration, formatShortDate, sumMinutes, weekStart } from '../lib/race'
@@ -303,7 +304,7 @@ function ShareCta({ profile, onSave }: { profile: Profile; onSave: (f: ProfileFi
     try {
       await onSave({ display_name: profile.display_name, show_on_leaderboard: true, share_workouts: true })
     } catch (e) {
-      alert(errorMessage(e))
+      toast.error(errorMessage(e))
     } finally {
       setBusy(false)
     }

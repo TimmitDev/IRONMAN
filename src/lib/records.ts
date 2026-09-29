@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { addDays, parseISODate, weekStart } from './race'
 import { SPORT_LABEL, type Workout } from './types'
 
 // Persoonlijke records en mijlpalen. Trainingen hebben geen splits: een record is het gemiddelde tempo
@@ -181,4 +182,99 @@ export function computeRecords(workouts: Workout[]): Records {
 
 export function useRecords(workouts: Workout[]): Records {
   return useMemo(() => computeRecords(workouts), [workouts])
+}
+
+/** Eén keer dat een klasse-record gezet of verbeterd werd. */
+export interface RecordEvent {
+  sport: RecordSport
+  km: number
+  label: string
+  date: string
+  /** Geschatte tijd over de klasse-afstand. */
+  minutes: number
+  workoutId: string
+  /** Vorige recordtijd, of null als de klasse toen voor het eerst gehaald werd. */
+  previous: number | null
+}
+
+/** Alle records zoals ze in de tijd gezet werden (zelfde regels als computeRecords), nieuwste eerst. */
+export function recordHistory(workouts: Workout[]): RecordEvent[] {
+  const sorted = [...workouts].sort(chronological)
+  const events: RecordEvent[] = []
+  for (const sport of RECORD_SPORTS) {
+    const list = sorted.filter((w) => w.sport === sport)
+    for (const km of BUCKETS[sport]) {
+      let best: number | null = null
+      for (const w of list) {
+        if (!w.distance_km || w.duration_min <= 0 || !reachesBucket(w.distance_km, km)) continue
+        const minutes = (w.duration_min / w.distance_km) * km
+        if (best !== null && minutes >= best) continue
+        events.push({ sport, km, label: bucketLabel(sport, km), date: w.date, minutes, workoutId: w.id, previous: best })
+        best = minutes
+      }
+    }
+  }
+  return events.sort((a, b) => b.date.localeCompare(a.date) || b.km - a.km)
+}
+
+/** Kortste sessies die nog meetellen voor de tempografiek; korter is meestal een test of inloopje. */
+const MIN_PACE_KM: Record<RecordSport, number> = { run: 1, bike: 5, swim: 0.2 }
+
+/** Tempo in de eenheid die triatleten lezen: lopen min/km, zwemmen min/100 m, fietsen km/u. */
+export function paceValue(sport: RecordSport, minutes: number, km: number): number {
+  if (sport === 'bike') return km / (minutes / 60)
+  if (sport === 'swim') return minutes / (km * 10)
+  return minutes / km
+}
+
+/** Bij fietsen is hoger beter (km/u), bij lopen en zwemmen lager (min per afstand). */
+export const higherIsFaster = (sport: RecordSport) => sport === 'bike'
+
+export interface PacePoint {
+  date: string
+  value: number
+  km: number
+  minutes: number
+  workoutId: string
+}
+
+/** Tempo per sessie vanaf `from` (YYYY-MM-DD), oudste eerst. */
+export function paceSeries(workouts: Workout[], sport: RecordSport, from: string): PacePoint[] {
+  return workouts
+    .filter((w) => w.sport === sport && w.date >= from && w.duration_min > 0 && (w.distance_km ?? 0) >= MIN_PACE_KM[sport])
+    .sort(chronological)
+    .map((w) => ({ date: w.date, value: paceValue(sport, w.duration_min, w.distance_km!), km: w.distance_km!, minutes: w.duration_min, workoutId: w.id }))
+}
+
+/** Langste reeks opeenvolgende weken (maandag–zondag) met minstens één training. */
+export function longestWeekStreak(workouts: Pick<Workout, 'date'>[]): number {
+  const weeks = [...new Set(workouts.map((w) => weekStart(parseISODate(w.date))))].sort()
+  let best = 0
+  let run = 0
+  weeks.forEach((w, i) => {
+    run = i > 0 && addDays(weeks[i - 1], 7) === w ? run + 1 : 1
+    best = Math.max(best, run)
+  })
+  return best
+}
+
+const median = (xs: number[]) => {
+  const s = [...xs].sort((a, b) => a - b)
+  const mid = Math.floor(s.length / 2)
+  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2
+}
+
+/**
+ * Hoeveel sneller (positief) of trager (negatief) je nu bent dan 3 maanden geleden, als fractie.
+ * Vergelijkt de mediaan van de laatste 6 weken met die van de 6 weken rond 3 maanden terug
+ * (minstens 2 sessies in elk venster), anders null.
+ */
+export function paceTrend(points: PacePoint[], sport: RecordSport, today: string): number | null {
+  const daysAgo = (iso: string) => Math.round((Date.parse(today) - Date.parse(iso)) / 86_400_000)
+  const recent = points.filter((p) => daysAgo(p.date) < 42).map((p) => p.value)
+  const past = points.filter((p) => daysAgo(p.date) >= 70 && daysAgo(p.date) < 112).map((p) => p.value)
+  if (recent.length < 2 || past.length < 2) return null
+  const now = median(recent)
+  const then = median(past)
+  return higherIsFaster(sport) ? (now - then) / then : (then - now) / then
 }

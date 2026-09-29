@@ -190,7 +190,6 @@ export const isDone = (c: Pick<Challenge, 'target'>, value: number) => value >= 
 
 export const progressFraction = (c: Pick<Challenge, 'target'>, value: number) => (c.target > 0 ? Math.min(1, value / c.target) : 0)
 
-/** Kleur van de balk: de sportkleur, of de merkkleur voor alle sporten. */
 /** Balkkleur: de sportkleur, of neutraal voor "alle sporten" (rood is enkel een klein accent). */
 export const challengeColor = (c: Pick<Challenge, 'sport'>) => (c.sport ? SPORT_BG[c.sport] : 'bg-fg-3')
 
@@ -198,6 +197,62 @@ export const challengeSportLabel = (c: Pick<Challenge, 'sport'>) => (c.sport ? S
 
 export function myEntry(c: Challenge, meId: string): ChallengeParticipant | undefined {
   return c.participants.find((p) => p.user_id === meId)
+}
+
+/** Je plaats in de ranglijst (gelijke waarden delen een plaats), of null als je niet meedoet. */
+export function myRank(c: Challenge, meId: string): { rank: number; of: number } | null {
+  const mine = myEntry(c, meId)
+  if (!mine) return null
+  return { rank: 1 + c.participants.filter((p) => p.value > mine.value).length, of: c.participants.length }
+}
+
+/** Totale lengte in dagen, start- en einddag inbegrepen. */
+export const periodDays = (c: Pick<Challenge, 'starts_on' | 'ends_on'>) => Math.max(1, daysBetween(c.starts_on, c.ends_on) + 1)
+
+/** Verstreken dagen, vandaag meegeteld (0 vóór de start, alle dagen na het einde). */
+export function elapsedDays(c: Pick<Challenge, 'starts_on' | 'ends_on'>, today = todayISO()): number {
+  return Math.min(periodDays(c), Math.max(0, daysBetween(c.starts_on, today) + 1))
+}
+
+/** Deel van de periode dat voorbij is (0–1), vandaag meegeteld. */
+export const timeFraction = (c: Pick<Challenge, 'starts_on' | 'ends_on'>, today = todayISO()) => elapsedDays(c, today) / periodDays(c)
+
+export interface Forecast {
+  /** Waar je bij een gelijkmatig tempo nu zou staan. */
+  expected: number
+  /** Je ligt op of vóór schema. */
+  onTrack: boolean
+  /** Verwachte datum waarop je het doel haalt aan je huidige tempo; null zonder tempo of als dat na het einde valt. */
+  finishOn: string | null
+  /** Wat er nog nodig is per resterende dag (vandaag meegeteld). */
+  perDay: number
+  remaining: number
+  daysLeft: number
+}
+
+/** Prognose voor een lopende uitdaging op basis van je tempo tot nu. */
+export function forecast(c: Challenge, value: number, today = todayISO()): Forecast {
+  const elapsed = elapsedDays(c, today)
+  const left = daysLeft(c, today)
+  const remaining = Math.max(0, c.target - value)
+  const expected = c.target * timeFraction(c, today)
+  const rate = elapsed > 0 ? value / elapsed : 0
+  let finishOn: string | null = null
+  if (!remaining) finishOn = today
+  else if (rate > 0) {
+    const date = addDays(today, Math.max(0, Math.ceil(remaining / rate) - 1))
+    if (date <= c.ends_on) finishOn = date
+  }
+  return { expected, onTrack: value >= expected, finishOn, perDay: left ? remaining / left : remaining, remaining, daysLeft: left }
+}
+
+/** "Nog 3,2 km per dag nodig", "Nog 25 min per dag nodig", "Nog 3 sessies in 5 dagen". */
+export function neededLabel(c: Pick<Challenge, 'metric'>, f: Pick<Forecast, 'perDay' | 'remaining' | 'daysLeft'>): string {
+  if (c.metric === 'sessions' || f.daysLeft <= 1) {
+    const when = f.daysLeft <= 1 ? 'vandaag' : `in ${f.daysLeft} dagen`
+    return `Nog ${formatAmount(c.metric, c.metric === 'sessions' ? Math.ceil(f.remaining) : f.remaining)} ${when}`
+  }
+  return `Nog ${formatAmount(c.metric, c.metric === 'distance' ? Math.ceil(f.perDay * 10) / 10 : Math.ceil(f.perDay))} per dag nodig`
 }
 
 // ---------- Periodes ----------

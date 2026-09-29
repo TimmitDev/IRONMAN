@@ -3,24 +3,33 @@ import { Avatar } from '../components/Avatar'
 import { Card } from '../components/Card'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
+import { KpiStrip } from '../components/KpiStrip'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
+import { Skeleton } from '../components/Skeleton'
 import {
   QUICK_PERIODS,
   challengeColor,
   challengeSportLabel,
   challengeStatus,
   daysBetween,
+  daysLeft,
+  elapsedDays,
+  forecast,
   formatAmount,
   formatPeriod,
   formatProgress,
   goalLabel,
   isDone,
   myEntry,
+  myRank,
+  neededLabel,
+  periodDays,
   progressFraction,
   quickPeriod,
+  timeFraction,
   timingLabel,
   useChallenges,
   validateChallenge,
@@ -29,7 +38,8 @@ import {
   type ChallengeStatus,
   type NewChallenge,
 } from '../lib/challenges'
-import { todayISO } from '../lib/race'
+import { ask } from '../lib/feedback'
+import { formatShortDate, todayISO } from '../lib/race'
 import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import {
   dangerOutlineButton,
@@ -91,14 +101,34 @@ export function Challenges() {
       />
 
       <div className="space-y-6">
+        {loading && !challenges.length ? <Skeleton className="h-[98px] w-full rounded-xl sm:h-[106px]" /> : <ChallengeKpis challenges={challenges} meId={meId} today={today} />}
+
         <Segmented options={TABS.map((t) => ({ key: t.key, label: counts[t.key] ? `${t.label} · ${counts[t.key]}` : t.label }))} value={tab} onChange={setTab} />
 
         {error && <p className="text-sm text-danger">{error}</p>}
 
         {loading && !challenges.length ? (
-          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          <div className="grid gap-4 sm:gap-6 lg:grid-cols-2" role="status" aria-label="Laden">
             {[0, 1].map((i) => (
-              <div key={i} className="h-64 animate-pulse rounded-xl bg-subtle" />
+              <Card key={i}>
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-5 w-3/5" />
+                    <Skeleton className="h-3 w-2/5" />
+                  </div>
+                  <Skeleton className="h-20 w-full" />
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((j) => (
+                      <div key={j} className="flex items-center gap-3">
+                        <Skeleton className="size-8 shrink-0 rounded-full" />
+                        <Skeleton className="h-3 flex-1" />
+                        <Skeleton className="h-3 w-10" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
             ))}
           </div>
         ) : shown.length ? (
@@ -137,6 +167,47 @@ export function Challenges() {
         />
       )}
     </div>
+  )
+}
+
+/** Kerncijfers over de uitdagingen waar je aan meedoet. */
+function ChallengeKpis({ challenges, meId, today }: { challenges: Challenge[]; meId: string; today: string }) {
+  const joined = challenges.filter((c) => myEntry(c, meId))
+  const active = joined.filter((c) => challengeStatus(c, today) === 'active')
+  const activeTotal = challenges.filter((c) => challengeStatus(c, today) === 'active').length
+  const achieved = joined.filter((c) => isDone(c, myEntry(c, meId)!.value)).length
+  // Beste plaats in een lopende uitdaging; bij gelijke plaats die met de meeste deelnemers.
+  const best = active
+    .map((c) => ({ c, r: myRank(c, meId)! }))
+    .sort((a, b) => a.r.rank - b.r.rank || b.r.of - a.r.of)[0]
+  // Bijna voorbij: nog hoogstens 3 dagen en nog niet gehaald.
+  const closing = active.filter((c) => daysLeft(c, today) <= 3 && !isDone(c, myEntry(c, meId)!.value)).sort((a, b) => a.ends_on.localeCompare(b.ends_on))
+
+  return (
+    <KpiStrip
+      items={[
+        {
+          label: 'Lopend, je doet mee',
+          value: active.length,
+          sub: activeTotal ? `van ${activeTotal} lopende` : 'Niets lopend',
+        },
+        {
+          label: 'Gehaald',
+          value: achieved,
+          sub: joined.length ? `van ${joined.length} waar je aan meedeed` : 'Doe mee om te starten',
+        },
+        {
+          label: 'Beste positie',
+          value: best ? `${best.r.rank}e` : '–',
+          sub: best ? `van ${best.r.of} in ${best.c.title}` : 'Geen lopende deelname',
+        },
+        {
+          label: 'Loopt bijna af',
+          value: closing.length,
+          sub: closing.length ? `${closing[0].title} · ${timingLabel(closing[0], today).toLowerCase()}` : 'Niets binnen 3 dagen',
+        },
+      ]}
+    />
   )
 }
 
@@ -218,12 +289,19 @@ function ChallengeCard({
                 <span className="shrink-0 text-sm font-medium text-fg-2 tabular-nums">{Math.round(progressFraction(c, mine.value) * 100)}%</span>
               )}
             </div>
-            <ProgressBar value={mine.value} max={c.target} color={done ? 'bg-success' : color} />
-            {!done && status !== 'ended' && (
-              <p className="mt-2 text-xs text-fg-3">
-                {status === 'upcoming' ? 'Trainingen tellen mee vanaf de startdatum.' : `Nog ${formatAmount(c.metric, c.target - mine.value)} te gaan.`}
-              </p>
-            )}
+            <div className="relative">
+              <ProgressBar value={mine.value} max={c.target} color={done ? 'bg-success' : color} />
+              {/* Streepje: waar je bij een gelijkmatig tempo nu zou staan. */}
+              {status === 'active' && !done && (
+                <span
+                  className="absolute top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-fg"
+                  style={{ left: `${timeFraction(c, today) * 100}%` }}
+                  title="Hier zou je nu moeten staan"
+                  aria-hidden
+                />
+              )}
+            </div>
+            <MyStanding challenge={c} value={mine.value} meId={meId} today={today} status={status} done={done} />
           </div>
         ) : status !== 'ended' ? (
           <div className="flex flex-col gap-3 rounded-lg bg-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -293,7 +371,10 @@ function ChallengeCard({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => confirm(`Stoppen met "${c.title}"?`) && run(() => onLeave(c.id))}
+                onClick={async () => {
+                  if (await ask({ title: `Stoppen met "${c.title}"?`, body: 'Je verdwijnt uit de ranglijst. Later opnieuw meedoen kan zolang de uitdaging loopt.', confirm: 'Stoppen' }))
+                    run(() => onLeave(c.id))
+                }}
                 className={ghostButton}
               >
                 <Icon name="logout" className="size-4" />
@@ -304,7 +385,17 @@ function ChallengeCard({
               <button
                 type="button"
                 disabled={busy}
-                onClick={() => confirm(`Uitdaging "${c.title}" verwijderen? Dit kan niet ongedaan worden en geldt voor alle deelnemers.`) && run(() => onRemove(c.id))}
+                onClick={async () => {
+                  if (
+                    await ask({
+                      title: `Uitdaging "${c.title}" verwijderen?`,
+                      body: 'Dit kan niet ongedaan gemaakt worden en geldt voor alle deelnemers.',
+                      confirm: 'Verwijderen',
+                      danger: true,
+                    })
+                  )
+                    run(() => onRemove(c.id))
+                }}
                 className={dangerOutlineButton}
               >
                 <Icon name="trash" className="size-4" />
@@ -315,6 +406,62 @@ function ChallengeCard({
         )}
       </div>
     </Card>
+  )
+}
+
+/** Prognose en plaats onder je eigen voortgangsbalk. */
+function MyStanding({
+  challenge: c,
+  value,
+  meId,
+  today,
+  status,
+  done,
+}: {
+  challenge: Challenge
+  value: number
+  meId: string
+  today: string
+  status: ChallengeStatus
+  done: boolean
+}) {
+  const rank = myRank(c, meId)
+  const place = rank && rank.of > 1 ? `${rank.rank}e van ${rank.of}` : null
+
+  if (status === 'upcoming') return <p className="mt-2 text-xs text-fg-3">Trainingen tellen mee vanaf de startdatum.</p>
+
+  if (status === 'ended' || done) {
+    return (
+      <p className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-1 text-xs text-fg-3">
+        <span>{done ? (status === 'ended' ? 'Doel gehaald.' : 'Doel gehaald, alles extra telt voor de ranglijst.') : `${formatAmount(c.metric, c.target - value)} tekort.`}</span>
+        {place && <span className="tabular-nums">{status === 'ended' ? `Eindigde ${place}` : `Plaats ${place}`}</span>}
+      </p>
+    )
+  }
+
+  const f = forecast(c, value, today)
+  const gap = Math.abs(value - f.expected)
+  // Kleine verschillen niet opblazen: binnen 2% van het doel ben je "op schema".
+  const even = gap < c.target * 0.02
+  return (
+    <div className="mt-3 space-y-1 text-xs">
+      <p className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-fg-3">
+        <span className="tabular-nums">
+          Dag {elapsedDays(c, today)} van {periodDays(c)} ·{' '}
+          <span className={even ? 'text-fg-2' : f.onTrack ? 'text-success' : 'text-fg-2'}>
+            {even ? 'op schema' : `${formatAmount(c.metric, c.metric === 'sessions' ? Math.round(gap) || 1 : gap)} ${f.onTrack ? 'voor' : 'achter'} op schema`}
+          </span>
+        </span>
+        {place && <span className="tabular-nums">Plaats {place}</span>}
+      </p>
+      <p className="text-fg-2">
+        {f.finishOn === today
+          ? 'Aan dit tempo haal je het vandaag nog.'
+          : f.finishOn
+            ? `Aan dit tempo haal je het op ${formatShortDate(f.finishOn)}.`
+            : `${neededLabel(c, f)}.`}
+      </p>
+    </div>
   )
 }
 

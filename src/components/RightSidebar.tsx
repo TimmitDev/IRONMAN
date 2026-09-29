@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { toast } from '../lib/feedback'
 import { useSharedFollows } from '../lib/follows'
 import { usePlayerSearch } from '../lib/players'
 import { useOnline } from '../lib/presence'
@@ -204,7 +205,7 @@ function FollowIcon({ person, label }: { person: FeedPerson; label: string }) {
         try {
           await follows.follow(person)
         } catch (e) {
-          alert(errorMessage(e))
+          toast.error(errorMessage(e))
         } finally {
           setBusy(false)
         }

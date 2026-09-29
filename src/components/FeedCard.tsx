@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { ask, toast } from '../lib/feedback'
 import type { Profile } from '../lib/profile'
 import { formatPace, formatSessionDuration, formatShortDate, parseISODate, todayISO } from '../lib/race'
 import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type FeedPerson } from '../lib/social'
@@ -102,19 +103,19 @@ export function FeedCard({
       await (gave ? removeKudos(item.id, me.id) : giveKudos(item.id))
     } catch (e) {
       onPatch((i) => ({ ...i, kudos: before }))
-      alert(errorMessage(e))
+      toast.error(errorMessage(e))
     } finally {
       setBusy(false)
     }
   }
 
   async function removeComment(id: string) {
-    if (!confirm('Reactie verwijderen?')) return
+    if (!(await ask({ title: 'Reactie verwijderen?', confirm: 'Verwijderen', danger: true }))) return
     try {
       await deleteComment(id)
       onPatch((i) => ({ ...i, comments: i.comments.filter((c) => c.id !== id) }))
     } catch (e) {
-      alert(errorMessage(e))
+      toast.error(errorMessage(e))
     }
   }
 
@@ -245,7 +246,7 @@ function CommentForm({ onSubmit }: { onSubmit: (body: string) => Promise<void> }
       await onSubmit(body)
       setText('')
     } catch (err) {
-      alert(errorMessage(err))
+      toast.error(errorMessage(err))
     } finally {
       setBusy(false)
     }

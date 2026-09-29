@@ -99,8 +99,8 @@ function GoalHistory({ workouts, goalMinutes }: { workouts: Workout[]; goalMinut
           return (
             <div key={w.start} className="flex h-full flex-1 flex-col justify-end" title={`Week van ${formatShortDate(w.start)}: ${formatDuration(w.minutes)}`}>
               <div
-                className={`min-h-px rounded-t-[3px] ${current ? 'bg-fg' : reached ? 'bg-fg-2' : 'bg-line-strong'}`}
-                style={{ height: `${(w.minutes / max) * 100}%` }}
+                className={`min-h-px origin-bottom animate-grow-y rounded-t-[3px] ${current ? 'bg-fg' : reached ? 'bg-fg-2' : 'bg-line-strong'}`}
+                style={{ height: `${(w.minutes / max) * 100}%`, animationDelay: `${i * 40}ms` }}
               />
             </div>
           )

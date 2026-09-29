@@ -90,12 +90,15 @@ export function WeeklyChart({
             className="relative flex flex-1 cursor-default flex-col justify-end"
             onMouseEnter={() => setHover(i)}
             onMouseLeave={() => setHover(null)}
+            // Op touchscreens bestaat hover niet: tikken toont of verbergt de details.
+            onClick={() => setHover(hover === i ? null : i)}
           >
+            {/* Balken groeien bij het verschijnen na elkaar op vanaf de basis. */}
             <div
-              className={`flex flex-col-reverse gap-px overflow-hidden rounded-t-[3px] transition-opacity ${
+              className={`flex origin-bottom animate-grow-y flex-col-reverse gap-px overflow-hidden rounded-t-[3px] transition-opacity ${
                 hover !== null && hover !== i ? 'opacity-40' : ''
               }`}
-              style={{ height: `${(w.total / 60 / maxH) * 100}%` }}
+              style={{ height: `${(w.total / 60 / maxH) * 100}%`, animationDelay: `${i * 30}ms` }}
             >
               {SPORTS.filter((s) => w.minutes[s] > 0).map((s) => (
                 <div key={s} className={SPORT_BG[s]} style={{ flexGrow: w.minutes[s], minHeight: 2 }} />
@@ -104,7 +107,7 @@ export function WeeklyChart({
 
             {hover === i && (
               <div
-                className={`absolute bottom-full z-10 mb-2 w-44 rounded-lg border border-line bg-surface p-3 text-xs shadow-lg ${
+                className={`absolute bottom-full z-10 mb-2 w-44 animate-pop rounded-lg border border-line bg-surface p-3 text-xs shadow-lg ${
                   i < 2 ? 'left-0' : i > count - 3 ? 'right-0' : 'left-1/2 -translate-x-1/2'
                 }`}
               >

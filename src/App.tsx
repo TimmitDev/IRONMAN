@@ -1,6 +1,7 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { Suspense, lazy, type ReactNode } from 'react'
 import { AuthProvider, useAuth } from './lib/auth'
+import { FeedbackHost } from './lib/feedback'
 import { ProfileProvider, useProfile } from './lib/profile'
 import { RaceProvider } from './lib/raceContext'
 import { isConfigured } from './lib/supabase'
@@ -110,6 +111,7 @@ export default function App() {
       ) : (
         <NotConfigured />
       )}
+      <FeedbackHost />
     </ThemeProvider>
   )
 }

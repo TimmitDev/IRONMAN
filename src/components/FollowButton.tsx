@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { FeedPerson, Follows } from '../lib/social'
+import { toast } from '../lib/feedback'
 import { errorMessage } from '../lib/ui'
 import { Icon } from './Icon'
 
@@ -13,7 +14,7 @@ export function FollowButton({ person, follows, disabled = false }: { person: Fe
     try {
       await (following ? follows.unfollow(person) : follows.follow(person))
     } catch (e) {
-      alert(errorMessage(e))
+      toast.error(errorMessage(e))
     } finally {
       setBusy(false)
     }

@@ -5,11 +5,14 @@ import { ClearScheduleDialog } from '../components/ClearScheduleDialog'
 import { CompleteDialog } from '../components/CompleteDialog'
 import { DoneToggle } from '../components/DoneToggle'
 import { Icon } from '../components/Icon'
+import { KpiStrip } from '../components/KpiStrip'
 import { Modal } from '../components/Modal'
 import { PageHeader } from '../components/PageHeader'
 import { PlanForm } from '../components/PlanForm'
 import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
+import { Skeleton } from '../components/Skeleton'
+import { ask, toast } from '../lib/feedback'
 import { IronmanPlan } from './IronmanPlan'
 import {
   addDays,
@@ -44,13 +47,13 @@ export function Plan() {
       <PageHeader title="Schema" description="Plan je sessies per week en vink ze af, of volg een opbouwschema richting je race." />
       <div className="space-y-6">
         <Segmented options={[...TABS]} value={tab} onChange={setTab} />
-        {tab === 'week' ? <WeekSchedule /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}
+        {tab === 'week' ? <WeekSchedule onShowRacePlan={() => setTab('ironman')} /> : <IronmanPlan onShowSchedule={() => setTab('week')} />}
       </div>
     </div>
   )
 }
 
-function WeekSchedule() {
+function WeekSchedule({ onShowRacePlan }: { onShowRacePlan: () => void }) {
   const [start, setStart] = useState(() => weekStart(new Date()))
   const { planned, done, loading, error, add, update, remove, complete, uncomplete, copyPreviousWeek, reload } = usePlan(start)
   const [clearing, setClearing] = useState(false)
@@ -67,13 +70,16 @@ function WeekSchedule() {
   const linked = new Set(planned.map((p) => p.workout_id))
   const extras = done.filter((w) => !linked.has(w.id))
   const isCurrentWeek = start === weekStart(new Date())
+  const firstLoad = loading && !planned.length && !done.length
+  const isEmpty = !loading && !planned.length && !done.length
 
-  const run = (fn: () => Promise<unknown>) => fn().catch((e) => alert(errorMessage(e)))
+  const run = (fn: () => Promise<unknown>) => fn().catch((e) => toast.error(errorMessage(e)))
 
   async function handleCopy() {
-    if (planned.length && !confirm('Deze week heeft al sessies. Toch de vorige week erbij kopiëren?')) return
+    if (planned.length && !(await ask({ title: 'Vorige week erbij kopiëren?', body: 'Deze week heeft al sessies; de sessies van vorige week komen erbij.', confirm: 'Kopiëren' }))) return
     const count = await copyPreviousWeek()
-    if (count === 0) alert('Vorige week had geen geplande sessies.')
+    if (count === 0) toast.info('Vorige week had geen geplande sessies.')
+    else toast.success(`${count} ${count === 1 ? 'sessie' : 'sessies'} gekopieerd.`)
   }
 
   const toggle = (p: PlannedWorkout) => (p.workout_id ? run(() => uncomplete(p)) : setCompleting(p))
@@ -148,16 +154,19 @@ function WeekSchedule() {
         </div>
       )}
 
-      <Card
-        title="Gepland vs. gedaan"
-        description={
-          <>
-            <span className="font-medium text-fg tabular-nums">{formatDuration(sumMinutes(done))}</span> gedaan van{' '}
-            <span className="tabular-nums">{formatDuration(sumMinutes(planned))}</span> gepland
-            <span className="hidden md:inline"> · sleep een sessie naar een andere dag om te verplaatsen</span>
-          </>
-        }
-      >
+      {firstLoad ? <Skeleton className="h-[98px] w-full rounded-xl sm:h-[106px]" /> : <ScheduleKpis planned={planned} done={done} today={today} />}
+
+      {isEmpty && (
+        <div className="flex flex-col gap-3 rounded-xl border border-dashed border-line-strong p-4 text-sm text-fg-2 sm:flex-row sm:items-center sm:justify-between">
+          <p>Nog niets gepland deze week. Plan een sessie, kopieer vorige week of neem sessies over uit je raceplan.</p>
+          <button onClick={onShowRacePlan} className={`${secondaryButton} shrink-0`}>
+            <Icon name="flag" className="size-4" />
+            Naar raceplan
+          </button>
+        </div>
+      )}
+
+      <Card title="Per sport" description={<span className="hidden md:inline">Sleep een sessie naar een andere dag om ze te verplaatsen.</span>}>
         <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
           {SPORTS.map((s) => {
             const plannedMin = sumMinutes(planned.filter((p) => p.sport === s))
@@ -188,6 +197,9 @@ function WeekSchedule() {
           const isToday = d === today
           const isOver = overDay === d
           const isRest = !dayPlanned.length && !dayExtras.length
+          // Dagtotaal: gepland, en wat er effectief gedaan is (afgevinkt of los gelogd).
+          const dayPlanMin = sumMinutes(dayPlanned)
+          const dayDoneMin = sumMinutes(done.filter((w) => w.date === d))
           return (
             <div
               key={d}
@@ -196,17 +208,27 @@ function WeekSchedule() {
                 isOver ? 'border-dashed border-fg-3 bg-subtle' : 'border-line bg-surface'
               }`}
             >
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span className={`inline-flex items-center gap-1.5 text-xs ${isToday ? 'font-medium text-fg' : 'text-fg-3'}`}>
-                  {isToday && <span className="size-1.5 rounded-full bg-brand" aria-label="Vandaag" />}
-                  {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short' })}
-                </span>
-                <span className={`text-sm tabular-nums ${isToday ? 'font-medium text-fg' : 'text-fg-2'}`}>
-                  {parseISODate(d).getDate()}
-                </span>
+              <div className="mb-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1.5 text-xs ${isToday ? 'font-medium text-fg' : 'text-fg-3'}`}>
+                    {isToday && <span className="size-1.5 rounded-full bg-brand" aria-label="Vandaag" />}
+                    {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short' })}
+                  </span>
+                  <span className={`text-sm tabular-nums ${isToday ? 'font-medium text-fg' : 'text-fg-2'}`}>
+                    {parseISODate(d).getDate()}
+                  </span>
+                </div>
+                {(dayPlanMin > 0 || dayDoneMin > 0) && (
+                  <p className="mt-0.5 truncate text-[11px] text-fg-4 tabular-nums" title="Gedaan / gepland">
+                    {dayDoneMin > 0 && dayPlanMin > 0
+                      ? `${formatDuration(dayDoneMin)} / ${formatDuration(dayPlanMin)}`
+                      : formatDuration(dayPlanMin || dayDoneMin)}
+                  </p>
+                )}
               </div>
 
               <div className="flex flex-1 flex-col gap-1.5">
+                {firstLoad && <Skeleton className="h-14 w-full" />}
                 {dayPlanned.map((p) => (
                   <PlannedItem
                     key={p.id}
@@ -234,7 +256,7 @@ function WeekSchedule() {
                     </div>
                   )
                 })}
-                {isRest && <p className="text-xs text-fg-4 md:py-2">Rust</p>}
+                {isRest && !firstLoad && <p className="text-xs text-fg-4 md:py-2">Rust</p>}
               </div>
 
               <button
@@ -260,8 +282,8 @@ function WeekSchedule() {
           <PlanForm defaultDate={editing.date} initial={editing} onSubmit={(patch) => update(editing, patch)} onCancel={() => setEditing(null)} />
           <div className="mt-5 border-t border-line pt-5">
             <button
-              onClick={() => {
-                if (!confirm('Geplande sessie verwijderen?')) return
+              onClick={async () => {
+                if (!(await ask({ title: 'Geplande sessie verwijderen?', confirm: 'Verwijderen', danger: true }))) return
                 run(() => remove(editing.id))
                 setEditing(null)
               }}
@@ -285,6 +307,41 @@ function WeekSchedule() {
         />
       )}
     </div>
+  )
+}
+
+/** Kerncijfers van de getoonde week: volume, uitvoering en wat er nog openstaat. */
+function ScheduleKpis({ planned, done, today }: { planned: PlannedWorkout[]; done: Workout[]; today: string }) {
+  const planMin = sumMinutes(planned)
+  const doneMin = sumMinutes(done)
+  // Schema-trouw telt enkel de sessies tot en met vandaag: de rest kon nog niet.
+  const due = planned.filter((p) => p.date <= today)
+  const ticked = due.filter((p) => p.workout_id).length
+  const open = planned.filter((p) => !p.workout_id && p.date >= today)
+  const missed = due.filter((p) => !p.workout_id && p.date < today).length
+  const sessions = (n: number) => `${n} ${n === 1 ? 'sessie' : 'sessies'}`
+
+  return (
+    <KpiStrip
+      items={[
+        { label: 'Gepland', value: planMin ? formatDuration(planMin) : '0', sub: sessions(planned.length) },
+        {
+          label: 'Gedaan',
+          value: doneMin ? formatDuration(doneMin) : '0',
+          sub: planMin ? `${Math.round((doneMin / planMin) * 100)}% van gepland` : sessions(done.length),
+        },
+        {
+          label: 'Schema-trouw',
+          value: due.length ? `${Math.round((ticked / due.length) * 100)}%` : '–',
+          sub: due.length ? `${ticked} van ${due.length} afgevinkt` : planned.length ? 'Nog niets te doen' : 'Niets gepland',
+        },
+        {
+          label: 'Nog te doen',
+          value: open.length ? formatDuration(sumMinutes(open)) : '0',
+          sub: `${sessions(open.length)}${missed ? ` · ${missed} gemist` : ''}`,
+        },
+      ]}
+    />
   )
 }
 

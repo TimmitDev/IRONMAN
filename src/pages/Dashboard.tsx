@@ -4,6 +4,7 @@ import { ActiveChallengesCard } from '../components/ActiveChallengesCard'
 import { BadgesCard } from '../components/Badges'
 import { Delta, KpiStrip } from '../components/KpiStrip'
 import { WeekStrip } from '../components/WeekStrip'
+import { toast } from '../lib/feedback'
 import { signed, weekStreak, weekSummary } from '../lib/stats'
 import { Card } from '../components/Card'
 import { CompleteDialog } from '../components/CompleteDialog'
@@ -53,7 +54,7 @@ export function Dashboard() {
       ? plan
           .uncomplete(p)
           .then(refresh)
-          .catch((e) => alert(errorMessage(e)))
+          .catch((e) => toast.error(errorMessage(e)))
       : setCompleting(p)
 
   const reportProps = { workouts, goals, goalMinutes, badges }

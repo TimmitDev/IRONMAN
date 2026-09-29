@@ -67,7 +67,10 @@ function Shell() {
       <main className="mx-auto max-w-6xl px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:pt-10 lg:pb-16">
         {/* Binnen de layout, zodat zijbalk, balk en tabbalk blijven staan terwijl een pagina laadt. */}
         <Suspense fallback={<PageLoader />}>
-          <Outlet />
+          {/* Nieuwe key per pagina: elke pagina komt zacht binnen. */}
+          <div key={pathname} className="animate-fade-up">
+            <Outlet />
+          </div>
         </Suspense>
       </main>
 

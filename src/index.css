@@ -41,6 +41,63 @@
   --color-strength: #c98500;
 
   --shadow-card: var(--card-shadow);
+
+  /* Beweging: kort en zacht. Gebruik als animate-fade-up, animate-pop, animate-sheet, animate-fade-in. */
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* `backwards`: enkel de beginstand vasthouden; na afloop blijft er geen transform hangen
+     (een blijvende transform zou vaste/sticky elementen erin verstoren). */
+  --animate-fade-up: fade-up 260ms var(--ease-out-soft) backwards;
+  --animate-fade-in: fade-in 180ms ease-out backwards;
+  --animate-pop: pop 160ms var(--ease-out-soft) backwards;
+  --animate-sheet: sheet 280ms var(--ease-out-soft) backwards;
+  --animate-toast: toast 240ms var(--ease-out-soft) backwards;
+  --animate-grow-y: grow-y 600ms var(--ease-out-soft) backwards;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-2px);
+    }
+  }
+  @keyframes sheet {
+    from {
+      transform: translateY(100%);
+    }
+  }
+  @keyframes toast {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+  }
+  /* Grafiekbalken groeien vanaf de basis. */
+  @keyframes grow-y {
+    from {
+      transform: scaleY(0);
+    }
+  }
+}
+
+/* Wie "minder beweging" instelt, krijgt geen animaties of overgangen. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }
 
 /*

@@ -3,7 +3,9 @@ import { Link } from 'react-router-dom'
 import { Card } from '../components/Card'
 import { EmptyState } from '../components/EmptyState'
 import { Icon } from '../components/Icon'
+import { ProgressBar } from '../components/ProgressBar'
 import { Segmented } from '../components/Segmented'
+import { Skeleton } from '../components/Skeleton'
 import { Stat } from '../components/Stat'
 import {
   DAY_NAMES,
@@ -20,6 +22,7 @@ import {
 import { RACE_TYPES, addDays, formatDuration, formatPace, formatShortDate, parseISODate, racePassed, toISODate, weekStart } from '../lib/race'
 import { useRace } from '../lib/raceContext'
 import { SPORTS, SPORT_BG, SPORT_LABEL } from '../lib/types'
+import { ask } from '../lib/feedback'
 import { errorMessage, inputClass, labelClass, linkClass, pillClass, primaryButton, secondaryButton } from '../lib/ui'
 
 export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) {
@@ -28,7 +31,15 @@ export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) 
   const [editing, setEditing] = useState(false)
   const weeks = useMemo(() => (settings ? generatePlan(settings, race) : []), [settings, race])
 
-  if (loading) return <p className="text-sm text-fg-3">Laden…</p>
+  if (loading) {
+    return (
+      <div className="space-y-6" role="status" aria-label="Laden">
+        <Skeleton className="h-56 w-full rounded-xl" />
+        <Skeleton className="h-36 w-full rounded-xl" />
+        <Skeleton className="h-72 w-full rounded-xl" />
+      </div>
+    )
+  }
 
   if (!settings || editing) {
     return (
@@ -93,6 +104,7 @@ export function IronmanPlan({ onShowSchedule }: { onShowSchedule: () => void }) 
 
   return (
     <div className="space-y-6">
+      <ThisWeek weeks={weeks} />
       <Summary settings={settings} weeks={weeks} onEdit={() => setEditing(true)} />
       <Card title="Uren per week" description="Beweeg over een balk voor de verdeling per sport.">
         <PlanChart weeks={weeks} />
@@ -210,10 +222,127 @@ function SettingsForm({
   )
 }
 
+/** Opeenvolgende weken met dezelfde fase, voor de faseband. */
+function phaseRuns(weeks: PlanWeek[]) {
+  return weeks.reduce<{ name: string; count: number }[]>((acc, w) => {
+    const last = acc[acc.length - 1]
+    if (last?.name === w.phase.name) last.count++
+    else acc.push({ name: w.phase.name, count: 1 })
+    return acc
+  }, [])
+}
+
+/** Waar je nu staat: week x van y, de fases als dunne band, en de sessies van deze week. */
+function ThisWeek({ weeks }: { weeks: PlanWeek[] }) {
+  const race = useRace()
+  const raceDate = toISODate(race.date)
+  const today = toISODate(new Date())
+  const idx = weeks.findIndex((w) => w.start === weekStart(new Date()))
+  const current = idx >= 0 ? weeks[idx] : null
+  const notStarted = !current && weeks[0].start > today
+  // Voor de start telt week 0; na het plan alle weken.
+  const done = current ? current.index : notStarted ? 0 : weeks.length
+  const runs = phaseRuns(weeks)
+  const weeksLeft = weeks.length - done
+
+  const days = current ? Array.from({ length: 7 }, (_, i) => addDays(current.start, i)) : []
+  const sessionsLeft = current ? current.sessions.filter((s) => s.date >= today) : []
+
+  return (
+    <Card
+      title="Deze week in je plan"
+      description={
+        current ? (
+          <>
+            {current.raceWeek ? 'Raceweek' : `Fase ${current.phase.name}`} · {current.recovery ? 'herstelweek' : 'geen herstelweek'} ·{' '}
+            <span className="tabular-nums">{formatDuration(current.minutes)}</span> in {current.sessions.length} sessies
+          </>
+        ) : notStarted ? (
+          `Je plan start op ${formatShortDate(weeks[0].start)}.`
+        ) : (
+          'Je plan is afgelopen.'
+        )
+      }
+    >
+      <div className="space-y-5">
+        {/* Voortgang door het plan. */}
+        <div>
+          <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+            <span className="font-medium text-fg tabular-nums">
+              Week {done} van {weeks.length}
+            </span>
+            <span className="text-xs text-fg-3 tabular-nums">
+              {weeksLeft > 0 ? `nog ${weeksLeft} ${weeksLeft === 1 ? 'week' : 'weken'} tot ${race.name}` : `${race.name} deze week`}
+            </span>
+          </div>
+          <ProgressBar value={done} max={weeks.length} color="bg-fg-2" />
+          <div className="mt-3 flex gap-[2px]">
+            {runs.map((p, i) => {
+              const from = runs.slice(0, i).reduce((a, r) => a + r.count, 0)
+              const isNow = idx >= from && idx < from + p.count
+              return (
+                <div key={`${p.name}-${i}`} style={{ flexGrow: p.count, flexBasis: 0 }} className="min-w-0">
+                  <div className={`h-0.5 rounded-full ${isNow ? 'bg-fg-2' : 'bg-muted'}`} />
+                  <span
+                    className={`mt-1 flex items-center gap-1 truncate text-[10px] ${isNow ? 'font-medium text-fg' : 'text-fg-3'} ${
+                      p.count < 4 && !isNow ? 'hidden sm:flex' : ''
+                    }`}
+                  >
+                    {isNow && <span className="size-1.5 shrink-0 rounded-full bg-brand" aria-label="Huidige fase" />}
+                    <span className="truncate">{p.name}</span>
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Sessies van deze week, compact. */}
+        {current && (
+          <div className="border-t border-line pt-4">
+            <p className="mb-1 flex flex-wrap justify-between gap-x-3 text-xs text-fg-3">
+              <span>Sessies</span>
+              <span className="tabular-nums">
+                {sessionsLeft.length ? `nog ${sessionsLeft.length} vanaf vandaag` : 'alles achter de rug'}
+              </span>
+            </p>
+            <ul className="divide-y divide-line">
+              {days.map((d) => {
+                const sessions = current.sessions.filter((s) => s.date === d)
+                const isRace = current.raceWeek && d === raceDate
+                if (!sessions.length && !isRace) return null
+                const isToday = d === today
+                const past = d < today
+                return (
+                  <li key={d} className="flex gap-3 py-2 text-sm">
+                    <span className={`flex w-10 shrink-0 items-center gap-1 text-xs ${isToday ? 'font-medium text-fg' : 'text-fg-3'}`}>
+                      {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short' }).replace('.', '')}
+                      {isToday && <span className="size-1.5 rounded-full bg-brand" aria-label="Vandaag" />}
+                    </span>
+                    <ul className={`min-w-0 flex-1 space-y-1 ${past ? 'text-fg-3' : 'text-fg'}`}>
+                      {isRace && <li className="font-medium">{race.name}</li>}
+                      {sessions.map((s, i) => (
+                        <li key={i} className="flex items-center gap-2">
+                          <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[s.sport]}`} aria-hidden />
+                          <span className="min-w-0 flex-1 truncate">{s.title}</span>
+                          <span className="shrink-0 text-xs text-fg-3 tabular-nums">{formatDuration(s.duration_min)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 function Summary({ settings, weeks, onEdit }: { settings: PlanSettings; weeks: PlanWeek[]; onEdit: () => void }) {
   const total = weeks.reduce((a, w) => a + w.minutes, 0)
   const peak = Math.max(...weeks.map((w) => w.minutes))
-  const current = weeks.find((w) => w.start === weekStart(new Date()))
   const level = LEVELS[settings.level]
   return (
     <Card
@@ -235,9 +364,7 @@ function Summary({ settings, weeks, onEdit }: { settings: PlanSettings; weeks: P
         <Stat tile label="Weken" value={String(weeks.length)} />
         <Stat tile label="Totaal" value={`${Math.round(total / 60)} u`} />
         <Stat tile label="Piekweek" value={formatDuration(peak)} />
-        {current && (
-          <Stat tile label="Deze week" value={formatDuration(current.minutes)} sub={`${current.phase.name}${current.recovery ? ' · herstel' : ''}`} />
-        )}
+        <Stat tile label="Gemiddeld" value={formatDuration(total / weeks.length)} sub="per week" />
       </div>
     </Card>
   )
@@ -248,12 +375,7 @@ function PlanChart({ weeks }: { weeks: PlanWeek[] }) {
   const thisWeek = weekStart(new Date())
   const maxMin = Math.max(...weeks.map((w) => w.minutes))
   const maxH = Math.ceil(maxMin / 60 / 5) * 5
-  const phases = weeks.reduce<{ name: string; count: number }[]>((acc, w) => {
-    const last = acc[acc.length - 1]
-    if (last?.name === w.phase.name) last.count++
-    else acc.push({ name: w.phase.name, count: 1 })
-    return acc
-  }, [])
+  const phases = phaseRuns(weeks)
   const hovered = hover !== null ? weeks[hover] : null
 
   return (
@@ -285,10 +407,11 @@ function PlanChart({ weeks }: { weeks: PlanWeek[] }) {
               onMouseLeave={() => setHover(null)}
             >
               <div
-                className={`w-full rounded-t-sm transition-opacity ${
+                className={`w-full origin-bottom animate-grow-y rounded-t-sm transition-opacity ${
                   w.start === thisWeek ? 'bg-brand' : w.recovery ? 'bg-line-strong' : 'bg-fg-3'
                 } ${hover !== null && hover !== i ? 'opacity-40' : ''}`}
-                style={{ height: `${(w.minutes / 60 / maxH) * 100}%` }}
+                // Lichte stagger van links naar rechts, afgetopt zodat lange plannen niet blijven hangen.
+                style={{ height: `${(w.minutes / 60 / maxH) * 100}%`, animationDelay: `${Math.min(i * 20, 600)}ms` }}
               />
             </div>
           ))}
@@ -352,7 +475,12 @@ function ApplyCard({ weeks, onShowSchedule }: { weeks: PlanWeek[]; onShowSchedul
   const until = range === 'all' ? addDays(weeks[weeks.length - 1]?.start ?? current, 6) : addDays(current, Number(range) * 7 - 1)
 
   async function handleApply() {
-    if (!confirm(`Plan-sessies t/m ${formatShortDate(until)} in je schema zetten? Eerder toegepaste plan-sessies die je nog niet deed, worden vervangen. Je eigen sessies blijven staan.`)) return
+    const ok = await ask({
+      title: `Plan-sessies t/m ${formatShortDate(until)} in je schema zetten?`,
+      body: 'Eerder toegepaste plan-sessies die je nog niet deed, worden vervangen. Je eigen sessies blijven staan.',
+      confirm: 'In schema zetten',
+    })
+    if (!ok) return
     setBusy(true)
     setResult(null)
     try {

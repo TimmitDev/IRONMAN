@@ -6,6 +6,7 @@ import { PageHeader } from '../components/PageHeader'
 import { Switch } from '../components/Switch'
 import { ThemeToggle } from '../components/ThemeToggle'
 import { useAuth } from '../lib/auth'
+import { ask } from '../lib/feedback'
 import { RaceFields, raceDraft, validateRace, type RaceDraft } from '../components/RaceFields'
 import { useMe } from '../lib/profile'
 import { useRace } from '../lib/raceContext'
@@ -266,7 +267,7 @@ function StravaSection() {
   }, [params])
 
   async function run(action: 'sync' | 'disconnect') {
-    if (action === 'disconnect' && !confirm('Strava ontkoppelen? Geïmporteerde trainingen blijven staan.')) return
+    if (action === 'disconnect' && !(await ask({ title: 'Strava ontkoppelen?', body: 'Geïmporteerde trainingen blijven staan.', confirm: 'Ontkoppelen', danger: true }))) return
     setBusy(action)
     setStatus(null)
     try {

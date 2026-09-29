@@ -37,7 +37,8 @@ function usePopover() {
   return { open, setOpen, ref }
 }
 
-const panelClass = 'absolute top-full right-0 z-40 mt-2 rounded-xl border border-line bg-surface p-1.5 shadow-lg shadow-black/5 dark:shadow-black/40'
+const panelClass =
+  'absolute top-full right-0 z-40 mt-2 origin-top-right animate-pop rounded-xl border border-line bg-surface p-1.5 shadow-lg shadow-black/5 dark:shadow-black/40'
 
 /**
  * Smalle balk bovenaan (desktop): spelers zoeken, meldingen en je profielmenu (met thema en uitloggen).

@@ -17,13 +17,14 @@ export function Modal({ title, description, onClose, children }: { title: string
   }, [onClose])
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-overlay backdrop-blur-[2px] sm:items-center sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex animate-fade-in items-end justify-center bg-overlay backdrop-blur-[2px] sm:items-center sm:p-4" onClick={onClose}>
+      {/* Mobiel schuift het venster van onderen in; vanaf sm verschijnt het zacht. */}
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl shadow-black/5 sm:max-w-lg sm:rounded-xl sm:p-6"
+        className="max-h-[92dvh] w-full animate-sheet overflow-y-auto rounded-t-2xl border border-line bg-surface p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))] shadow-xl shadow-black/5 sm:max-w-lg sm:animate-pop sm:rounded-xl sm:p-6"
       >
         {/* Grijpbalkje: herkenbaar als bottom sheet op mobiel. */}
         <div className="mx-auto -mt-2 mb-3 h-1 w-9 rounded-full bg-line-strong sm:hidden" aria-hidden />

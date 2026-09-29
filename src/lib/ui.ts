@@ -10,7 +10,7 @@ export const labelClass = 'mb-1.5 block text-sm text-fg-2'
 export const hintClass = 'mt-1.5 text-xs text-fg-3'
 
 const buttonBase =
-  'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40'
+  'inline-flex h-9 items-center justify-center gap-2 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition active:scale-[0.98] focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40'
 
 /** Hoofdactie: neutraal (zwart in light, wit in dark). Rood is voorbehouden aan kleine accenten. */
 export const primaryButton = `${buttonBase} bg-fg text-canvas hover:opacity-85 active:opacity-75`
