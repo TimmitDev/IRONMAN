@@ -91,7 +91,7 @@ function barSegments(r: LeaderboardRow, metric: Metric): { cls: string; value: n
       const part = r[`${s}_km`] / 3 / IRONMAN_DISTANCES[s]
       return { cls: SPORT_BG[s], value: part, label: `${SPORT_LABEL[s]} ${Math.round(r[`${s}_km`] * 10) / 10} km` }
     })
-  return [{ cls: 'bg-brand', value: Math.max(0, metricValue(r, metric)), label: '' }]
+  return [{ cls: 'bg-fg-3', value: Math.max(0, metricValue(r, metric)), label: '' }]
 }
 
 export function Leaderboard() {
@@ -134,7 +134,7 @@ export function Leaderboard() {
       />
 
       {/* Mobiel: zoeken, ranking, titels onder elkaar. Desktop: ranking links, zoeken en titels rechts. */}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr] xl:items-start">
+      <div className="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:grid-rows-[auto_1fr] xl:items-start">
         <div className="xl:col-start-2 xl:row-start-1">
           <PlayerSearch />
         </div>
@@ -155,7 +155,7 @@ export function Leaderboard() {
             {loading && ranked.length === 0 && (
               <div className="space-y-2 px-5 pb-5 sm:px-6">
                 {[0, 1, 2].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-xl bg-muted" />
+                  <div key={i} className="h-16 animate-pulse rounded-lg bg-subtle" />
                 ))}
               </div>
             )}
@@ -170,27 +170,23 @@ export function Leaderboard() {
                   <li key={r.user_id}>
                     <Link
                       to={`/leaderboard/${r.user_id}`}
-                      className={`block px-5 py-4 transition sm:px-6 ${isMe ? 'bg-brand/5 hover:bg-brand/10' : 'hover:bg-hover'}`}
+                      className={`block px-5 py-4 transition hover:bg-hover sm:px-6 ${isMe ? 'bg-subtle' : ''}`}
                     >
                       <div className="flex items-center gap-3 sm:gap-4">
-                        <span
-                          className={`flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums ${
-                            i === 0 ? 'bg-brand text-white' : i < 3 ? 'bg-brand/10 text-brand' : 'bg-muted text-fg-3'
-                          }`}
-                        >
+                        <span className="relative w-6 shrink-0 text-center text-sm text-fg-3 tabular-nums">
                           {i + 1}
+                          {i === 0 && <span className="absolute top-0 -right-0.5 size-1.5 rounded-full bg-brand" aria-hidden />}
                         </span>
                         <Avatar name={r.display_name} highlight={isMe} />
                         <div className="min-w-0 flex-1">
-                          <p className="flex min-w-0 items-center gap-2 font-semibold text-fg">
+                          <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-fg">
                             <span className="truncate">{r.display_name}</span>
                             {isMe && <span className={pillClass}>jij</span>}
                           </p>
                           {rowTitles && (
                             <div className="mt-1 flex flex-wrap gap-1">
                               {rowTitles.map((t) => (
-                                <span key={t.name} title={t.hint} className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand">
-                                  <Icon name="trophy" className="size-3" />
+                                <span key={t.name} title={t.hint} className={pillClass}>
                                   {t.name}
                                 </span>
                               ))}
@@ -198,11 +194,11 @@ export function Leaderboard() {
                           )}
                         </div>
                         <div className="shrink-0 text-right">
-                          <p className="text-lg font-semibold tracking-tight text-fg tabular-nums sm:text-xl">{main}</p>
+                          <p className="text-lg font-medium tracking-tight text-fg tabular-nums">{main}</p>
                           <p className="text-xs text-fg-3">{sub}</p>
                         </div>
                       </div>
-                      <div className="mt-3 h-2 rounded-full bg-muted sm:ml-12">
+                      <div className="mt-3 h-1.5 rounded-full bg-muted sm:ml-10">
                         <div className="flex h-full gap-[2px] overflow-hidden rounded-full" style={{ width: `${max > 0 ? (value / max) * 100 : 0}%` }}>
                           {segments.map((s) => (
                             <div key={s.cls} className={s.cls} style={{ flexGrow: s.value }} title={s.label} />
@@ -218,7 +214,7 @@ export function Leaderboard() {
               <div className="flex flex-wrap gap-x-4 gap-y-1 border-t border-line px-5 py-3 text-xs text-fg-3 sm:px-6">
                 {legend.map((s) => (
                   <span key={s} className="inline-flex items-center gap-1.5">
-                    <span className={`size-2 rounded-sm ${SPORT_BG[s]}`} />
+                    <span className={`size-1.5 rounded-full ${SPORT_BG[s]}`} />
                     {SPORT_LABEL[s]}
                   </span>
                 ))}
@@ -231,10 +227,8 @@ export function Leaderboard() {
           <Card title="Titels" description="De beste in elke categorie krijgt een titel (vanaf twee spelers).">
             <ul className="divide-y divide-line">
               {TITLES.map((t) => (
-                <li key={t.name} className="flex items-center gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
-                  <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                    <Icon name="trophy" className="size-4" />
-                  </span>
+                <li key={t.name} className="flex items-center gap-3 py-3 text-sm first:pt-0 last:pb-0">
+                  <Icon name="trophy" className="size-4 shrink-0 text-fg-4" />
                   <div className="min-w-0">
                     <p className="font-medium text-fg">{t.name}</p>
                     <p className="text-xs text-fg-3">{t.hint.charAt(0).toUpperCase() + t.hint.slice(1)}</p>
@@ -270,7 +264,7 @@ function PlayerSearch() {
         <ul className={`-mx-2 mt-3 ${loading ? 'opacity-50' : ''}`}>
           {hits.map((h) => (
             <li key={h.id}>
-              <Link to={`/leaderboard/${h.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 text-sm text-fg transition hover:bg-hover">
+              <Link to={`/leaderboard/${h.id}`} className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm text-fg transition hover:bg-hover">
                 <Avatar name={h.display_name} size="sm" />
                 <span className="min-w-0 flex-1 truncate font-medium">{h.display_name}</span>
                 <Icon name="chevron-right" className="size-4 text-fg-4" />

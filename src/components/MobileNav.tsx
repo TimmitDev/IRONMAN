@@ -18,7 +18,7 @@ const TABS: { to: string; label: string; icon: IconName; end?: boolean }[] = [
 const MORE = NAV.filter((n) => !TABS.some((t) => t.to === n.to))
 
 const tabClass = (active: boolean) =>
-  `relative flex flex-1 flex-col items-center gap-1 pt-2 pb-1.5 text-[11px] font-medium transition ${active ? 'text-brand' : 'text-fg-3 active:text-fg'}`
+  `relative flex flex-1 flex-col items-center gap-1 pt-2 pb-1.5 text-[11px] transition ${active ? 'font-medium text-fg' : 'text-fg-4 active:text-fg'}`
 
 /**
  * Mobiele navigatie (onder lg): Home · Schema · + · Mijn · Meer.
@@ -34,9 +34,7 @@ export function MobileNav({ unread }: { unread: number }) {
       <span className="relative">
         <Icon name={t.icon} className="size-6" />
         {t.to === '/' && unread > 0 && (
-          <span className="absolute -top-1 -right-2 min-w-4 rounded-full bg-brand px-1 text-center text-[10px] leading-4 font-bold text-white tabular-nums ring-2 ring-surface">
-            {unread > 9 ? '9+' : unread}
-          </span>
+          <span className="absolute -top-0.5 -right-0.5 size-2 rounded-full bg-brand ring-2 ring-surface" aria-label={`${unread} nieuwe meldingen`} />
         )}
       </span>
       {t.label}
@@ -46,16 +44,16 @@ export function MobileNav({ unread }: { unread: number }) {
   return (
     <>
       <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden" aria-label="Hoofdmenu">
-        <div className="mx-auto flex max-w-lg items-end">
+        <div className="mx-auto flex max-w-lg items-center">
           {tab(TABS[0])}
           {tab(TABS[1])}
           <div className="flex flex-1 justify-center">
             <Link
               to="/workouts"
-              className="-mt-5 flex size-14 items-center justify-center rounded-2xl bg-brand text-white shadow-lg shadow-brand/30 transition active:scale-95"
+              className="flex size-11 items-center justify-center rounded-full bg-fg text-canvas transition active:scale-95"
               aria-label="Training loggen"
             >
-              <Icon name="plus" className="size-6" strokeWidth={2.5} />
+              <Icon name="plus" className="size-5" strokeWidth={2} />
             </Link>
           </div>
           {tab(TABS[2])}
@@ -84,12 +82,10 @@ function MoreSheet({ pathname, onClose }: { pathname: string; onClose: () => voi
   return (
     <Modal title="Menu" onClose={onClose}>
       {/* Profiel, zoals bovenaan de zijbalk op desktop. */}
-      <Link to={`/leaderboard/${me.id}`} onClick={onClose} className="flex items-center gap-3 rounded-2xl bg-subtle p-3 transition active:bg-hover">
-        <span className="rounded-full p-0.5 ring-2 ring-brand/70">
-          <Avatar name={me.display_name} size="lg" />
-        </span>
+      <Link to={`/leaderboard/${me.id}`} onClick={onClose} className="flex items-center gap-3 rounded-lg border border-line p-3 transition active:bg-hover">
+        <Avatar name={me.display_name} size="md" />
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-bold text-fg">{me.display_name}</span>
+          <span className="block truncate text-sm font-medium text-fg">{me.display_name}</span>
           <span className="block text-xs text-fg-3">Bekijk je profiel</span>
         </span>
         <Icon name="chevron-right" className="size-5 text-fg-4" />
@@ -98,7 +94,7 @@ function MoreSheet({ pathname, onClose }: { pathname: string; onClose: () => voi
         {stats.map((s) => (
           <div key={s.label} className="flex flex-col-reverse">
             <dt className="text-xs text-fg-3">{s.label}</dt>
-            <dd className="text-lg font-bold tracking-tight text-fg tabular-nums">{s.value ?? '–'}</dd>
+            <dd className="text-base font-medium text-fg tabular-nums">{s.value ?? '–'}</dd>
           </div>
         ))}
       </dl>
@@ -112,14 +108,12 @@ function MoreSheet({ pathname, onClose }: { pathname: string; onClose: () => voi
                 to={n.to}
                 onClick={onClose}
                 aria-current={active ? 'page' : undefined}
-                className={`flex h-full flex-col items-center gap-2 rounded-2xl px-1 py-3.5 text-center transition active:scale-[0.97] ${
-                  active ? 'bg-brand/10 ring-1 ring-brand/30' : 'bg-subtle active:bg-hover'
+                className={`flex h-full flex-col items-center gap-2 rounded-lg border px-1 py-4 text-center transition active:bg-hover ${
+                  active ? 'border-fg-3 bg-subtle' : 'border-line'
                 }`}
               >
-                <span className="flex size-10 items-center justify-center rounded-xl bg-surface shadow-card">
-                  <Icon name={n.icon} className={`size-5 ${n.tint}`} />
-                </span>
-                <span className={`text-xs font-medium ${active ? 'text-brand' : 'text-fg-2'}`}>{n.label}</span>
+                <Icon name={n.icon} className={`size-5 ${active ? 'text-fg' : 'text-fg-3'}`} />
+                <span className={`text-xs ${active ? 'font-medium text-fg' : 'text-fg-2'}`}>{n.label}</span>
               </Link>
             </li>
           )
@@ -131,9 +125,9 @@ function MoreSheet({ pathname, onClose }: { pathname: string; onClose: () => voi
         <button
           type="button"
           onClick={() => supabase.auth.signOut()}
-          className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-fg-2 transition hover:bg-danger/10 hover:text-danger active:bg-danger/10"
+          className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm text-fg-2 transition hover:bg-hover hover:text-danger active:bg-hover"
         >
-          <Icon name="logout" className="size-5" />
+          <Icon name="logout" className="size-[18px] text-fg-3" />
           Uitloggen
         </button>
       </div>

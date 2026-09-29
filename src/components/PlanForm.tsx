@@ -70,7 +70,7 @@ export function PlanForm({
       <DurationFields value={duration} onChange={setDuration} className="col-span-2" />
       {pace && (
         <p className="col-span-2 -mt-1 text-xs text-fg-3">
-          Doeltempo: <span className="font-semibold text-fg tabular-nums">{pace}</span>
+          Doeltempo: <span className="font-medium text-fg tabular-nums">{pace}</span>
         </p>
       )}
       <label className="col-span-2">

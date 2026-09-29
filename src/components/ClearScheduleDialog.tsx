@@ -62,19 +62,19 @@ export function ClearScheduleDialog({ onClose, onCleared }: { onClose: () => voi
               role="radio"
               aria-checked={active}
               onClick={() => setMode(m.key)}
-              className={`flex w-full items-start gap-3 rounded-xl border p-3.5 text-left transition focus-visible:ring-4 focus-visible:ring-danger/20 focus-visible:outline-none ${
-                active ? 'border-danger/50 bg-danger/10' : 'border-line hover:bg-hover'
+              className={`flex w-full items-start gap-3 rounded-lg border p-3.5 text-left transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none ${
+                active ? 'border-fg-3 bg-subtle' : 'border-line hover:bg-hover'
               }`}
             >
               <span
-                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border-2 ${active ? 'border-danger' : 'border-line-strong'}`}
+                className={`mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border ${active ? 'border-fg bg-fg' : 'border-line-strong'}`}
               >
-                {active && <span className="size-1.5 rounded-full bg-danger" />}
+                {active && <span className="size-1.5 rounded-full bg-canvas" />}
               </span>
               <span className="min-w-0 flex-1">
                 <span className="flex justify-between gap-2">
-                  <span className="text-sm font-semibold text-fg">{m.label}</span>
-                  <span className="text-sm font-semibold text-fg-2 tabular-nums">{counts[m.key] ?? '…'}</span>
+                  <span className="text-sm font-medium text-fg">{m.label}</span>
+                  <span className="text-sm text-fg-2 tabular-nums">{counts[m.key] ?? '…'}</span>
                 </span>
                 <span className="mt-0.5 block text-xs text-fg-3">{m.description}</span>
               </span>

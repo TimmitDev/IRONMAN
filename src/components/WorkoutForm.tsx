@@ -79,7 +79,7 @@ export function WorkoutForm({
       </label>
       {pace && (
         <p className={`col-span-2 -mt-1 text-xs text-fg-3 ${lg('lg:col-span-6')}`}>
-          Tempo: <span className="font-semibold text-fg tabular-nums">{pace}</span>
+          Tempo: <span className="font-medium text-fg tabular-nums">{pace}</span>
         </p>
       )}
       <label className={`col-span-2 ${lg('lg:col-span-6')}`}>

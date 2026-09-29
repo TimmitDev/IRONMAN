@@ -46,10 +46,10 @@ export function CompleteDialog({
 
   return (
     <Modal title="Sessie afvinken" description="Vul in wat je echt deed; het plan staat al klaar." onClose={onClose}>
-      <div className="mb-5 flex items-start gap-3 rounded-xl bg-subtle p-4">
-        <span className={`mt-0.5 h-9 w-1 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} />
+      <div className="mb-6 flex items-start gap-3 border-b border-line pb-5">
+        <span className={`mt-0.5 h-9 w-0.5 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} />
         <div className="min-w-0">
-          <p className="font-semibold text-fg break-words">{item.title || SPORT_LABEL[item.sport]}</p>
+          <p className="text-sm font-medium text-fg break-words">{item.title || SPORT_LABEL[item.sport]}</p>
           <p className="mt-0.5 text-sm text-fg-3">
             Gepland {formatShortDate(item.date)}: {formatSessionDuration(item.duration_min)}
             {item.distance_km ? ` · ${item.distance_km} km` : ''}
@@ -69,8 +69,8 @@ export function CompleteDialog({
           <input type="number" min="1" max="10" inputMode="numeric" className={inputClass} value={rpe} onChange={(e) => setRpe(e.target.value)} placeholder="hoe zwaar?" />
         </label>
         {pace && (
-          <p className="col-span-2 rounded-xl bg-subtle px-3.5 py-2.5 text-sm text-fg-2">
-            Tempo: <span className="font-semibold text-fg tabular-nums">{pace}</span>
+          <p className="col-span-2 -mt-1 text-sm text-fg-2">
+            Tempo: <span className="font-medium text-fg tabular-nums">{pace}</span>
             {plannedPace && plannedPace !== pace && <span className="text-fg-3"> (gepland {plannedPace})</span>}
           </p>
         )}

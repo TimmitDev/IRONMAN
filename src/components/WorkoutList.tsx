@@ -22,14 +22,14 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
             {w.route_polyline ? (
               <RouteThumb polyline={w.route_polyline} sport={w.sport} />
             ) : (
-              <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
+              <span className={`h-9 w-0.5 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="truncate font-medium text-fg">{SPORT_LABEL[w.sport]}</span>
                 <span className="shrink-0 text-xs text-fg-3">{formatShortDate(w.date)}</span>
                 {w.strava_activity_id ? (
-                  <span className="shrink-0 rounded px-1 text-[10px] font-bold text-[#FC4C02] ring-1 ring-[#FC4C02]/40 ring-inset" title="Geïmporteerd uit Strava">
+                  <span className="shrink-0 rounded-md px-1 text-[10px] font-medium tracking-wide text-fg-3 ring-1 ring-line ring-inset" title="Geïmporteerd uit Strava">
                     STRAVA
                   </span>
                 ) : null}
@@ -43,7 +43,7 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
               )}
             </div>
             <div className="shrink-0 text-right tabular-nums">
-              <div className="font-semibold tracking-tight text-fg">{formatSessionDuration(w.duration_min)}</div>
+              <div className="font-medium tracking-tight text-fg">{formatSessionDuration(w.duration_min)}</div>
               {w.distance_km ? (
                 <div className="mt-0.5 text-xs text-fg-3">
                   {w.distance_km} km
@@ -58,7 +58,7 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
             {onEdit ? (
               <button
                 onClick={() => onEdit(w)}
-                className="group -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition hover:bg-hover focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
+                className="group -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none"
                 aria-label={`${SPORT_LABEL[w.sport]} ${formatShortDate(w.date)} bewerken`}
               >
                 {content}

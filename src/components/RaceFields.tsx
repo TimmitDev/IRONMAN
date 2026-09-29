@@ -49,18 +49,18 @@ export function RaceFields({ value, onChange }: { value: RaceDraft; onChange: (d
                 type="button"
                 onClick={() => set('type', key)}
                 aria-pressed={active}
-                className={`relative rounded-xl border p-4 text-left transition focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none ${
-                  active ? 'border-brand bg-brand/5' : 'border-line hover:border-line-strong hover:bg-hover'
+                className={`relative rounded-xl border p-4 text-left transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none ${
+                  active ? 'border-fg-3 bg-subtle' : 'border-line hover:border-line-strong hover:bg-hover'
                 }`}
               >
                 {active && (
-                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-brand text-white">
-                    <Icon name="check" className="size-3" strokeWidth={3} />
+                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-fg text-canvas">
+                    <Icon name="check" className="size-3" strokeWidth={2.5} />
                   </span>
                 )}
-                <p className="pr-6 font-semibold text-fg">{type.label}</p>
+                <p className="pr-6 text-sm font-medium text-fg">{type.label}</p>
                 <p className="mt-1 text-xs text-fg-3">{type.description}</p>
-                <p className="mt-3 text-xs font-semibold text-fg-2 tabular-nums">{formatDistances(type.distances)}</p>
+                <p className="mt-3 text-xs text-fg-2 tabular-nums">{formatDistances(type.distances)}</p>
               </button>
             )
           })}

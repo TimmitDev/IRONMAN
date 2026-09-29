@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { Avatar } from '../components/Avatar'
 import { FollowButton } from '../components/FollowButton'
+import { Logo } from '../components/Logo'
 import { Icon, type IconName } from '../components/Icon'
 import { PageLoader } from '../components/Layout'
 import { RaceFields, raceDraft, validateRace, type RaceDraft } from '../components/RaceFields'
@@ -47,9 +48,7 @@ export function Onboarding() {
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-10 border-b border-line bg-surface/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-3 px-4 sm:gap-4 sm:px-6">
-          <span className="text-lg font-black tracking-tight italic">
-            IRON<span className="text-brand">MAN</span>
-          </span>
+          <Logo link={false} />
           {/* Kort op mobiel, zodat logo, teller en themaknoppen ook op 360px naast elkaar passen. */}
           <span className="ml-auto text-sm text-fg-3 tabular-nums">
             <span className="sm:hidden">
@@ -61,8 +60,8 @@ export function Onboarding() {
           </span>
           <ThemeToggle />
         </div>
-        <div className="h-1 bg-muted">
-          <div className="h-full bg-brand transition-all duration-500" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
+        <div className="h-0.5 bg-muted">
+          <div className="h-full bg-fg transition-all duration-500" style={{ width: `${((step + 1) / STEPS.length) * 100}%` }} />
         </div>
       </header>
 
@@ -82,11 +81,9 @@ export function Onboarding() {
 function StepHeader({ icon, title, children }: { icon: IconName; title: string; children: ReactNode }) {
   return (
     <div className="mb-8">
-      <span className="flex size-12 items-center justify-center rounded-2xl bg-brand/10 text-brand">
-        <Icon name={icon} className="size-6" />
-      </span>
-      <h1 className="mt-5 text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-      <p className="mt-2 text-fg-3">{children}</p>
+      <Icon name={icon} className="size-5 text-fg-3" />
+      <h1 className="mt-4 text-2xl font-semibold tracking-tight text-fg sm:text-[28px]">{title}</h1>
+      <p className="mt-2 text-sm text-fg-3">{children}</p>
     </div>
   )
 }
@@ -137,7 +134,7 @@ function StepActions({
 }
 
 function ErrorText({ error }: { error: string | null }) {
-  return error ? <p className="mt-4 rounded-xl bg-danger/10 px-3.5 py-2.5 text-sm text-danger">{error}</p> : null
+  return error ? <p className="mt-4 text-sm text-danger">{error}</p> : null
 }
 
 function WelcomeStep({ onNext }: { onNext: () => void }) {
@@ -150,24 +147,22 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
   ]
   return (
     <div className="flex flex-1 flex-col">
-      <div className="rounded-3xl border border-line bg-surface p-6 shadow-card sm:p-8">
-        <p className="text-sm font-semibold text-brand">Welkom!</p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">Samen op weg naar de finish.</h1>
-        <p className="mt-3 text-fg-3">
+      <div>
+        <p className="text-sm text-fg-3">Welkom</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-fg sm:text-4xl">Samen op weg naar de finish.</h1>
+        <p className="mt-3 text-sm text-fg-3">
           We zetten je in een paar stappen klaar voor je race, van sprint tot volledige afstand. Alles kan je later nog aanpassen in Instellingen.
         </p>
       </div>
-      <ul className="mt-8 grid gap-3 sm:grid-cols-2">
+      <ul className="mt-10 divide-y divide-line border-y border-line">
         {items.map((i, n) => (
-          <li key={i.title} className="flex gap-4 rounded-2xl border border-line bg-surface p-4 shadow-card">
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-subtle text-fg-2">
-              <Icon name={i.icon} />
-            </span>
-            <span className="min-w-0">
-              <span className="block text-xs font-medium text-fg-4">Stap {n + 2}</span>
-              <span className="block font-semibold">{i.title}</span>
+          <li key={i.title} className="flex gap-4 py-4">
+            <Icon name={i.icon} className="mt-0.5 size-[18px] shrink-0 text-fg-3" />
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium text-fg">{i.title}</span>
               <span className="block text-sm text-fg-3">{i.text}</span>
             </span>
+            <span className="shrink-0 text-xs text-fg-4 tabular-nums">Stap {n + 2}</span>
           </li>
         ))}
       </ul>
@@ -222,7 +217,7 @@ function ProfileStep({
         Je naam verschijnt in de feed, bij kudos en op het leaderboard.
       </StepHeader>
 
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
         <div className="flex items-center gap-4">
           <Avatar name={name || '?'} size="lg" />
           <label className="min-w-0 flex-1">
@@ -233,8 +228,8 @@ function ProfileStep({
         <p className={hintClass}>Maximaal 30 tekens. Je voornaam of een bijnaam werkt prima.</p>
       </div>
 
-      <div className="mt-4 space-y-5 rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
-        <div className="flex items-center gap-2 text-sm font-semibold">
+      <div className="mt-4 space-y-5 rounded-xl border border-line bg-surface p-5 sm:p-6">
+        <div className="flex items-center gap-2 text-sm font-medium text-fg">
           <Icon name="shield" className="size-4 text-fg-3" />
           Privacy
         </div>
@@ -309,7 +304,7 @@ function RaceStep({
         volledige afstand.
       </StepHeader>
 
-      <div className="rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
         <RaceFields value={draft} onChange={setDraft} />
       </div>
 
@@ -375,31 +370,31 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
                 type="button"
                 onClick={() => set('level', key)}
                 aria-pressed={active}
-                className={`relative rounded-2xl border p-4 text-left transition ${
-                  active ? 'border-brand bg-brand/5 ring-4 ring-brand/10' : 'border-line bg-surface shadow-card hover:border-line-strong'
+                className={`relative rounded-xl border p-4 text-left transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none ${
+                  active ? 'border-fg-3 bg-subtle' : 'border-line bg-surface hover:border-line-strong hover:bg-hover'
                 }`}
               >
                 {active && (
-                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-brand text-white">
-                    <Icon name="check" className="size-3" strokeWidth={3} />
+                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-fg text-canvas">
+                    <Icon name="check" className="size-3" strokeWidth={2.5} />
                   </span>
                 )}
-                <p className="font-semibold">{level.label}</p>
+                <p className="pr-6 text-sm font-medium text-fg">{level.label}</p>
                 <p className="mt-1 text-sm text-fg-3">{level.description}</p>
-                <p className="mt-3 text-xs font-medium text-fg-2">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
+                <p className="mt-3 text-xs text-fg-2 tabular-nums">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
               </button>
             )
           })}
         </div>
       </fieldset>
 
-      <div className="mt-6 grid gap-4 rounded-2xl border border-line bg-surface p-5 shadow-card sm:grid-cols-3 sm:p-6">
+      <div className="mt-6 grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-3 sm:p-6">
         {daySelect('restDay', 'Rustdag')}
         {daySelect('longBikeDay', 'Lange rit')}
         {daySelect('longRunDay', 'Lange loop')}
       </div>
 
-      <div className="mt-4 rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">
+      <div className="mt-4 rounded-xl border border-line bg-surface p-5 sm:p-6">
         <Switch
           checked={fillSchedule}
           onChange={setFillSchedule}
@@ -473,11 +468,11 @@ function GoalsForm({
         {fromPlan ? 'We vulden alvast in wat je plan deze week voorziet.' : `Een voorstel voor de fase ${currentPhase(race).name}.`} Pas gerust aan.
       </StepHeader>
 
-      <div className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
+      <div className="divide-y divide-line rounded-xl border border-line bg-surface">
         {SPORTS.map((sp) => (
-          <label key={sp} className="flex items-center gap-4 px-5 py-4 sm:px-6">
-            <span className={`h-8 w-1.5 shrink-0 rounded-full ${SPORT_BG[sp]}`} />
-            <span className="min-w-0 flex-1 font-medium">{SPORT_LABEL[sp]}</span>
+          <label key={sp} className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
+            <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[sp]}`} />
+            <span className="min-w-0 flex-1 text-sm font-medium text-fg">{SPORT_LABEL[sp]}</span>
             <span className="relative w-32">
               <input
                 type="number"
@@ -495,7 +490,7 @@ function GoalsForm({
         ))}
         <div className="flex items-center justify-between px-5 py-4 sm:px-6">
           <span className="text-sm text-fg-3">Totaal per week</span>
-          <span className="text-lg font-semibold tabular-nums">{formatDuration(total)}</span>
+          <span className="text-lg font-medium tracking-tight text-fg tabular-nums">{formatDuration(total)}</span>
         </div>
       </div>
 
@@ -516,17 +511,17 @@ function CommunityStep({ meId, onBack, onNext }: { meId: string; onBack: () => v
       </StepHeader>
 
       {players.length ? (
-        <ul className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
+        <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
           {players.map((p) => (
             <li key={p.user_id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
               <Avatar name={p.display_name} size="sm" />
-              <span className="min-w-0 flex-1 truncate font-medium">{p.display_name}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-medium text-fg">{p.display_name}</span>
               <FollowButton person={p} follows={follows} />
             </li>
           ))}
         </ul>
       ) : (
-        <div className="rounded-2xl border border-dashed border-line-strong p-8 text-center text-sm text-fg-3">
+        <div className="rounded-xl border border-dashed border-line-strong p-8 text-center text-sm text-fg-3">
           Je bent een van de eersten! Zodra anderen meedoen, vind je ze op het leaderboard.
         </div>
       )}
@@ -539,14 +534,12 @@ function CommunityStep({ meId, onBack, onNext }: { meId: string; onBack: () => v
 function DoneStep({ name, onFinish }: { name: string; onFinish: () => void }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center text-center">
-      <span className="flex size-16 items-center justify-center rounded-3xl bg-brand text-white shadow-lg shadow-brand/30">
-        <Icon name="flag" className="size-8" />
-      </span>
-      <h1 className="mt-6 text-3xl font-bold tracking-tight">Klaar voor de start, {name}!</h1>
-      <p className="mt-3 max-w-md text-fg-3">
+      <Icon name="flag" className="size-6 text-fg-3" />
+      <h1 className="mt-5 text-3xl font-semibold tracking-tight text-fg">Klaar voor de start, {name}!</h1>
+      <p className="mt-3 max-w-md text-sm text-fg-3">
         Je home toont je feed en je vrienden, je dashboard je voortgang. Log je eerste training om je eerste badge te verdienen.
       </p>
-      <button onClick={onFinish} className={`mt-10 h-12 px-6 ${primaryButton}`}>
+      <button onClick={onFinish} className={`${primaryButton} mt-10`}>
         Naar de app
         <Icon name="arrow-right" className="size-4" />
       </button>

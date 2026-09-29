@@ -164,18 +164,18 @@ function SettingsForm({
                 type="button"
                 onClick={() => set('level', key)}
                 aria-pressed={active}
-                className={`relative rounded-xl border p-4 text-left transition focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none ${
-                  active ? 'border-brand bg-brand/5' : 'border-line hover:border-line-strong hover:bg-hover'
+                className={`relative rounded-xl border p-4 text-left transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none ${
+                  active ? 'border-fg-3 bg-subtle' : 'border-line hover:border-line-strong hover:bg-hover'
                 }`}
               >
                 {active && (
-                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-brand text-white">
-                    <Icon name="check" className="size-3" strokeWidth={3} />
+                  <span className="absolute top-3 right-3 flex size-5 items-center justify-center rounded-full bg-fg text-canvas">
+                    <Icon name="check" className="size-3" strokeWidth={2.5} />
                   </span>
                 )}
-                <p className="pr-6 font-semibold text-fg">{level.label}</p>
+                <p className="pr-6 text-sm font-medium text-fg">{level.label}</p>
                 <p className="mt-1 text-xs text-fg-3">{level.description}</p>
-                <p className="mt-3 text-xs font-semibold text-fg-2 tabular-nums">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
+                <p className="mt-3 text-xs text-fg-2 tabular-nums">Piekweek ±{Math.round(level.peakHours * scale)} uur</p>
               </button>
             )
           })}
@@ -295,12 +295,12 @@ function PlanChart({ weeks }: { weeks: PlanWeek[] }) {
         </div>
 
         {hovered && (
-          <div className="pointer-events-none absolute top-0 right-0 z-10 w-52 rounded-xl border border-line bg-surface p-3 text-xs shadow-lg">
-            <p className="font-semibold text-fg">
+          <div className="pointer-events-none absolute top-0 right-0 z-10 w-52 rounded-lg border border-line bg-surface p-3 text-xs">
+            <p className="font-medium text-fg">
               Week {hovered.index} · {formatShortDate(hovered.start)}
             </p>
             <p className="text-fg-3">
-              {hovered.raceWeek ? 'Raceweek 🏁' : hovered.phase.name}
+              {hovered.raceWeek ? 'Raceweek' : hovered.phase.name}
               {hovered.recovery ? ' · herstelweek' : ''}
             </p>
             <div className="mt-2 space-y-1">
@@ -309,7 +309,7 @@ function PlanChart({ weeks }: { weeks: PlanWeek[] }) {
                 return min ? (
                   <div key={s} className="flex justify-between text-fg-2">
                     <span className="inline-flex items-center gap-1.5">
-                      <span className={`size-2 rounded-sm ${SPORT_BG[s]}`} />
+                      <span className={`size-1.5 rounded-full ${SPORT_BG[s]}`} />
                       {SPORT_LABEL[s]}
                     </span>
                     <span className="tabular-nums">{formatDuration(min)}</span>
@@ -317,7 +317,7 @@ function PlanChart({ weeks }: { weeks: PlanWeek[] }) {
                 ) : null
               })}
             </div>
-            <div className="mt-2 flex justify-between border-t border-line pt-2 font-semibold text-fg">
+            <div className="mt-2 flex justify-between border-t border-line pt-2 font-medium text-fg">
               <span>Totaal</span>
               <span className="tabular-nums">{formatDuration(hovered.minutes)}</span>
             </div>
@@ -378,7 +378,7 @@ function ApplyCard({ weeks, onShowSchedule }: { weeks: PlanWeek[]; onShowSchedul
         </button>
       </div>
       {result && (
-        <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl bg-subtle px-4 py-3 text-sm text-fg-2">
+        <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-4 text-sm text-fg-2">
           <span>{result}</span>
           <button onClick={onShowSchedule} className={`${linkClass} inline-flex items-center gap-1`}>
             Bekijk weekschema
@@ -406,7 +406,7 @@ function WeekList({ weeks }: { weeks: PlanWeek[] }) {
         </button>
       }
     >
-      <div className="space-y-2">
+      <div className="-mx-5 divide-y divide-line border-t border-line sm:-mx-6">
         {visible.map((w) => (
           <WeekCard key={w.start} week={w} open={w.start === current} />
         ))}
@@ -420,42 +420,42 @@ function WeekCard({ week, open }: { week: PlanWeek; open: boolean }) {
   const raceDate = toISODate(race.date)
   const days = Array.from({ length: 7 }, (_, i) => addDays(week.start, i))
   return (
-    <details open={open} className="group rounded-xl border border-line bg-subtle">
-      <summary className="flex cursor-pointer list-none items-center gap-3 rounded-xl p-3 transition hover:bg-hover sm:p-4 [&::-webkit-details-marker]:hidden">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-surface text-sm font-semibold text-fg-2 tabular-nums shadow-sm">
-          {week.index}
-        </span>
+    <details open={open} className="group">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-5 py-3.5 transition hover:bg-hover sm:px-6 [&::-webkit-details-marker]:hidden">
+        <span className="w-6 shrink-0 text-sm text-fg-3 tabular-nums">{week.index}</span>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-fg tabular-nums">
+          <p className="flex items-center gap-1.5 text-sm font-medium text-fg tabular-nums">
+            {open && <span className="size-1.5 shrink-0 rounded-full bg-brand" aria-label="Deze week" />}
             {formatShortDate(week.start)} – {formatShortDate(addDays(week.start, 6))}
           </p>
           <p className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-fg-3">
-            <span>{week.raceWeek ? 'Raceweek 🏁' : week.phase.name}</span>
+            <span>{week.raceWeek ? 'Raceweek' : week.phase.name}</span>
             {week.recovery && <span className={pillClass}>herstelweek</span>}
             <span>· {week.sessions.length} sessies</span>
           </p>
         </div>
-        <span className="text-base font-semibold tracking-tight text-fg tabular-nums">{formatDuration(week.minutes)}</span>
-        <Icon name="chevron-down" className="size-4 text-fg-3 transition group-open:rotate-180" />
+        <span className="text-sm font-medium tracking-tight text-fg tabular-nums">{formatDuration(week.minutes)}</span>
+        <Icon name="chevron-down" className="size-4 text-fg-4 transition group-open:rotate-180" />
       </summary>
-      <div className="grid gap-2 border-t border-line p-3 sm:grid-cols-2 sm:p-4 lg:grid-cols-4">
+      <div className="grid gap-2 px-5 pb-5 sm:grid-cols-2 sm:px-6 lg:grid-cols-4">
         {days.map((d) => {
           const sessions = week.sessions.filter((s) => s.date === d)
           const isRace = week.raceWeek && d === raceDate
           return (
-            <div key={d} className={`rounded-lg p-3 ${isRace ? 'bg-brand/10' : sessions.length ? 'border border-line bg-surface' : ''}`}>
-              <p className={`mb-1.5 text-[11px] font-semibold tracking-wide uppercase ${isRace ? 'text-brand' : 'text-fg-3'}`}>
+            <div key={d} className={`rounded-lg p-3 ${isRace ? 'border border-fg-3' : sessions.length ? 'border border-line' : ''}`}>
+              <p className={`mb-1.5 flex items-center gap-1.5 text-xs ${isRace ? 'font-medium text-fg' : 'text-fg-3'}`}>
+                {isRace && <span className="size-1.5 rounded-full bg-brand" aria-hidden />}
                 {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short', day: 'numeric', month: 'short' })}
               </p>
               {isRace ? (
-                <p className="text-sm font-semibold text-fg">🏁 {race.name}</p>
+                <p className="text-sm font-medium text-fg">{race.name}</p>
               ) : sessions.length ? (
                 <ul className="space-y-2.5">
                   {sessions.map((s, i) => {
                     const pace = formatPace(s.sport, s.duration_min, s.distance_km)
                     return (
                       <li key={i} className="flex gap-2">
-                        <span className={`mt-1 h-3.5 w-1 shrink-0 rounded-full ${SPORT_BG[s.sport]}`} />
+                        <span className={`mt-1 h-3.5 w-0.5 shrink-0 rounded-full ${SPORT_BG[s.sport]}`} />
                         <div className="min-w-0">
                           <p className="text-sm leading-tight font-medium text-fg">{s.title}</p>
                           <p className="mt-0.5 flex flex-wrap gap-x-1.5 text-xs text-fg-3 tabular-nums">

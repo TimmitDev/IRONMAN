@@ -26,7 +26,7 @@ export function RouteThumb({ polyline, sport, className = 'size-10' }: { polylin
 
   if (!path) return null
   return (
-    <svg viewBox="0 0 40 40" className={`shrink-0 rounded-lg bg-subtle ${className}`} aria-hidden>
+    <svg viewBox="0 0 40 40" className={`shrink-0 rounded-md bg-subtle ${className}`} aria-hidden>
       <path d={path} fill="none" stroke={SPORT_HEX[sport]} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )

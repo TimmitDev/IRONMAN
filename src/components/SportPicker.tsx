@@ -6,7 +6,7 @@ export function SportPicker({ value, onChange }: { value: Sport; onChange: (s: S
   return (
     <fieldset>
       <legend className={labelClass}>Sport</legend>
-      <div className="grid grid-cols-4 gap-1 rounded-xl bg-muted p-1">
+      <div className="grid grid-cols-4 gap-0.5 rounded-lg bg-subtle p-0.5">
         {SPORTS.map((s) => {
           const active = value === s
           return (
@@ -15,11 +15,11 @@ export function SportPicker({ value, onChange }: { value: Sport; onChange: (s: S
               type="button"
               onClick={() => onChange(s)}
               aria-pressed={active}
-              className={`flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium transition focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none ${
-                active ? 'bg-surface text-fg shadow-sm' : 'text-fg-3 hover:text-fg'
+              className={`flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 text-sm transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none ${
+                active ? 'bg-surface font-medium text-fg ring-1 ring-line' : 'text-fg-3 hover:text-fg'
               }`}
             >
-              <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[s]}`} />
+              <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[s]}`} />
               <span className="truncate">{SPORT_LABEL[s]}</span>
             </button>
           )

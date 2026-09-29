@@ -15,20 +15,20 @@ import { Stat } from './Stat'
 function headline(goalPct: number | null, delta: number | null, total: number): [string, string] {
   if (total === 0) return ['Rustweek', 'Geen trainingen gelogd. Soms is rust precies wat je lichaam nodig heeft.']
   if (goalPct !== null) {
-    if (goalPct >= 1.1) return ['Monsterweek! 💪', `${Math.round(goalPct * 100)}% van je weekdoel. Denk ook aan herstel.`]
-    if (goalPct >= 0.95) return ['Doel gehaald! ✅', `${Math.round(goalPct * 100)}% van je weekdoel. Precies op koers.`]
-    if (goalPct >= 0.75) return ['Goede week 👍', `${Math.round(goalPct * 100)}% van je weekdoel. Net niet, maar solide.`]
+    if (goalPct >= 1.1) return ['Monsterweek', `${Math.round(goalPct * 100)}% van je weekdoel. Denk ook aan herstel.`]
+    if (goalPct >= 0.95) return ['Doel gehaald', `${Math.round(goalPct * 100)}% van je weekdoel. Precies op koers.`]
+    if (goalPct >= 0.75) return ['Goede week', `${Math.round(goalPct * 100)}% van je weekdoel. Net niet, maar solide.`]
     if (goalPct >= 0.4) return ['Rustige week', `${Math.round(goalPct * 100)}% van je weekdoel.`]
     return ['Herstelweek?', `${Math.round(goalPct * 100)}% van je weekdoel. Volgende week weer aanvallen.`]
   }
-  if (delta !== null && delta >= 0.1) return ['Stijgende lijn 📈', `${Math.round(delta * 100)}% meer dan vorige week.`]
+  if (delta !== null && delta >= 0.1) return ['Stijgende lijn', `${Math.round(delta * 100)}% meer dan vorige week.`]
   return ['Week afgerond', 'Stel weekdoelen in voor een scherper rapport.']
 }
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl bg-subtle p-4">
-      <h3 className={`mb-3 ${eyebrowClass}`}>{title}</h3>
+    <div className="min-w-0 border-t border-line pt-4">
+      <h3 className={`mb-4 ${eyebrowClass}`}>{title}</h3>
       {children}
     </div>
   )
@@ -77,7 +77,7 @@ export function WeekReport({
   if (ranking.length >= 2 && myRank >= 0) {
     if (myRank === 0) {
       const gap = ranking[0].total_min - ranking[1].total_min
-      rivalry = gap > 0 ? `🏆 Je won de week, ${formatDuration(gap)} voor op ${ranking[1].display_name}.` : `🤝 Gelijkspel met ${ranking[1].display_name}!`
+      rivalry = gap > 0 ? `Je won de week, ${formatDuration(gap)} voor op ${ranking[1].display_name}.` : `Gelijkspel met ${ranking[1].display_name}.`
     } else {
       const gap = ranking[0].total_min - ranking[myRank].total_min
       rivalry = `${ranking[0].display_name} won de week, ${formatDuration(gap)} meer dan jij. Revanche volgende week?`
@@ -90,14 +90,15 @@ export function WeekReport({
   const nextTotal = sumMinutes(next.planned)
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-brand/30 bg-gradient-to-br from-brand/10 to-surface p-5 shadow-card sm:p-6">
+    <section className="rounded-xl border border-line bg-surface p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-semibold tracking-wide text-brand uppercase">
+          <p className={`inline-flex items-center gap-2 ${eyebrowClass}`}>
+            <span className="size-1.5 shrink-0 rounded-full bg-brand" aria-hidden />
             Weekrapport · {formatShortDate(start)} – {formatShortDate(end)}
           </p>
-          <h2 className="mt-1.5 text-2xl font-bold tracking-tight text-fg sm:text-3xl">{title}</h2>
-          <p className="mt-1 text-fg-2">{subtitle}</p>
+          <h2 className="mt-2 text-xl font-medium tracking-tight text-fg sm:text-2xl">{title}</h2>
+          <p className="mt-1 text-sm text-fg-3">{subtitle}</p>
         </div>
         {onClose && (
           <button onClick={onClose} className={`${iconButton} -mt-1 -mr-2`} aria-label="Sluiten">
@@ -106,7 +107,7 @@ export function WeekReport({
         )}
       </div>
 
-      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-4 sm:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
         <Stat label="Totaal" value={formatDuration(total)} sub={goalMinutes ? `doel ${formatDuration(goalMinutes)}` : undefined} />
         <Stat
           label="Vs. vorige week"
@@ -117,7 +118,7 @@ export function WeekReport({
         <Stat label="Schema" value={plan.planned.length ? `${doneCount}/${plan.planned.length}` : '–'} sub="sessies afgevinkt" />
       </div>
 
-      <div className="mt-6 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-8 grid gap-x-8 gap-y-6 md:grid-cols-2 lg:grid-cols-3">
         <Section title="Per sport">
           <div className="space-y-3">
             {SPORTS.map((s) => {
@@ -130,7 +131,7 @@ export function WeekReport({
                   <div className="mb-1.5 flex justify-between gap-2 text-sm">
                     <span className="text-fg-2">{SPORT_LABEL[s]}</span>
                     <span className="text-fg-3 tabular-nums">
-                      <span className="font-semibold text-fg">{min ? formatDuration(min) : '0'}</span>
+                      <span className="font-medium text-fg">{min ? formatDuration(min) : '0'}</span>
                       {goal ? ` / ${formatDuration(goal)}` : ''}
                       {dist ? ` · ${dist} km` : ''}
                     </span>
@@ -147,7 +148,7 @@ export function WeekReport({
             {longest && (
               <li>
                 <span className="text-fg-3">Langste sessie:</span>{' '}
-                <span className="font-semibold text-fg">
+                <span className="font-medium text-fg">
                   {SPORT_LABEL[longest.sport]} {formatSessionDuration(longest.duration_min)}
                   {longest.distance_km
                     ? ` (${[`${longest.distance_km} km`, formatPace(longest.sport, longest.duration_min, longest.distance_km)].filter(Boolean).join(' · ')})`
@@ -160,7 +161,7 @@ export function WeekReport({
                 <span className="text-fg-3">Nieuwe badges:</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {newBadges.map((b) => (
-                    <span key={b.badge.id} className="rounded-full bg-warning/12 px-2.5 py-1 text-xs font-medium text-warning">
+                    <span key={b.badge.id} className="inline-flex items-center gap-1 rounded-md bg-subtle px-2 py-1 text-xs font-medium text-fg-2">
                       {b.badge.emoji} {b.badge.name}
                     </span>
                   ))}
@@ -186,7 +187,7 @@ export function WeekReport({
         </Section>
 
         <Section title="Volgende week">
-          <p className="text-2xl font-semibold tracking-tight text-fg tabular-nums">
+          <p className="text-2xl font-medium tracking-tight text-fg tabular-nums">
             {nextTotal ? formatDuration(nextTotal) : '–'}
             <span className="ml-1.5 text-sm font-medium text-fg-3">gepland</span>
           </p>
@@ -194,8 +195,9 @@ export function WeekReport({
             {next.planned.length ? `${next.planned.length} sessies ingepland` : 'Nog niets ingepland. Plan je week!'}
           </p>
           {!passed && phaseNext !== phaseNow && (
-            <p className="mt-3 rounded-lg bg-brand/10 px-3 py-2 text-sm text-fg">
-              Nieuwe fase: <span className="font-semibold text-brand">{phaseNext.name}</span>. {phaseNext.description}
+            <p className="mt-3 text-sm text-fg-2">
+              <span className="mr-1.5 inline-block size-1.5 -translate-y-px rounded-full bg-brand align-middle" aria-hidden />
+              Nieuwe fase: <span className="font-medium text-fg">{phaseNext.name}</span>. {phaseNext.description}
             </p>
           )}
           <p className="mt-3 text-sm text-fg-3">
@@ -203,7 +205,7 @@ export function WeekReport({
               <>{race.name} zit erop. Tijd voor een nieuw doel?</>
             ) : (
               <>
-                Nog <span className="font-semibold text-fg">{daysUntilRace(race)}</span> dagen tot {race.name}.
+                Nog <span className="font-medium text-fg">{daysUntilRace(race)}</span> dagen tot {race.name}.
               </>
             )}
           </p>

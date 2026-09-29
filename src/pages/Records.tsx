@@ -7,7 +7,7 @@ import { ProgressBar } from '../components/ProgressBar'
 import { Stat } from '../components/Stat'
 import { formatPace, formatSessionDuration, formatShortDate, parseISODate } from '../lib/race'
 import { useRecords, type BucketRecord, type Milestone, type MilestoneTrack, type SportRecords } from '../lib/records'
-import { SPORT_BG, SPORT_LABEL, SPORT_SOFT, SPORT_TEXT } from '../lib/types'
+import { SPORT_BG, SPORT_LABEL } from '../lib/types'
 import { useWorkouts } from '../lib/useWorkouts'
 import { eyebrowClass, primaryButton } from '../lib/ui'
 
@@ -51,7 +51,7 @@ export function Records() {
           </EmptyState>
         </Card>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-6 sm:space-y-8">
           <div className="grid gap-4 sm:gap-6 md:grid-cols-2 xl:grid-cols-3">
             {sports.map((s) => (
               <SportCard key={s.sport} records={s} />
@@ -77,7 +77,7 @@ function SportCard({ records }: { records: SportRecords }) {
     <Card
       title={
         <span className="flex items-center gap-2">
-          <span className={`size-2.5 shrink-0 rounded-full ${SPORT_BG[sport]}`} aria-hidden />
+          <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[sport]}`} aria-hidden />
           {SPORT_LABEL[sport]}
         </span>
       }
@@ -89,15 +89,13 @@ function SportCard({ records }: { records: SportRecords }) {
         ))}
       </ul>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-2 grid grid-cols-2 gap-4 border-t border-line pt-5">
         <Stat
-          tile
           label="Langste afstand"
           value={longest.distance ? formatKm(longest.distance.km) : '—'}
           sub={longest.distance ? formatDate(longest.distance.date) : 'Nog geen afstand'}
         />
         <Stat
-          tile
           label="Langste duur"
           value={longest.duration ? formatSessionDuration(longest.duration.minutes) : '—'}
           sub={longest.duration ? formatDate(longest.duration.date) : 'Nog geen sessie'}
@@ -111,9 +109,9 @@ function BucketRow({ sport, bucket }: { sport: SportRecords['sport']; bucket: Bu
   const { best } = bucket
   if (!best)
     return (
-      <li className="flex items-center justify-between gap-3 py-3 opacity-60">
-        <p className="min-w-0 truncate text-sm font-medium text-fg-2">{bucket.label}</p>
-        <p className="shrink-0 text-sm text-fg-3">Nog niet gehaald</p>
+      <li className="flex items-center justify-between gap-3 py-3">
+        <p className="min-w-0 truncate text-sm text-fg-3">{bucket.label}</p>
+        <p className="shrink-0 text-sm text-fg-4">Nog niet gehaald</p>
       </li>
     )
 
@@ -130,16 +128,13 @@ function BucketRow({ sport, bucket }: { sport: SportRecords['sport']; bucket: Bu
           <p className="truncate text-xs text-fg-4">Eerst gehaald op {formatDate(bucket.firstDate)}</p>
         )}
       </div>
-      <p className="shrink-0 text-xl font-semibold tracking-tight text-fg tabular-nums">{formatSessionDuration(best.minutes)}</p>
+      <p className="shrink-0 text-lg font-medium tracking-tight text-fg tabular-nums">{formatSessionDuration(best.minutes)}</p>
     </li>
   )
 }
 
 const KIND_ICON: Record<Milestone['kind'], IconName> = { km: 'flag', hours: 'calendar', sessions: 'activity' }
 
-function iconTint(m: { sport: Milestone['sport'] }) {
-  return m.sport ? `${SPORT_SOFT[m.sport]} ${SPORT_TEXT[m.sport]}` : 'bg-brand/10 text-brand'
-}
 
 function formatTotal(t: MilestoneTrack, n: number) {
   const value = Math.floor(n).toLocaleString('nl-BE')
@@ -151,18 +146,19 @@ function formatTotal(t: MilestoneTrack, n: number) {
 function MilestonesCard({ tracks, reached }: { tracks: MilestoneTrack[]; reached: Milestone[] }) {
   return (
     <Card title="Mijlpalen" description="Totalen sinds je eerste gelogde training.">
-      <div className="space-y-6">
+      <div className="space-y-8">
         <section>
           <h3 className={eyebrowClass}>Gehaald</h3>
           {reached.length ? (
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <ul className="mt-3 grid gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {reached.map((m) => (
-                <li key={`${m.kind}-${m.sport}-${m.target}`} className="flex items-center gap-3 rounded-xl bg-subtle p-3">
-                  <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${iconTint(m)}`}>
-                    <Icon name={KIND_ICON[m.kind]} className="size-5" />
+                <li key={`${m.kind}-${m.sport}-${m.target}`} className="flex items-center gap-3">
+                  <span className="relative flex size-9 shrink-0 items-center justify-center rounded-lg bg-subtle text-fg-3">
+                    <Icon name={KIND_ICON[m.kind]} className="size-4" />
+                    {m.sport && <span className={`absolute -top-0.5 -right-0.5 size-2 rounded-full ring-2 ring-surface ${SPORT_BG[m.sport]}`} aria-hidden />}
                   </span>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-fg">{m.label}</p>
+                    <p className="truncate text-sm font-medium text-fg">{m.label}</p>
                     {m.date && <p className="text-xs text-fg-3">{formatDate(m.date)}</p>}
                   </div>
                 </li>
@@ -175,9 +171,9 @@ function MilestonesCard({ tracks, reached }: { tracks: MilestoneTrack[]; reached
 
         <section>
           <h3 className={eyebrowClass}>Volgende</h3>
-          <ul className="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="mt-3 grid gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
             {tracks.map((t) => (
-              <li key={t.key} className="min-w-0 rounded-xl border border-line p-3">
+              <li key={t.key} className="min-w-0">
                 <div className="flex items-baseline justify-between gap-2">
                   <p className="truncate text-sm font-medium text-fg">{t.next ? t.next.label : t.title}</p>
                   <p className="shrink-0 text-xs text-fg-3 tabular-nums">
@@ -185,7 +181,7 @@ function MilestonesCard({ tracks, reached }: { tracks: MilestoneTrack[]; reached
                   </p>
                 </div>
                 <div className="mt-2">
-                  <ProgressBar value={t.progress} max={1} color={t.sport ? SPORT_BG[t.sport] : 'bg-brand'} />
+                  <ProgressBar value={t.progress} max={1} color={t.sport ? SPORT_BG[t.sport] : 'bg-fg-3'} />
                 </div>
               </li>
             ))}

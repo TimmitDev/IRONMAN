@@ -10,7 +10,7 @@ export const emptyDuration: DurationValue = { hours: '', minutes: '', seconds: '
 
 // Zelfde look als inputClass, met ruimte rechts voor het achtervoegsel (u/min/s).
 const partClass =
-  'block h-11 w-full min-w-0 rounded-xl border border-line-strong bg-surface pr-10 pl-3.5 text-base text-fg tabular-nums placeholder:text-fg-4 transition focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none sm:text-sm'
+  'block h-10 w-full min-w-0 rounded-lg border border-line-strong bg-surface pr-10 pl-3 text-base text-fg tabular-nums placeholder:text-fg-4 transition focus:border-fg-3 focus:ring-2 focus:ring-fg/10 focus:outline-none sm:text-sm'
 
 /** Duur als uren/minuten/seconden in één veld; gedeeld door het trainings- en het planformulier. */
 export function DurationFields({

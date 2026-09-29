@@ -17,32 +17,28 @@ export function PhaseTimeline() {
   return (
     <div>
       <div className="relative">
-        <div className="flex h-2.5 gap-[2px]">
+        <div className="flex h-1 gap-[2px]">
           {segments.map(({ phase, weeks, state }) => (
             <div
               key={phase.name}
               style={{ flexGrow: weeks }}
-              className={`first:rounded-l-full last:rounded-r-full ${
-                state === 'current' ? 'bg-brand' : state === 'past' ? 'bg-fg-4' : 'bg-muted'
-              }`}
+              className={`first:rounded-l-full last:rounded-r-full ${state === 'current' ? 'bg-fg-3' : state === 'past' ? 'bg-fg-4' : 'bg-muted'}`}
             />
           ))}
         </div>
-        <div
-          className="absolute -top-1 h-4.5 w-1.5 -translate-x-1/2 rounded-full bg-fg ring-2 ring-surface"
-          style={{ left: `${position}%` }}
-          title="Vandaag"
-        />
+        {/* Dun streepje voor vandaag. */}
+        <div className="absolute -top-1.5 h-4 w-0.5 -translate-x-1/2 rounded-full bg-fg" style={{ left: `${position}%` }} title="Vandaag" />
       </div>
-      <div className="mt-2 flex gap-[2px] text-[11px]">
+      <div className="mt-2.5 flex gap-[2px] text-[11px]">
         {segments.map(({ phase, weeks, state }) => (
           <div key={phase.name} style={{ flexGrow: weeks, flexBasis: 0 }} className="min-w-0">
             <span
-              className={`block truncate ${state === 'current' ? 'font-semibold text-fg' : 'text-fg-3'} ${
-                weeks < 6 ? 'hidden sm:block' : ''
+              className={`flex items-center gap-1.5 truncate ${state === 'current' ? 'font-medium text-fg' : 'text-fg-3'} ${
+                weeks < 6 ? 'hidden sm:flex' : ''
               }`}
             >
-              {phase.name}
+              {state === 'current' && <span className="size-1.5 shrink-0 rounded-full bg-brand" aria-hidden />}
+              <span className="truncate">{phase.name}</span>
             </span>
           </div>
         ))}

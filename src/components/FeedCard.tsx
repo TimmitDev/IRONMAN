@@ -5,10 +5,10 @@ import { formatPace, formatSessionDuration, formatShortDate, parseISODate, today
 import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type FeedPerson } from '../lib/social'
 import { bucketLabel } from '../lib/records'
 import { SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
-import { errorMessage, iconButton, pillClass } from '../lib/ui'
+import { errorMessage, iconButton, inputClass, pillClass, primaryButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { RouteMap } from './RouteMap'
-import { Icon, type IconName } from './Icon'
+import { Icon } from './Icon'
 
 const DAY = 86_400_000
 
@@ -53,14 +53,14 @@ function firstText(sport: Sport, km: number) {
 }
 
 /** Hoogstens twee pills: PR of eerste keer op een afstand, en langste sessie ooit. */
-function highlightBadges(item: FeedItem): { text: string; icon: IconName; tone: string }[] {
+function highlightBadges(item: FeedItem): { text: string; dot: string }[] {
   const h = item.highlights
   if (!h) return []
-  const out: { text: string; icon: IconName; tone: string }[] = []
-  if (h.bucket && h.bucket_pr === 'pr') out.push({ text: `Nieuw PR · ${bucketLabel(item.sport, h.bucket)}`, icon: 'trophy', tone: 'bg-brand/10 text-brand' })
-  if (h.bucket && h.bucket_pr === 'first') out.push({ text: firstText(item.sport, h.bucket), icon: 'sparkles', tone: 'bg-warning/12 text-warning' })
+  const out: { text: string; dot: string }[] = []
+  if (h.bucket && h.bucket_pr === 'pr') out.push({ text: `Nieuw PR · ${bucketLabel(item.sport, h.bucket)}`, dot: 'bg-brand' })
+  if (h.bucket && h.bucket_pr === 'first') out.push({ text: firstText(item.sport, h.bucket), dot: 'bg-warning' })
   const longest = LONGEST_TEXT[item.sport]
-  if (h.longest && longest) out.push({ text: longest, icon: 'flag', tone: 'bg-muted text-fg-2' })
+  if (h.longest && longest) out.push({ text: longest, dot: 'bg-fg-4' })
   return out.slice(0, 2)
 }
 
@@ -119,23 +119,23 @@ export function FeedCard({
   }
 
   const actionClass = (active: boolean) =>
-    `inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-medium transition disabled:opacity-40 sm:flex-none sm:px-3 ${
-      active ? 'bg-brand/10 text-brand' : 'text-fg-3 hover:bg-hover hover:text-fg'
+    `inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg text-sm transition disabled:opacity-40 sm:flex-none sm:px-3 ${
+      active ? 'font-medium text-fg' : 'text-fg-3 hover:bg-hover hover:text-fg'
     }`
 
   return (
-    <article className="rounded-2xl border border-line bg-surface p-4 shadow-card sm:p-5">
+    <article className="rounded-xl border border-line bg-surface p-5 sm:p-6">
       <header className="flex items-center gap-3">
         <Avatar name={item.display_name} highlight={isOwn} online={online} />
         <div className="min-w-0 flex-1">
           <p className="flex min-w-0 items-center gap-2">
-            <Link to={`/leaderboard/${item.user_id}`} className="truncate font-semibold text-fg hover:underline">
+            <Link to={`/leaderboard/${item.user_id}`} className="truncate text-sm font-medium text-fg hover:underline">
               {item.display_name}
             </Link>
             {isOwn && <span className={pillClass}>jij</span>}
           </p>
           <p className="flex items-center gap-1.5 text-xs text-fg-3">
-            <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} aria-hidden />
+            <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} aria-hidden />
             {SPORT_LABEL[item.sport]} · {relativeDay(item.date)}
           </p>
         </div>
@@ -144,33 +144,33 @@ export function FeedCard({
       {badges.length > 0 && (
         <ul className="mt-4 flex flex-wrap gap-2">
           {badges.map((b) => (
-            <li key={b.text} className={`inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${b.tone}`}>
-              <Icon name={b.icon} className="size-3.5 shrink-0" />
+            <li key={b.text} className={`${pillClass} max-w-full gap-1.5 px-2 py-1 text-xs`}>
+              <span className={`size-1.5 shrink-0 rounded-full ${b.dot}`} aria-hidden />
               <span className="truncate">{b.text}</span>
             </li>
           ))}
         </ul>
       )}
 
-      <dl className={`${badges.length ? 'mt-3' : 'mt-4'} flex flex-wrap gap-x-8 gap-y-2 rounded-xl bg-subtle p-3 sm:px-4`}>
+      <dl className={`${badges.length ? 'mt-4' : 'mt-5'} flex flex-wrap gap-x-10 gap-y-3`}>
         {stats.map((s) => (
           <div key={s.label} className="min-w-0">
-            <dt className="text-xs font-medium text-fg-3">{s.label}</dt>
-            <dd className="mt-0.5 truncate text-lg font-semibold tracking-tight text-fg tabular-nums">{s.value}</dd>
+            <dt className="text-xs text-fg-3">{s.label}</dt>
+            <dd className="mt-1 truncate text-xl font-medium tracking-tight text-fg tabular-nums">{s.value}</dd>
           </div>
         ))}
       </dl>
 
-      {item.route && <RouteMap polyline={item.route} sport={item.sport} className="mt-3 h-48 sm:h-56" />}
+      {item.route && <RouteMap polyline={item.route} sport={item.sport} className="mt-4 h-48 sm:h-56" />}
 
       {item.kudos.length > 0 && (
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-fg-3">
-          <Icon name="heart" className="size-3.5 fill-current text-brand" />
+        <p className="mt-4 flex items-center gap-1.5 text-xs text-fg-3">
+          <Icon name="heart" className="size-3.5 fill-current text-fg-3" />
           <span className="min-w-0 truncate">{kudosText(item.kudos, me.id)}</span>
         </p>
       )}
 
-      <div className="mt-3 flex gap-1 border-t border-line pt-2">
+      <div className="mt-4 flex gap-1 border-t border-line pt-2">
         <button
           type="button"
           onClick={toggleKudos}
@@ -199,9 +199,9 @@ export function FeedCard({
             {comments.map((c) => (
               <li key={c.id} className="flex items-start gap-2 text-sm">
                 <Avatar name={c.display_name} size="sm" />
-                <div className="min-w-0 flex-1 rounded-xl bg-subtle px-3 py-2">
+                <div className="min-w-0 flex-1 rounded-lg bg-subtle px-3 py-2">
                   <div className="flex items-baseline justify-between gap-2">
-                    <Link to={`/leaderboard/${c.user_id}`} className="truncate text-xs font-semibold text-fg hover:underline">
+                    <Link to={`/leaderboard/${c.user_id}`} className="truncate text-xs font-medium text-fg hover:underline">
                       {c.display_name}
                     </Link>
                     <span className="shrink-0 text-[11px] text-fg-4">{ago(c.created_at)}</span>
@@ -209,7 +209,7 @@ export function FeedCard({
                   <p className="break-words whitespace-pre-line text-fg-2">{c.body}</p>
                 </div>
                 {(c.user_id === me.id || isOwn) && (
-                  <button type="button" onClick={() => removeComment(c.id)} className={`${iconButton} hover:bg-danger/10 hover:text-danger`} aria-label="Reactie verwijderen">
+                  <button type="button" onClick={() => removeComment(c.id)} className={`${iconButton} hover:text-danger`} aria-label="Reactie verwijderen">
                     <Icon name="trash" className="size-4" />
                   </button>
                 )}
@@ -262,13 +262,9 @@ function CommentForm({ onSubmit }: { onSubmit: (body: string) => Promise<void> }
         enterKeyHint="send"
         placeholder="Schrijf een reactie…"
         aria-label="Reactie"
-        className="h-10 min-w-0 flex-1 rounded-full border border-line-strong bg-surface px-4 text-base text-fg placeholder:text-fg-4 transition focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none sm:text-sm"
+        className={`${inputClass} min-w-0 flex-1`}
       />
-      <button
-        type="submit"
-        disabled={busy || !text.trim()}
-        className="inline-flex h-10 shrink-0 items-center rounded-full bg-brand px-4 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-50"
-      >
+      <button type="submit" disabled={busy || !text.trim()} className={`${primaryButton} h-10 shrink-0`}>
         Plaats
       </button>
     </form>

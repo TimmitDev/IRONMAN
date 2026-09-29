@@ -9,22 +9,20 @@ export interface NavItem {
   to: string
   label: string
   icon: IconName
-  /** Icoonkleur, zodat het menu in één oogopslag leesbaar is. */
-  tint: string
   end?: boolean
 }
 
-/** Alle pagina's, in de volgorde van het menu. Gedeeld door de desktop-zijbalk en het mobiele menu. */
+/** Alle pagina's, in de volgorde van het menu. Gedeeld door de desktop-zijbalk, de navbar en het mobiele menu. */
 export const NAV: NavItem[] = [
-  { to: '/', label: 'Home', icon: 'home', tint: 'text-brand', end: true },
-  { to: '/dashboard', label: 'Dashboard', icon: 'chart', tint: 'text-swim' },
-  { to: '/plan', label: 'Schema', icon: 'calendar', tint: 'text-bike' },
-  { to: '/workouts', label: 'Trainingen', icon: 'activity', tint: 'text-run' },
-  { to: '/goals', label: 'Doelen', icon: 'target', tint: 'text-strength' },
-  { to: '/records', label: 'Records', icon: 'sparkles', tint: 'text-brand' },
-  { to: '/leaderboard', label: 'Leaderboard', icon: 'trophy', tint: 'text-warning' },
-  { to: '/uitdagingen', label: 'Uitdagingen', icon: 'flag', tint: 'text-swim' },
-  { to: '/instellingen', label: 'Instellingen', icon: 'settings', tint: 'text-fg-3' },
+  { to: '/', label: 'Home', icon: 'home', end: true },
+  { to: '/dashboard', label: 'Dashboard', icon: 'chart' },
+  { to: '/plan', label: 'Schema', icon: 'calendar' },
+  { to: '/workouts', label: 'Trainingen', icon: 'activity' },
+  { to: '/goals', label: 'Doelen', icon: 'target' },
+  { to: '/records', label: 'Records', icon: 'sparkles' },
+  { to: '/leaderboard', label: 'Leaderboard', icon: 'trophy' },
+  { to: '/uitdagingen', label: 'Uitdagingen', icon: 'flag' },
+  { to: '/instellingen', label: 'Instellingen', icon: 'settings' },
 ]
 
 /** Aantal gelogde trainingen, bijgewerkt zodra er ergens trainingen bijkomen of verdwijnen. */
@@ -42,7 +40,10 @@ export function useSessionCount(userId: string) {
   return count
 }
 
-/** Meldingen die nieuwer zijn dan je laatste bezoek aan Home (per toestel bijgehouden). */
+/**
+ * Meldingen die nieuwer zijn dan wat je al zag (per toestel bijgehouden). Alles telt als gelezen
+ * op Home (daar staat "Voor jou") of met `markRead`, bv. bij het openen van het belletje.
+ */
 export function useUnread(meId: string, items: InboxItem[]) {
   const { pathname } = useLocation()
   const key = `inbox_seen_${meId}`
@@ -54,17 +55,20 @@ export function useUnread(meId: string, items: InboxItem[]) {
     }
   })
 
-  // Op Home zie je "Voor jou", dus dan telt alles als gelezen.
-  useEffect(() => {
+  const markRead = useCallback(() => {
     const latest = items[0]?.created_at
-    if (pathname !== '/' || !latest || latest <= seen) return
+    if (!latest || latest <= seen) return
     setSeen(latest)
     try {
       localStorage.setItem(key, latest)
     } catch {
       // Opslag geblokkeerd: dan telt het alleen voor deze sessie.
     }
-  }, [pathname, items, seen, key])
+  }, [items, seen, key])
 
-  return items.filter((i) => i.created_at > seen).length
+  useEffect(() => {
+    if (pathname === '/') markRead()
+  }, [pathname, markRead])
+
+  return { unread: items.filter((i) => i.created_at > seen).length, markRead }
 }

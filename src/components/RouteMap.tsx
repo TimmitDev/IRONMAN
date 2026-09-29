@@ -65,5 +65,5 @@ export function RouteMap({
   }, [polyline, sport, interactive, resolved])
 
   // `isolate`: Leaflet gebruikt hoge z-indexen; zo blijven die binnen de kaart en onder de balken en vensters.
-  return <div ref={ref} className={`isolate overflow-hidden rounded-xl bg-muted ${className}`} role="img" aria-label="Kaart van de route" />
+  return <div ref={ref} className={`isolate overflow-hidden rounded-lg border border-line bg-muted ${className}`} role="img" aria-label="Kaart van de route" />
 }

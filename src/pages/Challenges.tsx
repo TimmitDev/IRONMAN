@@ -34,6 +34,7 @@ import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
 import {
   dangerOutlineButton,
   errorMessage,
+  eyebrowClass,
   ghostButton,
   hintClass,
   inputClass,
@@ -97,7 +98,7 @@ export function Challenges() {
         {loading && !challenges.length ? (
           <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
             {[0, 1].map((i) => (
-              <div key={i} className="h-64 animate-pulse rounded-2xl bg-muted" />
+              <div key={i} className="h-64 animate-pulse rounded-xl bg-subtle" />
             ))}
           </div>
         ) : shown.length ? (
@@ -160,7 +161,8 @@ function ChallengeCard({
   const status = challengeStatus(c, today)
   const mine = myEntry(c, meId)
   const isOwner = c.created_by === meId
-  const color = challengeColor(c)
+  // Zonder sport een neutrale balk: rood blijft voor kleine accenten.
+  const color = c.sport ? challengeColor(c) : 'bg-fg-3'
   const done = mine ? isDone(c, mine.value) : false
   const doneCount = c.participants.filter((p) => isDone(c, p.value)).length
   const people = showAll ? c.participants : c.participants.slice(0, SHOWN)
@@ -178,21 +180,24 @@ function ChallengeCard({
 
   return (
     <Card className="min-w-0">
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Kop: sport, periode en resterende tijd. */}
         <div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-3">
-            <span className="inline-flex items-center gap-1.5 font-medium text-fg-2">
-              {c.sport ? <span className={`size-2 rounded-full ${SPORT_BG[c.sport]}`} /> : <Icon name="activity" className="size-3.5" />}
+            <span className="inline-flex items-center gap-1.5 text-fg-2">
+              {c.sport ? <span className={`size-1.5 rounded-full ${SPORT_BG[c.sport]}`} /> : <Icon name="activity" className="size-3.5 text-fg-4" />}
               {challengeSportLabel(c)}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Icon name="calendar" className="size-3.5" />
+              <Icon name="calendar" className="size-3.5 text-fg-4" />
               {formatPeriod(c)}
             </span>
-            <span className={status === 'active' ? 'font-semibold text-brand' : ''}>{timingLabel(c, today)}</span>
+            <span className={status === 'active' ? 'inline-flex items-center gap-1.5 font-medium text-fg-2' : ''}>
+              {status === 'active' && <span className="size-1.5 rounded-full bg-brand" aria-hidden />}
+              {timingLabel(c, today)}
+            </span>
           </div>
-          <h2 className="mt-2 text-lg font-semibold tracking-tight break-words text-fg">{c.title}</h2>
+          <h2 className="mt-2 text-base font-medium tracking-tight break-words text-fg">{c.title}</h2>
           <p className="mt-0.5 text-sm text-fg-3">
             Doel: <span className="font-medium text-fg-2">{goalLabel(c)}</span> · door {isOwner ? 'jou' : c.creator_name}
           </p>
@@ -201,16 +206,16 @@ function ChallengeCard({
 
         {/* Eigen voortgang, of meedoen. */}
         {mine ? (
-          <div className={`rounded-xl p-4 ${done ? 'bg-success/10' : 'bg-subtle'}`}>
+          <div className="rounded-lg bg-subtle p-4">
             <div className="mb-2 flex items-baseline justify-between gap-3">
-              <p className="min-w-0 text-sm font-semibold text-fg tabular-nums">{formatProgress(c, mine.value)}</p>
+              <p className="min-w-0 text-sm font-medium text-fg tabular-nums">{formatProgress(c, mine.value)}</p>
               {done ? (
-                <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-success px-2.5 py-0.5 text-xs font-semibold text-white">
-                  <Icon name="check" className="size-3.5" />
-                  Gehaald!
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-fg-2">
+                  <span className="size-1.5 rounded-full bg-success" aria-hidden />
+                  Gehaald
                 </span>
               ) : (
-                <span className="shrink-0 text-sm font-semibold text-fg-2 tabular-nums">{Math.round(progressFraction(c, mine.value) * 100)}%</span>
+                <span className="shrink-0 text-sm font-medium text-fg-2 tabular-nums">{Math.round(progressFraction(c, mine.value) * 100)}%</span>
               )}
             </div>
             <ProgressBar value={mine.value} max={c.target} color={done ? 'bg-success' : color} />
@@ -221,7 +226,7 @@ function ChallengeCard({
             )}
           </div>
         ) : status !== 'ended' ? (
-          <div className="flex flex-col gap-3 rounded-xl bg-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 rounded-lg bg-subtle p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-fg-2">Je doet nog niet mee. Je trainingen in deze periode tellen meteen mee.</p>
             <button type="button" onClick={() => run(() => onJoin(c.id))} disabled={busy} className={`${primaryButton} shrink-0`}>
               <Icon name="plus" className="size-4" />
@@ -233,7 +238,7 @@ function ChallengeCard({
         {/* Ranglijst. */}
         <div>
           <div className="mb-1 flex items-center justify-between gap-2">
-            <p className="text-xs font-semibold tracking-wide text-fg-3 uppercase">
+            <p className={eyebrowClass}>
               {c.participants.length} {c.participants.length === 1 ? 'deelnemer' : 'deelnemers'}
             </p>
             {doneCount > 0 && <p className="text-xs text-fg-3">{doneCount} gehaald</p>}
@@ -244,8 +249,11 @@ function ChallengeCard({
                 const isMe = p.user_id === meId
                 const pDone = isDone(c, p.value)
                 return (
-                  <li key={p.user_id} className={`-mx-2 flex items-center gap-3 rounded-xl px-2 py-2.5 ${isMe ? 'bg-brand/5' : ''}`}>
-                    <span className="w-5 shrink-0 text-center text-sm font-semibold text-fg-3 tabular-nums">{i + 1}</span>
+                  <li key={p.user_id} className={`-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 ${isMe ? 'bg-subtle' : ''}`}>
+                    <span className="relative w-5 shrink-0 text-center text-sm text-fg-3 tabular-nums">
+                      {i + 1}
+                      {i === 0 && p.value > 0 && <span className="absolute top-0 -right-0.5 size-1.5 rounded-full bg-brand" aria-hidden />}
+                    </span>
                     <Avatar name={p.display_name} size="sm" highlight={isMe} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
@@ -253,7 +261,7 @@ function ChallengeCard({
                           <span className="truncate">{p.display_name}</span>
                           {isMe && <span className={pillClass}>jij</span>}
                         </p>
-                        <p className="flex shrink-0 items-center gap-1 text-sm font-semibold text-fg tabular-nums">
+                        <p className="flex shrink-0 items-center gap-1 text-sm font-medium text-fg tabular-nums">
                           {pDone && <Icon name="check" className="size-4 text-success" />}
                           {formatAmount(c.metric, p.value)}
                         </p>
@@ -337,7 +345,7 @@ function Choice<T extends string>({
   return (
     <fieldset>
       <legend className={labelClass}>{legend}</legend>
-      <div className={`grid gap-1 rounded-xl bg-muted p-1 ${className}`}>
+      <div className={`grid gap-0.5 rounded-lg bg-subtle p-0.5 ${className}`}>
         {options.map((o) => {
           const active = value === o.key
           return (
@@ -347,11 +355,11 @@ function Choice<T extends string>({
               onClick={() => onChange(o.key)}
               disabled={o.disabled}
               aria-pressed={active}
-              className={`flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg px-2 text-sm font-medium transition focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${
-                active ? 'bg-surface text-fg shadow-sm' : 'text-fg-3 hover:text-fg'
+              className={`flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 text-sm transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 ${
+                active ? 'bg-surface font-medium text-fg ring-1 ring-line' : 'text-fg-3 hover:text-fg'
               }`}
             >
-              {o.dot && <span className={`size-2 shrink-0 rounded-full ${o.dot}`} />}
+              {o.dot && <span className={`size-1.5 shrink-0 rounded-full ${o.dot}`} />}
               <span className="truncate">{o.label}</span>
             </button>
           )
@@ -486,8 +494,8 @@ function CreateChallengeDialog({ onClose, onCreate }: { onClose: () => void; onC
                   type="button"
                   onClick={() => setPeriod([s, e])}
                   aria-pressed={active}
-                  className={`h-9 rounded-xl border px-3 text-sm font-medium transition ${
-                    active ? 'border-brand bg-brand/5 text-brand' : 'border-line-strong text-fg-2 hover:bg-hover'
+                  className={`h-9 rounded-lg border px-3 text-sm transition ${
+                    active ? 'border-fg-3 bg-subtle font-medium text-fg' : 'border-line-strong text-fg-2 hover:bg-hover'
                   }`}
                 >
                   {q.label}

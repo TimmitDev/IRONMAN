@@ -191,7 +191,8 @@ export const isDone = (c: Pick<Challenge, 'target'>, value: number) => value >= 
 export const progressFraction = (c: Pick<Challenge, 'target'>, value: number) => (c.target > 0 ? Math.min(1, value / c.target) : 0)
 
 /** Kleur van de balk: de sportkleur, of de merkkleur voor alle sporten. */
-export const challengeColor = (c: Pick<Challenge, 'sport'>) => (c.sport ? SPORT_BG[c.sport] : 'bg-brand')
+/** Balkkleur: de sportkleur, of neutraal voor "alle sporten" (rood is enkel een klein accent). */
+export const challengeColor = (c: Pick<Challenge, 'sport'>) => (c.sport ? SPORT_BG[c.sport] : 'bg-fg-3')
 
 export const challengeSportLabel = (c: Pick<Challenge, 'sport'>) => (c.sport ? SPORT_LABEL[c.sport] : 'Alle sporten')
 

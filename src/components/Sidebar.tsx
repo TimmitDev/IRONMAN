@@ -3,79 +3,68 @@ import { useSharedFollows } from '../lib/follows'
 import { LEVELS, usePlanSettings } from '../lib/ironmanPlan'
 import { NAV, useSessionCount } from '../lib/nav'
 import { useMe } from '../lib/profile'
-import { currentPhase, daysUntilRace, racePassed } from '../lib/race'
+import { currentPhase, racePassed } from '../lib/race'
 import { useRace } from '../lib/raceContext'
-import { supabase } from '../lib/supabase'
 import { iconButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { Icon } from './Icon'
-import { DarkModeSwitch } from './ThemeToggle'
+import { Logo } from './Logo'
 
-/** Desktop-zijbalk: profiel bovenaan, dan het menu. Vrienden en activiteit staan rechts (RightSidebar). */
+// Instellingen, donkere modus en uitloggen zitten in het profielmenu van de navbar; zo past alles zonder scrollen.
+const ITEMS = NAV.filter((n) => n.to !== '/instellingen')
+
+/** Desktop-zijbalk: compact profiel en het menu. Vrienden en activiteit staan rechts (RightSidebar). */
 export function Sidebar({ unread }: { unread: number }) {
   return (
-    // Zwevende kaart: los van de rand van het scherm, met eigen afronding en schaduw.
-    <aside className="no-scrollbar fixed top-4 bottom-4 left-4 z-30 hidden w-72 flex-col overflow-y-auto rounded-3xl border border-line bg-surface shadow-xl shadow-black/5 lg:flex dark:shadow-black/40">
-      <div className="flex h-16 shrink-0 items-center justify-between px-6">
-        <Link to="/" className="text-xl font-black tracking-tight text-fg italic">
-          IRON<span className="text-brand">MAN</span>
-        </Link>
-        <Link to="/workouts" className={`${iconButton} bg-brand/10 text-brand hover:bg-brand hover:text-white`} aria-label="Training loggen" title="Training loggen">
-          <Icon name="plus" className="size-[18px]" strokeWidth={2.5} />
+    // Tegen de rand, gescheiden met een dunne lijn; overflow-y-auto is enkel een vangnet voor heel lage vensters.
+    <aside className="no-scrollbar fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto border-r border-line bg-canvas lg:flex">
+      <div className="flex h-14 shrink-0 items-center justify-between pr-3 pl-5">
+        <Logo />
+        <Link to="/workouts" className={`${iconButton} size-8 border border-line text-fg-2`} aria-label="Training loggen" title="Training loggen">
+          <Icon name="plus" className="size-4" />
         </Link>
       </div>
 
       <ProfileBlock />
 
-      <nav className="mx-4 border-t border-line py-5" aria-label="Hoofdmenu">
-        <ul className="space-y-1">
-          {NAV.map((n) => (
+      <nav className="px-3 py-4" aria-label="Hoofdmenu">
+        <ul className="space-y-px">
+          {ITEMS.map((n) => (
             <li key={n.to}>
               <NavLink
                 to={n.to}
                 end={n.end}
                 className={({ isActive }) =>
-                  `flex h-11 items-center gap-3 rounded-xl px-3 text-sm transition ${
-                    isActive ? 'bg-subtle font-semibold text-fg shadow-card' : 'font-medium text-fg-2 hover:bg-hover hover:text-fg'
+                  `group flex h-9 items-center gap-3 rounded-lg px-3 text-sm transition ${
+                    isActive ? 'bg-subtle font-medium text-fg' : 'text-fg-3 hover:bg-hover hover:text-fg'
                   }`
                 }
               >
-                <Icon name={n.icon} className={`size-5 ${n.tint}`} />
+                <Icon name={n.icon} className="size-[18px]" />
                 <span className="flex-1">{n.label}</span>
                 {n.to === '/' && unread > 0 && (
-                  <span className="min-w-5 rounded-full bg-brand px-1.5 py-0.5 text-center text-[11px] font-bold text-white tabular-nums">{unread}</span>
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-fg-2 tabular-nums">
+                    <span className="size-1.5 rounded-full bg-brand" aria-hidden />
+                    {unread}
+                  </span>
                 )}
               </NavLink>
             </li>
           ))}
         </ul>
       </nav>
-
-      <div className="mx-4 mt-auto space-y-1 border-t border-line py-4">
-        <DarkModeSwitch />
-        <button
-          type="button"
-          onClick={() => supabase.auth.signOut()}
-          className="flex h-11 w-full items-center gap-3 rounded-xl px-3 text-sm font-medium text-fg-2 transition hover:bg-danger/10 hover:text-danger focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
-        >
-          <Icon name="logout" className="size-5" />
-          Uitloggen
-        </button>
-      </div>
     </aside>
   )
 }
 
-/** Gecentreerd profiel: avatar, naam, niveau en fase, en drie kerncijfers. */
+/** Compact profiel: avatar met naam en niveau/fase, daaronder drie kerncijfers tussen dunne lijnen. */
 function ProfileBlock() {
   const { me } = useMe()
   const follows = useSharedFollows()
   const sessions = useSessionCount(me.id)
   const { settings } = usePlanSettings()
   const race = useRace()
-  const passed = racePassed(race)
-  const phase = currentPhase(race)
-  const subtitle = [settings ? LEVELS[settings.level].label : null, passed ? null : `Fase ${phase.name}`].filter(Boolean).join(' · ')
+  const subtitle = [settings ? LEVELS[settings.level].label : null, racePassed(race) ? null : `Fase ${currentPhase(race).name}`].filter(Boolean).join(' · ')
 
   const stats = [
     { label: 'Sessies', value: sessions },
@@ -84,38 +73,20 @@ function ProfileBlock() {
   ]
 
   return (
-    <div className="px-6 pt-4 pb-6 text-center">
-      <Link to={`/leaderboard/${me.id}`} className="group relative mx-auto block w-fit">
-        {/* Zachte gloed achter de avatar. */}
-        <span className="pointer-events-none absolute inset-0 scale-150 rounded-full bg-brand/15 blur-2xl" aria-hidden />
-        <span className="relative block rounded-full p-1 ring-2 ring-brand/70 transition group-hover:ring-brand">
-          <Avatar name={me.display_name} size="xl" />
+    <div className="border-y border-line px-3 py-3">
+      <Link to={`/leaderboard/${me.id}`} className="flex items-center gap-3 rounded-lg p-2 transition hover:bg-hover">
+        <Avatar name={me.display_name} size="md" />
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-medium text-fg">{me.display_name}</span>
+          {subtitle && <span className="block truncate text-xs text-fg-3">{subtitle}</span>}
         </span>
       </Link>
-      <Link to={`/leaderboard/${me.id}`} className="mt-4 inline-flex max-w-full items-center gap-1.5 hover:underline">
-        <span className="truncate text-lg font-bold text-fg">{me.display_name}</span>
-      </Link>
-      <p className="text-xs font-medium text-fg-3">{subtitle}</p>
-      <p className="mx-auto mt-2 max-w-[15rem] text-sm text-fg-2">
-        {passed ? (
-          <>
-            {race.name} zit erop.{' '}
-            <Link to="/instellingen" className="font-medium text-brand hover:underline">
-              Kies je volgende race
-            </Link>
-          </>
-        ) : (
-          <>
-            Op weg naar {race.name}, nog <span className="font-semibold text-fg tabular-nums">{daysUntilRace(race)}</span> dagen.
-          </>
-        )}
-      </p>
 
-      <dl className="mt-5 grid grid-cols-3">
+      <dl className="mt-2 grid grid-cols-3 px-2 pb-1">
         {stats.map((s) => (
           <div key={s.label} className="flex flex-col-reverse">
-            <dt className="text-xs text-fg-3">{s.label}</dt>
-            <dd className="text-lg font-bold tracking-tight text-fg tabular-nums">{s.value ?? '–'}</dd>
+            <dt className="text-[11px] text-fg-3">{s.label}</dt>
+            <dd className="text-sm font-medium text-fg tabular-nums">{s.value ?? '–'}</dd>
           </div>
         ))}
       </dl>

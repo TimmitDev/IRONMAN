@@ -5,23 +5,26 @@ import { usePlayerSearch } from '../lib/players'
 import { useOnline } from '../lib/presence'
 import { useMe } from '../lib/profile'
 import type { FeedPerson, InboxItem } from '../lib/social'
-import { SPORT_NOUN, SPORT_SOFT, SPORT_TEXT } from '../lib/types'
+import { SPORT_NOUN } from '../lib/types'
 import { errorMessage, iconButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { ago } from './FeedCard'
 import { Icon } from './Icon'
+import { WeekPodium } from './WeekPodium'
 
 type FriendsTab = 'following' | 'followers'
 
-/** Rechter zijbalk (vanaf xl): je vrienden met online-status, daaronder recente activiteit. */
+/** Rechter zijbalk (enkel op Home, vanaf xl): vrienden met online-status, de weektop en recente activiteit. */
 export function RightSidebar({ inbox }: { inbox: InboxItem[] }) {
   return (
-    // Zwevende kaart, gespiegeld aan de linker zijbalk.
     <aside
-      className="no-scrollbar fixed top-4 right-4 bottom-4 z-30 hidden w-72 flex-col overflow-y-auto rounded-3xl border border-line bg-surface shadow-xl shadow-black/5 xl:flex dark:shadow-black/40"
+      className="no-scrollbar fixed inset-y-0 right-0 z-30 hidden w-72 flex-col overflow-y-auto border-l border-line bg-canvas xl:flex"
       aria-label="Vrienden en activiteit"
     >
       <FriendsBlock />
+      <div className="mx-5 border-t border-line py-5">
+        <WeekPodium bare />
+      </div>
       <ActivityBlock items={inbox} />
     </aside>
   )
@@ -51,12 +54,12 @@ function FriendsBlock() {
   ]
 
   return (
-    <section className="px-5 pt-6 pb-5">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold text-fg">Vrienden</h2>
+    <section className="px-5 pt-5 pb-5">
+      <div className="flex h-6 items-center justify-between">
+        <h2 className="text-sm font-medium text-fg">Vrienden</h2>
         {onlineCount > 0 && (
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success">
-            <span className="size-2 rounded-full bg-success" />
+          <span className="inline-flex items-center gap-1.5 text-xs text-fg-3">
+            <span className="size-1.5 rounded-full bg-success" />
             {onlineCount} online
           </span>
         )}
@@ -70,7 +73,7 @@ function FriendsBlock() {
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Zoek een speler…"
           aria-label="Zoek een speler"
-          className="h-10 w-full rounded-xl border border-line bg-subtle pr-3 pl-9 text-sm text-fg placeholder:text-fg-4 focus:border-brand focus:ring-4 focus:ring-brand/15 focus:outline-none"
+          className="h-9 w-full rounded-lg border border-line bg-subtle pr-3 pl-9 text-sm text-fg placeholder:text-fg-4 focus:border-fg-3 focus:ring-2 focus:ring-fg/10 focus:outline-none"
         />
       </label>
 
@@ -84,7 +87,7 @@ function FriendsBlock() {
               role="tab"
               aria-selected={active}
               onClick={() => setTab(t.key)}
-              className={`-mb-px border-b-2 pb-2 font-medium transition ${active ? 'border-fg text-fg' : 'border-transparent text-fg-3 hover:text-fg'}`}
+              className={`-mb-px border-b pb-2 transition ${active ? 'border-fg font-medium text-fg' : 'border-transparent text-fg-3 hover:text-fg'}`}
             >
               {t.label} <span className="text-fg-4 tabular-nums">{t.count}</span>
             </button>
@@ -96,7 +99,7 @@ function FriendsBlock() {
         <p className="mt-4 text-sm text-fg-3">Laden…</p>
       ) : (
         <ul className="mt-3 space-y-0.5">
-          {list.slice(0, q ? 20 : 8).map((p) => (
+          {list.slice(0, q ? 20 : 6).map((p) => (
             <PersonRow
               key={p.user_id}
               person={p}
@@ -121,7 +124,7 @@ function FriendsBlock() {
           )}
         </ul>
       )}
-      {!q && list.length > 8 && (
+      {!q && list.length > 6 && (
         <Link to="/leaderboard" className="mt-2 block px-2 text-xs font-medium text-fg-3 hover:text-fg">
           Alle {list.length} bekijken
         </Link>
@@ -132,15 +135,15 @@ function FriendsBlock() {
 
 function PersonRow({ person, online, sub, action }: { person: FeedPerson; online: boolean; sub: string; action?: ReactNode }) {
   return (
-    <li className="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-hover">
+    <li className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition hover:bg-hover">
       <Link to={`/leaderboard/${person.user_id}`} className="flex min-w-0 flex-1 items-center gap-3">
-        <Avatar name={person.display_name} size="md" online={online} />
+        <Avatar name={person.display_name} size="sm" online={online} />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-semibold text-fg">{person.display_name}</span>
-          <span className={`block truncate text-xs ${online ? 'text-success' : 'text-fg-3'}`}>{sub}</span>
+          <span className="block truncate text-sm text-fg">{person.display_name}</span>
+          <span className="block truncate text-xs text-fg-3">{sub}</span>
         </span>
       </Link>
-      {action ?? <Icon name="chevron-right" className="size-4 text-fg-4" />}
+      {action}
     </li>
   )
 }
@@ -153,21 +156,21 @@ function ActivityBlock({ items }: { items: InboxItem[] }) {
 
   return (
     <section className="mx-5 border-t border-line py-5">
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-fg">Activiteit</h2>
-        <Link to="/" className="text-xs font-medium text-fg-3 hover:text-fg">
+      <div className="mb-3 flex h-6 items-center justify-between">
+        <h2 className="text-sm font-medium text-fg">Activiteit</h2>
+        <Link to="/" className="text-xs text-fg-3 hover:text-fg">
           Alles
         </Link>
       </div>
       {items.length ? (
-        <ul className="space-y-0.5">
-          {items.slice(0, 6).map((i) => (
-            <li key={`${i.kind}-${i.user_id}-${i.created_at}`} className="flex items-center gap-3 rounded-xl px-2 py-2 transition hover:bg-hover">
+        <ul className="space-y-px">
+          {items.slice(0, 5).map((i) => (
+            <li key={`${i.kind}-${i.user_id}-${i.created_at}`} className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition hover:bg-hover">
               <Link to={`/leaderboard/${i.user_id}`} className="shrink-0">
-                <Avatar name={i.display_name} size="md" online={online.has(i.user_id)} />
+                <Avatar name={i.display_name} size="sm" online={online.has(i.user_id)} />
               </Link>
               <div className="min-w-0 flex-1">
-                <Link to={`/leaderboard/${i.user_id}`} className="block truncate text-sm font-semibold text-fg hover:underline">
+                <Link to={`/leaderboard/${i.user_id}`} className="block truncate text-sm text-fg hover:underline">
                   {i.display_name}
                 </Link>
                 <p className="truncate text-xs text-fg-3">
@@ -178,9 +181,7 @@ function ActivityBlock({ items }: { items: InboxItem[] }) {
               {i.user_id !== me.id && !follows.loading && !follows.isFollowing(i.user_id) ? (
                 <FollowIcon person={{ user_id: i.user_id, display_name: i.display_name }} label="Terug volgen" />
               ) : (
-                <span className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${SPORT_SOFT[i.sport]} ${SPORT_TEXT[i.sport]}`} aria-hidden>
-                  <Icon name={i.kind === 'kudos' ? 'heart' : 'message'} className="size-4" />
-                </span>
+                <Icon name={i.kind === 'kudos' ? 'heart' : 'message'} className="size-4 shrink-0 text-fg-4" />
               )}
             </li>
           ))}
@@ -209,11 +210,11 @@ function FollowIcon({ person, label }: { person: FeedPerson; label: string }) {
         }
       }}
       disabled={busy}
-      className={`${iconButton} size-8 text-brand hover:bg-brand/10 hover:text-brand`}
+      className={`${iconButton} size-7 border border-line text-fg-2`}
       aria-label={`${person.display_name}: ${label.toLowerCase()}`}
       title={label}
     >
-      <Icon name="plus" className="size-4" strokeWidth={2.5} />
+      <Icon name="plus" className="size-3.5" />
     </button>
   )
 }

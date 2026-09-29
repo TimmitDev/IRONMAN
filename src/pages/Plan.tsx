@@ -102,11 +102,11 @@ function WeekSchedule() {
       {/* Werkbalk: weeknavigatie links, acties rechts (op mobiel eronder). */}
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-0.5 rounded-xl border border-line bg-surface p-0.5 shadow-card">
+          <div className="flex items-center gap-0.5 rounded-lg border border-line bg-surface p-0.5">
             <button onClick={() => setStart(addDays(start, -7))} className={iconButton} aria-label="Vorige week">
               <Icon name="chevron-left" />
             </button>
-            <span className="min-w-36 px-1 text-center text-sm font-semibold text-fg tabular-nums">
+            <span className="min-w-36 px-1 text-center text-sm font-medium text-fg tabular-nums">
               {formatShortDate(start)} – {formatShortDate(addDays(start, 6))}
             </span>
             <button onClick={() => setStart(addDays(start, 7))} className={iconButton} aria-label="Volgende week">
@@ -137,7 +137,7 @@ function WeekSchedule() {
 
       {error && <p className="text-sm text-danger">{error}</p>}
       {notice && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-line bg-subtle py-1.5 pr-1.5 pl-4 text-sm text-fg-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-line py-1.5 pr-1.5 pl-4 text-sm text-fg-2">
           <span className="inline-flex items-center gap-2">
             <Icon name="check" className="size-4 text-success" />
             {notice}
@@ -152,13 +152,13 @@ function WeekSchedule() {
         title="Gepland vs. gedaan"
         description={
           <>
-            <span className="font-semibold text-fg tabular-nums">{formatDuration(sumMinutes(done))}</span> gedaan van{' '}
+            <span className="font-medium text-fg tabular-nums">{formatDuration(sumMinutes(done))}</span> gedaan van{' '}
             <span className="tabular-nums">{formatDuration(sumMinutes(planned))}</span> gepland
             <span className="hidden md:inline"> · sleep een sessie naar een andere dag om te verplaatsen</span>
           </>
         }
       >
-        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
           {SPORTS.map((s) => {
             const plannedMin = sumMinutes(planned.filter((p) => p.sport === s))
             const doneMin = sumMinutes(done.filter((w) => w.sport === s))
@@ -170,7 +170,7 @@ function WeekSchedule() {
                     <span className="truncate">{SPORT_LABEL[s]}</span>
                   </span>
                   <span className="whitespace-nowrap text-fg-3 tabular-nums">
-                    <span className="font-semibold text-fg">{doneMin ? formatDuration(doneMin) : '0'}</span>
+                    <span className="font-medium text-fg">{doneMin ? formatDuration(doneMin) : '0'}</span>
                     {plannedMin ? ` / ${formatDuration(plannedMin)}` : ''}
                   </span>
                 </div>
@@ -192,25 +192,16 @@ function WeekSchedule() {
             <div
               key={d}
               {...dropHandlers(d)}
-              className={`flex min-w-0 flex-col rounded-2xl border p-3 transition ${
-                isOver
-                  ? 'border-brand border-dashed bg-brand/5'
-                  : isToday
-                    ? 'border-brand/60 bg-surface shadow-card ring-1 ring-brand/20'
-                    : isRest
-                      ? 'border-line bg-subtle'
-                      : 'border-line bg-surface shadow-card'
+              className={`flex min-w-0 flex-col rounded-xl border p-3 transition ${
+                isOver ? 'border-dashed border-fg-3 bg-subtle' : 'border-line bg-surface'
               }`}
             >
-              <div className="mb-2.5 flex items-center justify-between gap-2">
-                <span className={`text-xs font-semibold tracking-wide uppercase ${isToday ? 'text-brand' : 'text-fg-3'}`}>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className={`inline-flex items-center gap-1.5 text-xs ${isToday ? 'font-medium text-fg' : 'text-fg-3'}`}>
+                  {isToday && <span className="size-1.5 rounded-full bg-brand" aria-label="Vandaag" />}
                   {parseISODate(d).toLocaleDateString('nl-BE', { weekday: 'short' })}
                 </span>
-                <span
-                  className={`flex size-7 items-center justify-center rounded-full text-sm font-semibold tabular-nums ${
-                    isToday ? 'bg-brand text-white' : 'text-fg'
-                  }`}
-                >
+                <span className={`text-sm tabular-nums ${isToday ? 'font-medium text-fg' : 'text-fg-2'}`}>
                   {parseISODate(d).getDate()}
                 </span>
               </div>
@@ -234,7 +225,7 @@ function WeekSchedule() {
                 {dayExtras.map((w) => {
                   const pace = formatPace(w.sport, w.duration_min, w.distance_km)
                   return (
-                    <div key={w.id} className="rounded-xl border border-dashed border-line-strong p-2.5">
+                    <div key={w.id} className="rounded-lg border border-dashed border-line-strong p-2.5">
                       <p className="flex items-center gap-1.5 text-sm font-medium text-fg">
                         <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[w.sport]}`} />
                         {SPORT_LABEL[w.sport]}
@@ -248,7 +239,7 @@ function WeekSchedule() {
 
               <button
                 onClick={() => setAddDate(d)}
-                className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-line-strong text-xs font-medium text-fg-3 transition hover:border-brand/50 hover:bg-brand/5 hover:text-brand focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none md:h-8"
+                className="mt-2.5 inline-flex h-9 w-full items-center justify-center gap-1 rounded-lg border border-dashed border-line-strong text-xs text-fg-3 transition hover:border-fg-3 hover:text-fg focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none md:h-8"
               >
                 <Icon name="plus" className="size-3.5" />
                 plannen
@@ -341,17 +332,18 @@ function PlannedItem({
         onDragStart()
       }}
       onDragEnd={onDragEnd}
-      className={`overflow-hidden rounded-xl border border-line bg-subtle p-2.5 transition hover:border-line-strong md:cursor-grab md:active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
+      className={`overflow-hidden rounded-lg border border-line p-2.5 transition hover:border-line-strong md:cursor-grab md:active:cursor-grabbing ${dragging ? 'opacity-40' : ''}`}
     >
       <div className="flex items-start gap-2">
         <DoneToggle sport={item.sport} checked={isDone} onClick={onToggle} />
         <button
           onClick={onEdit}
-          className="min-w-0 flex-1 rounded-md text-left focus-visible:ring-4 focus-visible:ring-brand/25 focus-visible:outline-none"
+          className="min-w-0 flex-1 rounded-md text-left focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none"
           aria-label={`${item.title || SPORT_LABEL[item.sport]} bewerken`}
         >
-          <p className={`text-sm leading-tight font-medium break-words ${isDone ? 'text-fg-3 line-through' : 'text-fg'}`}>
-            {item.title || SPORT_LABEL[item.sport]}
+          <p className={`flex items-start gap-1.5 text-sm leading-tight font-medium break-words ${isDone ? 'text-fg-3 line-through' : 'text-fg'}`}>
+            <span className={`mt-1.5 size-1.5 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} aria-hidden />
+            <span className="min-w-0">{item.title || SPORT_LABEL[item.sport]}</span>
           </p>
           <SessionMeta parts={[formatSessionDuration(shown.duration_min), shown.distance_km ? `${shown.distance_km} km` : null, pace]} />
           {isDone && actual && actual.duration_min !== item.duration_min && (

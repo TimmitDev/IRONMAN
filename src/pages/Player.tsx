@@ -27,7 +27,7 @@ export function Player() {
   const { player, loading, error } = usePlayerProfile(userId!)
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="mx-auto max-w-4xl space-y-6 sm:space-y-8">
       <Link to="/leaderboard" className="-ml-1 inline-flex items-center gap-1 rounded-lg px-1 text-sm font-medium text-fg-3 transition hover:text-fg">
         <Icon name="chevron-left" className="size-4" />
         Leaderboard
@@ -74,11 +74,11 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
           <Avatar name={player.display_name} size="xl" highlight={isMe} online={online} />
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-2xl font-bold tracking-tight text-fg sm:text-3xl">{player.display_name}</h1>
+              <h1 className="truncate text-2xl font-semibold tracking-tight text-fg sm:text-[28px]">{player.display_name}</h1>
               {isMe && <span className={pillClass}>jij</span>}
             </div>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-fg-3">
-              <span className={`size-2 rounded-full ${online ? 'bg-success' : 'bg-line-strong'}`} aria-hidden />
+              <span className={`size-1.5 rounded-full ${online ? 'bg-success' : 'bg-line-strong'}`} aria-hidden />
               {online ? 'Nu online' : 'Offline'}
             </p>
             <p className="mt-1 text-sm text-fg-3">
@@ -86,9 +86,9 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
             </p>
             {player.race && (
               <p className="mt-1 flex min-w-0 items-center gap-1.5 text-sm text-fg-2">
-                <Icon name="flag" className="size-4 shrink-0 text-brand" />
+                <Icon name="flag" className="size-4 shrink-0 text-fg-4" />
                 <span className="min-w-0">
-                  Traint voor <span className="font-semibold text-fg">{player.race.name}</span> ·{' '}
+                  Traint voor <span className="font-medium text-fg">{player.race.name}</span> ·{' '}
                   {parseISODate(player.race.date).toLocaleDateString('nl-BE', { day: 'numeric', month: 'long', year: 'numeric' })}
                   {RACE_TYPES[player.race.type] ? ` · ${RACE_TYPES[player.race.type].label}` : ''}
                 </span>
@@ -102,8 +102,8 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
           )}
         </div>
         {isMe && (
-          <p className="mt-4 flex items-start gap-2 rounded-xl bg-subtle px-3 py-2.5 text-sm text-fg-3">
-            <Icon name="eye" className="mt-0.5 size-4 text-fg-4" />
+          <p className="mt-5 flex items-start gap-2 border-t border-line pt-4 text-sm text-fg-3">
+            <Icon name="eye" className="mt-0.5 size-4 shrink-0 text-fg-4" />
             <span>
               Zo zien anderen je profiel. Delen pas je aan in{' '}
               <Link to="/instellingen" className={linkClass}>
@@ -113,10 +113,10 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
             </span>
           </p>
         )}
-        <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-line pt-6 sm:grid-cols-3 sm:gap-x-6 lg:grid-cols-5">
           {stats.map((s, i) => (
             <div key={s.label} className={i === stats.length - 1 ? 'col-span-2 sm:col-span-1' : ''}>
-              <Stat tile label={s.label} value={s.value} />
+              <Stat label={s.label} value={s.value} />
             </div>
           ))}
         </div>
@@ -130,13 +130,13 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
               const km = s === 'strength' ? null : t[`${s}_km`]
               return (
                 <li key={s} className="flex items-center gap-3 py-3 text-sm">
-                  <span className={`h-9 w-1 shrink-0 rounded-full ${SPORT_BG[s]}`} />
+                  <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[s]}`} />
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-fg">{SPORT_LABEL[s]}</p>
                     {record && <p className="text-xs text-fg-3">Langste: {record.km ? `${fmtKm(record.km)} km` : formatSessionDuration(record.min)}</p>}
                   </div>
                   <div className="shrink-0 text-right tabular-nums">
-                    <p className="font-semibold text-fg">{t[`${s}_min`] ? formatDuration(t[`${s}_min`]) : '–'}</p>
+                    <p className="font-medium text-fg">{t[`${s}_min`] ? formatDuration(t[`${s}_min`]) : '–'}</p>
                     {km ? <p className="text-xs text-fg-3">{fmtKm(km)} km</p> : null}
                   </div>
                 </li>

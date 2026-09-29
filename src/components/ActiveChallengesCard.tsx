@@ -31,31 +31,31 @@ export function ActiveChallengesCard() {
       {loading && !challenges.length ? (
         <div className="space-y-3">
           {[0, 1].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-muted" />
+            <div key={i} className="h-14 animate-pulse rounded-lg bg-subtle" />
           ))}
         </div>
       ) : mine.length ? (
-        <ul className="space-y-4">
+        <ul className="space-y-3">
           {mine.slice(0, 3).map(({ c, entry }) => {
             const done = isDone(c, entry!.value)
             return (
               <li key={c.id}>
-                <Link to="/uitdagingen" className="-mx-2 block rounded-xl px-2 py-1.5 transition hover:bg-hover">
-                  <div className="mb-1.5 flex items-center justify-between gap-3">
-                    <p className="flex min-w-0 items-center gap-2 text-sm font-semibold text-fg">
-                      <span className={`size-2 shrink-0 rounded-full ${c.sport ? SPORT_BG[c.sport] : 'bg-brand'}`} />
+                <Link to="/uitdagingen" className="-mx-2 block rounded-lg px-2 py-1.5 transition hover:bg-hover">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-fg">
+                      <span className={`size-1.5 shrink-0 rounded-full ${c.sport ? SPORT_BG[c.sport] : 'bg-fg-4'}`} />
                       <span className="truncate">{c.title}</span>
                     </p>
                     {done ? (
-                      <span className="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-success">
+                      <span className="inline-flex shrink-0 items-center gap-1 text-xs text-success">
                         <Icon name="check" className="size-3.5" />
-                        Gehaald!
+                        Gehaald
                       </span>
                     ) : (
                       <span className="shrink-0 text-xs text-fg-3">{timingLabel(c, today)}</span>
                     )}
                   </div>
-                  <ProgressBar value={entry!.value} max={c.target} color={done ? 'bg-success' : challengeColor(c)} />
+                  <ProgressBar value={entry!.value} max={c.target} color={done ? 'bg-success' : c.sport ? challengeColor(c) : 'bg-fg-3'} />
                   <p className="mt-1 text-xs text-fg-3 tabular-nums">{formatProgress(c, entry!.value)}</p>
                 </Link>
               </li>

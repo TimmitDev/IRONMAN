@@ -11,7 +11,7 @@ import { useMe } from '../lib/profile'
 import { useRace } from '../lib/raceContext'
 import { STRAVA_ORANGE, checkStravaState, startStravaConnect, stravaEnabled, useStrava, type SyncResult } from '../lib/strava'
 import { supabase } from '../lib/supabase'
-import { errorMessage, ghostButton, hintClass, inputClass, labelClass, primaryButton, secondaryButton } from '../lib/ui'
+import { errorMessage, ghostButton, hintClass, inputClass, labelClass, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 
 type Status = { type: 'ok' | 'error'; text: string } | null
 
@@ -20,10 +20,10 @@ function Section({ title, description, children }: { title: string; description:
   return (
     <section className="grid gap-4 border-t border-line py-8 first:border-t-0 first:pt-0 md:grid-cols-[16rem_minmax(0,1fr)] md:gap-10">
       <div>
-        <h2 className="font-semibold text-fg">{title}</h2>
+        <h2 className="text-sm font-medium text-fg">{title}</h2>
         <p className="mt-1 text-sm text-fg-3">{description}</p>
       </div>
-      <div className="min-w-0 rounded-2xl border border-line bg-surface p-5 shadow-card sm:p-6">{children}</div>
+      <div className="min-w-0 rounded-xl border border-line bg-surface p-5 sm:p-6">{children}</div>
     </section>
   )
 }
@@ -181,9 +181,9 @@ function RaceSection() {
     <Section title="Jouw race" description="De wedstrijd waarvoor je traint. Countdown, fases en je trainingsplan volgen deze keuze.">
       <form onSubmit={handleSubmit}>
         <RaceFields value={draft} onChange={setDraft} />
-        <p className="mt-5 rounded-xl bg-subtle px-3.5 py-2.5 text-sm text-fg-2">
+        <p className="mt-5 text-sm text-fg-3">
           Je trainingsplan past zich aan; zet het opnieuw in je schema via{' '}
-          <Link to="/plan?tab=ironman" className="font-semibold text-brand hover:underline">
+          <Link to="/plan?tab=ironman" className={linkClass}>
             Schema → Raceplan
           </Link>
           .
@@ -209,10 +209,8 @@ function TrainingSection() {
       <ul className="-my-2 divide-y divide-line">
         {links.map((l) => (
           <li key={l.to}>
-            <Link to={l.to} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-3 transition hover:bg-hover">
-              <span className="flex size-9 items-center justify-center rounded-xl bg-subtle text-fg-2">
-                <Icon name={l.icon} className="size-[18px]" />
-              </span>
+            <Link to={l.to} className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-3 transition hover:bg-hover">
+              <Icon name={l.icon} className="size-[18px] shrink-0 text-fg-3" />
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium text-fg">{l.title}</span>
                 <span className="block text-sm text-fg-3">{l.text}</span>
@@ -288,11 +286,11 @@ function StravaSection() {
   return (
     <Section title="Koppelingen" description="Importeer je activiteiten automatisch, zodat je niets meer met de hand hoeft te loggen.">
       <div className="flex items-start gap-4">
-        <span className="flex size-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ backgroundColor: STRAVA_ORANGE }} aria-hidden>
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-line" style={{ color: STRAVA_ORANGE }} aria-hidden>
           <StravaLogo />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-fg">Strava</p>
+          <p className="text-sm font-medium text-fg">Strava</p>
           {!stravaEnabled ? (
             <p className="mt-0.5 text-sm text-fg-3">Nog niet ingesteld voor deze app (VITE_STRAVA_CLIENT_ID ontbreekt, zie README).</p>
           ) : strava.loading ? (
