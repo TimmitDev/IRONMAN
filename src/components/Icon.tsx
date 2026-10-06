@@ -105,6 +105,35 @@ const PATHS = {
   ),
   'eye-off': <path d="M9.9 4.2A10 10 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.2 3.2M6.6 6.6A17 17 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6M14.1 14.1a3 3 0 1 1-4.2-4.2M2 2l20 20" />,
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  // Sporten: zelfde sleutels als Sport, dus <Icon name={sport} /> werkt rechtstreeks.
+  swim: (
+    <>
+      <circle cx="16.5" cy="5" r="2" />
+      <path d="M5 11.5 9.5 8l3 2.5" />
+      <path d="M2 15c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1M2 20c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+    </>
+  ),
+  bike: (
+    <>
+      <circle cx="5.5" cy="17.5" r="3.5" />
+      <circle cx="18.5" cy="17.5" r="3.5" />
+      <circle cx="15" cy="5" r="1" />
+      <path d="M12 17.5V14l-3-3 4-3 2 3h2" />
+    </>
+  ),
+  run: (
+    <>
+      <circle cx="15" cy="4.5" r="2" />
+      <path d="M8 10.5 11 8h3l2 3h3M14 8l-2.5 5 3 3V21M11.5 13l-2 4.5L5 19" />
+    </>
+  ),
+  strength: <path d="m6.5 6.5 11 11M21 21l-1-1M3 3l1 1M18 22l4-4M2 6l4-4M3 10l7-7M14 21l7-7" />,
+  cardio: (
+    <>
+      <path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7z" />
+      <path d="M3.5 11.5h5l1.5-2.5 2.5 5 2-3.5h6" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>
 
 export type IconName = keyof typeof PATHS

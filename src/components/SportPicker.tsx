@@ -1,12 +1,13 @@
-import { SPORTS, SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
+import { SPORTS, SPORT_LABEL, SPORT_SOFT, SPORT_TEXT, type Sport } from '../lib/types'
 import { labelClass } from '../lib/ui'
+import { Icon } from './Icon'
 
-/** Sportkeuze als segmentknoppen (zelfde stijl als Segmented), met het kleurbolletje van de sport. */
+/** Sportkeuze als tegels met icoon; de gekozen sport krijgt zijn kleur. */
 export function SportPicker({ value, onChange }: { value: Sport; onChange: (s: Sport) => void }) {
   return (
     <fieldset>
       <legend className={labelClass}>Sport</legend>
-      <div className="grid grid-cols-5 gap-0.5 rounded-lg bg-subtle p-0.5">
+      <div className="grid grid-cols-5 gap-1.5">
         {SPORTS.map((s) => {
           const active = value === s
           return (
@@ -15,13 +16,12 @@ export function SportPicker({ value, onChange }: { value: Sport; onChange: (s: S
               type="button"
               onClick={() => onChange(s)}
               aria-pressed={active}
-              className={`flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-1 text-[13px] transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none sm:px-2 sm:text-sm ${
-                active ? 'bg-surface font-medium text-fg ring-1 ring-line' : 'text-fg-3 hover:text-fg'
+              className={`flex h-[4.25rem] min-w-0 flex-col items-center justify-center gap-1.5 rounded-lg border px-1 text-xs transition focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none active:scale-[0.97] ${
+                active ? `border-transparent font-medium text-fg ring-2 ring-current ${SPORT_TEXT[s]} ${SPORT_SOFT[s]}` : 'border-line-strong text-fg-3 hover:bg-hover hover:text-fg'
               }`}
             >
-              {/* Vijf knoppen op een smal scherm: het bolletje valt weg zodat de namen passen. */}
-              <span className={`hidden size-1.5 shrink-0 rounded-full sm:block ${SPORT_BG[s]}`} />
-              <span className="truncate">{SPORT_LABEL[s]}</span>
+              <Icon name={s} className="size-5" />
+              <span className={`max-w-full truncate ${active ? 'text-fg' : ''}`}>{SPORT_LABEL[s]}</span>
             </button>
           )
         })}
