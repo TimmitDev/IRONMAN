@@ -5,7 +5,7 @@ import type { Profile } from '../lib/profile'
 import { formatPace, formatSessionDuration, formatShortDate, parseISODate, todayISO } from '../lib/race'
 import { addComment, deleteComment, giveKudos, removeKudos, type FeedItem, type FeedPerson } from '../lib/social'
 import { bucketLabel } from '../lib/records'
-import { SPORT_BG, SPORT_LABEL, type Sport } from '../lib/types'
+import { SPORT_BG, workoutLabel, type Sport } from '../lib/types'
 import { errorMessage, iconButton, inputClass, pillClass, primaryButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { RouteMap } from './RouteMap'
@@ -137,7 +137,7 @@ export function FeedCard({
           </p>
           <p className="flex items-center gap-1.5 text-xs text-fg-3">
             <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[item.sport]}`} aria-hidden />
-            {SPORT_LABEL[item.sport]} · {relativeDay(item.date)}
+            {workoutLabel(item)} · {relativeDay(item.date)}
           </p>
         </div>
       </header>

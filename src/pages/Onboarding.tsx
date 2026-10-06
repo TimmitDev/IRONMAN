@@ -21,7 +21,7 @@ import { useGoals } from '../lib/useGoals'
 const STEPS = ['Welkom', 'Profiel', 'Jouw race', 'Jouw week', 'Doelen', 'Community', 'Klaar'] as const
 
 /** Typische verdeling voor een triatleet als er geen plan is om van af te leiden. */
-const SPLIT: Record<Sport, number> = { swim: 0.15, bike: 0.5, run: 0.3, strength: 0.05 }
+const SPLIT: Record<Sport, number> = { swim: 0.15, bike: 0.5, run: 0.3, strength: 0.05, cardio: 0 }
 
 /**
  * Eerste kennismaking na het aanmelden. Stap "Profiel" maakt het profiel aan (vanaf dan zit je in de app);

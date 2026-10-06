@@ -9,7 +9,7 @@ export const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('S
 const CLIENT_ID = Deno.env.get('STRAVA_CLIENT_ID')
 const CLIENT_SECRET = Deno.env.get('STRAVA_CLIENT_SECRET')
 
-type Sport = 'swim' | 'bike' | 'run' | 'strength'
+type Sport = 'swim' | 'bike' | 'run' | 'strength' | 'cardio'
 
 export interface Connection {
   user_id: string
@@ -144,7 +144,7 @@ export async function stravaGet<T>(token: string, path: string): Promise<{ statu
   return { status: res.status, data: (await res.json()) as T }
 }
 
-// Strava-sporttypes naar de vier sporten van de app; al de rest (wandelen, yoga …) wordt niet geïmporteerd.
+// Strava-sporttypes naar de sporten van de app; al de rest (yoga, skiën …) wordt niet geïmporteerd.
 const SPORTS: Record<string, Sport> = {
   Swim: 'swim',
   Ride: 'bike',
@@ -160,8 +160,18 @@ const SPORTS: Record<string, Sport> = {
   VirtualRun: 'run',
   WeightTraining: 'strength',
   Crossfit: 'strength',
-  HighIntensityIntervalTraining: 'strength',
   Workout: 'strength',
+}
+
+// Strava-sporttypes die als cardio binnenkomen, met de soort uit CARDIO_TYPES (src/lib/types.ts).
+const CARDIO: Record<string, string> = {
+  Rowing: 'rowing',
+  VirtualRow: 'rowing',
+  Elliptical: 'crosstrainer',
+  Walk: 'walking',
+  Hike: 'hiking',
+  StairStepper: 'stairmaster',
+  HighIntensityIntervalTraining: 'hiit',
 }
 
 interface WorkoutRow {
@@ -169,6 +179,7 @@ interface WorkoutRow {
   strava_activity_id: number
   date: string
   sport: Sport
+  cardio_type: string | null
   duration_min: number
   distance_km: number | null
   notes: string | null
@@ -177,13 +188,16 @@ interface WorkoutRow {
 }
 
 function toWorkout(a: StravaActivity, userId: string): WorkoutRow | null {
-  const sport = SPORTS[a.sport_type ?? a.type ?? '']
+  const type = a.sport_type ?? a.type ?? ''
+  const cardioType = CARDIO[type] ?? null
+  const sport: Sport | undefined = cardioType ? 'cardio' : SPORTS[type]
   if (!sport || !a.moving_time) return null
   return {
     user_id: userId,
     strava_activity_id: a.id,
     date: a.start_date_local.slice(0, 10),
     sport,
+    cardio_type: cardioType,
     // Bewegingstijd, zoals Strava die ook als "tijd" toont; minuten met 4 decimalen zoals de database.
     duration_min: Math.round((a.moving_time / 60) * 10000) / 10000,
     distance_km: sport === 'strength' || !a.distance ? null : Math.round(a.distance / 10) / 100,

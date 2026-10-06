@@ -1,5 +1,5 @@
 import { formatPace, formatSessionDuration, formatShortDate } from '../lib/race'
-import { SPORT_BG, SPORT_LABEL, type Workout } from '../lib/types'
+import { SPORT_BG, workoutLabel, type Workout } from '../lib/types'
 import { EmptyState } from './EmptyState'
 import { Icon } from './Icon'
 import { RouteThumb } from './RouteThumb'
@@ -26,7 +26,7 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
             )}
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
-                <span className="truncate font-medium text-fg">{SPORT_LABEL[w.sport]}</span>
+                <span className="truncate font-medium text-fg">{workoutLabel(w)}</span>
                 <span className="shrink-0 text-xs text-fg-3">{formatShortDate(w.date)}</span>
                 {w.strava_activity_id ? (
                   <span className="shrink-0 rounded-md px-1 text-[10px] font-medium tracking-wide text-fg-3 ring-1 ring-line ring-inset" title="Geïmporteerd uit Strava">
@@ -59,7 +59,7 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
               <button
                 onClick={() => onEdit(w)}
                 className="group -mx-3 flex w-[calc(100%+1.5rem)] items-center gap-3 rounded-lg px-3 py-3 text-left text-sm transition hover:bg-hover focus-visible:ring-2 focus-visible:ring-fg/20 focus-visible:outline-none"
-                aria-label={`${SPORT_LABEL[w.sport]} ${formatShortDate(w.date)} bewerken`}
+                aria-label={`${workoutLabel(w)} ${formatShortDate(w.date)} bewerken`}
               >
                 {content}
                 <Icon name="chevron-right" className="size-4 text-fg-4 transition group-hover:text-fg-3" />

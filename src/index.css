@@ -33,12 +33,13 @@
   --color-success: var(--success);
   --color-warning: var(--warning);
 
-  /* Merk en sporten: gevalideerde categorische volgorde (blauw, oranje, aqua, geel). */
+  /* Merk en sporten: gevalideerde categorische volgorde (blauw, oranje, aqua, geel, paars). */
   --color-brand: #e3122d;
   --color-swim: #3987e5;
   --color-bike: #d95926;
   --color-run: #199e70;
   --color-strength: #c98500;
+  --color-cardio: #8b5fd6;
 
   --shadow-card: var(--card-shadow);
 

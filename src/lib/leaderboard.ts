@@ -10,6 +10,8 @@ export interface LeaderboardRow {
   bike_min: number
   run_min: number
   strength_min: number
+  /** Ontbreekt vóór migratie 014. */
+  cardio_min?: number
   swim_km: number
   bike_km: number
   run_km: number

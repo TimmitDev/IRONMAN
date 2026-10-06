@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { supabase } from './supabase'
-import { normalizeRow, type Sport } from './types'
+import { normalizeRow, type CardioType, type Sport } from './types'
 
 export interface FeedPerson {
   user_id: string
@@ -18,6 +18,8 @@ export interface FeedItem extends FeedPerson {
   id: string
   date: string
   sport: Sport
+  /** Ontbreekt vóór migratie 014. */
+  cardio_type?: CardioType | null
   duration_min: number
   distance_km: number | null
   created_at: string

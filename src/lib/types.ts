@@ -1,11 +1,17 @@
-export const SPORTS = ['swim', 'bike', 'run', 'strength'] as const
+export const SPORTS = ['swim', 'bike', 'run', 'strength', 'cardio'] as const
 export type Sport = (typeof SPORTS)[number]
+
+/** De drie triatlondisciplines; de rest telt niet mee voor IRONMAN-afstanden en -badges. */
+export const TRI_SPORTS = ['swim', 'bike', 'run'] as const
+export type TriSport = (typeof TRI_SPORTS)[number]
+export const isTriSport = (s: Sport): s is TriSport => (TRI_SPORTS as readonly Sport[]).includes(s)
 
 export const SPORT_LABEL: Record<Sport, string> = {
   swim: 'Zwemmen',
   bike: 'Fietsen',
   run: 'Lopen',
   strength: 'Kracht',
+  cardio: 'Cardio',
 }
 
 export const SPORT_BG: Record<Sport, string> = {
@@ -13,6 +19,7 @@ export const SPORT_BG: Record<Sport, string> = {
   bike: 'bg-bike',
   run: 'bg-run',
   strength: 'bg-strength',
+  cardio: 'bg-cardio',
 }
 
 /** Sportkleuren als hex, voor plekken buiten Tailwind (kaartlijnen). Zelfde waarden als in index.css. */
@@ -21,6 +28,7 @@ export const SPORT_HEX: Record<Sport, string> = {
   bike: '#d95926',
   run: '#199e70',
   strength: '#c98500',
+  cardio: '#8b5fd6',
 }
 
 export const SPORT_TEXT: Record<Sport, string> = {
@@ -28,6 +36,7 @@ export const SPORT_TEXT: Record<Sport, string> = {
   bike: 'text-bike',
   run: 'text-run',
   strength: 'text-strength',
+  cardio: 'text-cardio',
 }
 
 /** Zachte achtergrond in de sportkleur, voor icoontegels. */
@@ -36,6 +45,7 @@ export const SPORT_SOFT: Record<Sport, string> = {
   bike: 'bg-bike/15',
   run: 'bg-run/15',
   strength: 'bg-strength/15',
+  cardio: 'bg-cardio/15',
 }
 
 /** Zelfstandig naamwoord voor in zinnen: "kudos op je loopsessie". */
@@ -44,6 +54,7 @@ export const SPORT_NOUN: Record<Sport, string> = {
   bike: 'fietsrit',
   run: 'loopsessie',
   strength: 'krachttraining',
+  cardio: 'cardiotraining',
 }
 
 export const SPORT_BORDER: Record<Sport, string> = {
@@ -51,6 +62,44 @@ export const SPORT_BORDER: Record<Sport, string> = {
   bike: 'border-bike',
   run: 'border-run',
   strength: 'border-strength',
+  cardio: 'border-cardio',
+}
+
+/** Soorten cardiotraining waaruit je kiest bij sport "Cardio". Nieuwe soorten mogen hier gewoon bij. */
+export const CARDIO_TYPES = [
+  'rowing',
+  'crosstrainer',
+  'spinning',
+  'indoor_bike',
+  'walking',
+  'hiking',
+  'stairs',
+  'stairmaster',
+  'hiit',
+  'bootcamp',
+  'jump_rope',
+  'other',
+] as const
+export type CardioType = (typeof CARDIO_TYPES)[number]
+
+export const CARDIO_LABEL: Record<CardioType, string> = {
+  rowing: 'Roeien',
+  crosstrainer: 'Crosstrainer',
+  spinning: 'Spinning',
+  indoor_bike: 'Indoor fietsen',
+  walking: 'Wandelen',
+  hiking: 'Hiken',
+  stairs: 'Traplopen',
+  stairmaster: 'Stairmaster',
+  hiit: 'HIIT',
+  bootcamp: 'Bootcamp',
+  jump_rope: 'Springtouw',
+  other: 'Andere cardio',
+}
+
+/** Naam van een training: de cardiosoort als die gekozen is ("Roeien"), anders de sport. */
+export function workoutLabel(w: { sport: Sport; cardio_type?: CardioType | null }): string {
+  return (w.cardio_type && CARDIO_LABEL[w.cardio_type]) || SPORT_LABEL[w.sport]
 }
 
 /** numeric-kolommen kunnen als string uit PostgREST komen; zet ze om zodat optellen niet gaat concateneren. */
@@ -63,6 +112,8 @@ export interface Workout {
   user_id: string
   date: string // YYYY-MM-DD
   sport: Sport
+  /** Alleen bij sport "cardio": welke soort (CARDIO_TYPES), of null als niet gekozen. */
+  cardio_type?: CardioType | null
   duration_min: number
   distance_km: number | null
   rpe: number | null
@@ -74,7 +125,7 @@ export interface Workout {
   route_polyline?: string | null
 }
 
-export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>
+export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'cardio_type' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>
 
 export interface PlannedWorkout {
   id: string

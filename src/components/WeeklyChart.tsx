@@ -15,7 +15,7 @@ function buildWeeks(workouts: ChartItem[], count: number): Week[] {
   const current = weekStart(new Date())
   const weeks: Week[] = Array.from({ length: count }, (_, i) => ({
     start: addDays(current, (i - count + 1) * 7),
-    minutes: { swim: 0, bike: 0, run: 0, strength: 0 },
+    minutes: { swim: 0, bike: 0, run: 0, strength: 0, cardio: 0 },
     total: 0,
   }))
   const byStart = new Map(weeks.map((w) => [w.start, w]))

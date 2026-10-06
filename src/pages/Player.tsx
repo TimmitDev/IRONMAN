@@ -128,6 +128,7 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
             {SPORTS.map((s) => {
               const record = player.records[s]
               const km = s === 'strength' ? null : t[`${s}_km`]
+              const min = t[`${s}_min`] ?? 0
               return (
                 <li key={s} className="flex items-center gap-3 py-3 text-sm">
                   <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[s]}`} />
@@ -136,7 +137,7 @@ function PlayerView({ player, meId }: { player: PlayerProfile; meId: string }) {
                     {record && <p className="text-xs text-fg-3">Langste: {record.km ? `${fmtKm(record.km)} km` : formatSessionDuration(record.min)}</p>}
                   </div>
                   <div className="shrink-0 text-right tabular-nums">
-                    <p className="font-medium text-fg">{t[`${s}_min`] ? formatDuration(t[`${s}_min`]) : '–'}</p>
+                    <p className="font-medium text-fg">{min ? formatDuration(min) : '–'}</p>
                     {km ? <p className="text-xs text-fg-3">{fmtKm(km)} km</p> : null}
                   </div>
                 </li>

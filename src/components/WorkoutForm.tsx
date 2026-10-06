@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { formatPace, todayISO } from '../lib/race'
-import type { NewWorkout, Sport } from '../lib/types'
+import { CARDIO_LABEL, CARDIO_TYPES, type CardioType, type NewWorkout, type Sport } from '../lib/types'
 import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
 import { DurationFields, emptyDuration, fromMinutes, toMinutes, type DurationValue } from './DurationFields'
 import { Icon } from './Icon'
@@ -20,6 +20,7 @@ export function WorkoutForm({
   onSubmit: (w: NewWorkout) => Promise<void>
 }) {
   const [sport, setSport] = useState<Sport>(initial?.sport ?? 'run')
+  const [cardioType, setCardioType] = useState<CardioType | ''>(initial?.cardio_type ?? '')
   const [date, setDate] = useState(initial?.date ?? todayISO())
   const [duration, setDuration] = useState<DurationValue>(initial ? fromMinutes(initial.duration_min) : emptyDuration)
   const [distance, setDistance] = useState(initial?.distance_km ? String(initial.distance_km) : '')
@@ -35,11 +36,13 @@ export function WorkoutForm({
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (minutes <= 0) return setError('Vul een duur in.')
+    if (sport === 'cardio' && !cardioType) return setError('Kies welke cardiotraining je deed.')
     setBusy(true)
     setError(null)
     try {
       await onSubmit({
         sport,
+        cardio_type: sport === 'cardio' ? cardioType || null : null,
         date,
         duration_min: minutes,
         distance_km: distance ? Number(distance) : null,
@@ -68,6 +71,21 @@ export function WorkoutForm({
         <span className={labelClass}>Datum</span>
         <input type="date" className={inputClass} value={date} onChange={(e) => setDate(e.target.value)} required />
       </label>
+      {sport === 'cardio' && (
+        <label className={`col-span-2 ${lg('lg:col-span-6')}`}>
+          <span className={labelClass}>Soort cardio</span>
+          <select className={inputClass} value={cardioType} onChange={(e) => setCardioType(e.target.value as CardioType)} required>
+            <option value="" disabled>
+              Kies een workout…
+            </option>
+            {CARDIO_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {CARDIO_LABEL[t]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
       <DurationFields value={duration} onChange={setDuration} className={`col-span-2 ${lg('lg:col-span-3')}`} />
       <label className={lg('lg:col-span-2')}>
         <span className={labelClass}>Afstand (km)</span>

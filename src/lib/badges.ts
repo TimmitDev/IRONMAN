@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 import { IRONMAN_DISTANCES, addDays, todayISO, weekStart, parseISODate } from './race'
-import type { Sport, Workout } from './types'
+import { isTriSport, type Sport, type Workout } from './types'
 import type { Goals } from './useGoals'
 
 interface Context {
@@ -142,7 +142,7 @@ export const BADGES: Badge[] = [
     description: 'Zwemmen, fietsen én lopen in één week.',
     evaluate: perWeek(
       () => new Set<Sport>(),
-      (s, w) => w.sport !== 'strength' && s.add(w.sport),
+      (s, w) => isTriSport(w.sport) && s.add(w.sport),
       (s) => s.size >= 3,
       (s) => s.size / 3,
       (best) => `${Math.round(best * 3)} / 3 disciplines in één week`,
@@ -168,7 +168,7 @@ export const BADGES: Badge[] = [
     evaluate: perWeek(
       () => ({ swim: 0, bike: 0, run: 0 }),
       (s, w) => {
-        if (w.sport !== 'strength') s[w.sport] += km(w)
+        if (isTriSport(w.sport)) s[w.sport] += km(w)
       },
       (s) => s.swim >= IRONMAN_DISTANCES.swim && s.bike >= IRONMAN_DISTANCES.bike && s.run >= IRONMAN_DISTANCES.run,
       (s) => (Math.min(1, s.swim / IRONMAN_DISTANCES.swim) + Math.min(1, s.bike / IRONMAN_DISTANCES.bike) + Math.min(1, s.run / IRONMAN_DISTANCES.run)) / 3,
@@ -184,7 +184,7 @@ export const BADGES: Badge[] = [
       const targets = Object.values(ctx.goals).filter((g) => g && g.minutes > 0)
       if (!targets.length) return { earned: false, earnedOn: null, progress: 0, progressLabel: 'stel eerst weekdoelen in' }
       return perWeek(
-        () => ({ swim: 0, bike: 0, run: 0, strength: 0 }) as Record<Sport, number>,
+        () => ({ swim: 0, bike: 0, run: 0, strength: 0, cardio: 0 }) as Record<Sport, number>,
         (s, w) => {
           s[w.sport] += w.duration_min
         },

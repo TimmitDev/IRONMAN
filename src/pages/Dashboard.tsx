@@ -115,7 +115,7 @@ export function Dashboard() {
             </span>
           </div>
           <WeekStrip start={thisWeek} done={plan.done} planned={plan.planned} />
-          <div className="grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-5">
             {SPORTS.map((s) => {
               const done = plan.done.filter((w) => w.sport === s)
               const open = plan.planned.filter((p) => p.sport === s && !p.workout_id)

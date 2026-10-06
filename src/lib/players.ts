@@ -18,9 +18,12 @@ export interface PlayerTotals {
   bike_min: number
   run_min: number
   strength_min: number
+  /** cardio_min en cardio_km ontbreken vóór migratie 014. */
+  cardio_min?: number
   swim_km: number
   bike_km: number
   run_km: number
+  cardio_km?: number
 }
 
 /** Wat `player_profile` teruggeeft. `workouts` is null als de speler geen losse trainingen deelt. */

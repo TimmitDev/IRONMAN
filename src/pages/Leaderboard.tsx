@@ -13,7 +13,7 @@ import { compliance, formatIronman, ironmanFraction, useLeaderboard, type Leader
 import { usePlayerSearch } from '../lib/players'
 import { useMe } from '../lib/profile'
 import { IRONMAN_DISTANCES, addDays, formatDuration, toISODate, todayISO, weekStart } from '../lib/race'
-import { SPORT_BG, SPORT_LABEL } from '../lib/types'
+import { SPORTS, SPORT_BG, SPORT_LABEL, TRI_SPORTS } from '../lib/types'
 import { inputClass, pillClass, secondaryButton } from '../lib/ui'
 
 type Period = 'week' | 'month' | 'all'
@@ -120,7 +120,10 @@ function formatMetric(r: LeaderboardRow, metric: Metric): { main: string; sub: s
 
 function barSegments(r: LeaderboardRow, metric: Metric): { cls: string; value: number; label: string }[] {
   if (metric === 'hours')
-    return (['swim', 'bike', 'run', 'strength'] as const).map((s) => ({ cls: SPORT_BG[s], value: r[`${s}_min`], label: `${SPORT_LABEL[s]} ${formatDuration(r[`${s}_min`])}` }))
+    return SPORTS.map((s) => {
+      const min = r[`${s}_min`] ?? 0
+      return { cls: SPORT_BG[s], value: min, label: `${SPORT_LABEL[s]} ${formatDuration(min)}` }
+    })
   if (metric === 'ironman')
     return (['swim', 'bike', 'run'] as const).map((s) => {
       const part = r[`${s}_km`] / 3 / IRONMAN_DISTANCES[s]
@@ -161,7 +164,7 @@ export function Leaderboard() {
     }
   }
   const metricInfo = METRICS.find((m) => m.key === metric)!
-  const legend = metric === 'hours' ? (['swim', 'bike', 'run', 'strength'] as const) : metric === 'ironman' ? (['swim', 'bike', 'run'] as const) : null
+  const legend = metric === 'hours' ? SPORTS : metric === 'ironman' ? TRI_SPORTS : null
 
   return (
     <div>

@@ -167,7 +167,7 @@ function WeekSchedule({ onShowRacePlan }: { onShowRacePlan: () => void }) {
       )}
 
       <Card title="Per sport" description={<span className="hidden md:inline">Sleep een sessie naar een andere dag om ze te verplaatsen.</span>}>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3 lg:grid-cols-5">
           {SPORTS.map((s) => {
             const plannedMin = sumMinutes(planned.filter((p) => p.sport === s))
             const doneMin = sumMinutes(done.filter((w) => w.sport === s))
