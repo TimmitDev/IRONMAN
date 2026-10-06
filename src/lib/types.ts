@@ -66,35 +66,12 @@ export const SPORT_BORDER: Record<Sport, string> = {
 }
 
 /** Soorten cardiotraining waaruit je kiest bij sport "Cardio". Nieuwe soorten mogen hier gewoon bij. */
-export const CARDIO_TYPES = [
-  'rowing',
-  'crosstrainer',
-  'spinning',
-  'indoor_bike',
-  'walking',
-  'hiking',
-  'stairs',
-  'stairmaster',
-  'hiit',
-  'bootcamp',
-  'jump_rope',
-  'other',
-] as const
+export const CARDIO_TYPES = ['rowing', 'stairmaster'] as const
 export type CardioType = (typeof CARDIO_TYPES)[number]
 
 export const CARDIO_LABEL: Record<CardioType, string> = {
   rowing: 'Roeien',
-  crosstrainer: 'Crosstrainer',
-  spinning: 'Spinning',
-  indoor_bike: 'Indoor fietsen',
-  walking: 'Wandelen',
-  hiking: 'Hiken',
-  stairs: 'Traplopen',
   stairmaster: 'Stairmaster',
-  hiit: 'HIIT',
-  bootcamp: 'Bootcamp',
-  jump_rope: 'Springtouw',
-  other: 'Andere cardio',
 }
 
 /** Naam van een training: de cardiosoort als die gekozen is ("Roeien"), anders de sport. */

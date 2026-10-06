@@ -28,7 +28,7 @@ const NOTES_PLACEHOLDER: Record<Sport, string> = {
   bike: "bv. 4x8' op FTP",
   run: 'bv. 6x1 km op 10k-tempo',
   strength: 'bv. squats 4x6, planken',
-  cardio: 'bv. 8 rondes tabata',
+  cardio: "bv. 5x4' op 2:00 /500 m",
 }
 
 /** Kleine pilknop voor snelkeuzes; `activeClass` kleurt de gekozen. */
@@ -92,14 +92,14 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
       {sport === 'cardio' && (
         <fieldset className="animate-fade-in">
           <legend className={labelClass}>Soort cardio</legend>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {CARDIO_TYPES.map((t) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => setCardioType(t)}
                 aria-pressed={cardioType === t}
-                className={chipClass(cardioType === t, 'border-cardio bg-cardio/15 text-fg')}
+                className={`${chipClass(cardioType === t, 'border-cardio bg-cardio/15 text-fg')} h-10 justify-center rounded-lg`}
               >
                 {CARDIO_LABEL[t]}
               </button>

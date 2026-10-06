@@ -1,6 +1,6 @@
 -- Voer dit uit in Supabase > SQL Editor (na 013_challenges.sql).
 
--- Vijfde sport: cardio (roeien, crosstrainer, spinning, wandelen, HIIT …), met de soort in cardio_type.
+-- Vijfde sport: cardio (roeien, stairmaster), met de soort in cardio_type.
 -- De lijst met soorten staat in src/lib/types.ts (CARDIO_TYPES); hier enkel een vormcontrole,
 -- zodat er soorten bij kunnen zonder nieuwe migratie.
 

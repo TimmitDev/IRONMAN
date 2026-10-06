@@ -144,7 +144,7 @@ export async function stravaGet<T>(token: string, path: string): Promise<{ statu
   return { status: res.status, data: (await res.json()) as T }
 }
 
-// Strava-sporttypes naar de sporten van de app; al de rest (yoga, skiën …) wordt niet geïmporteerd.
+// Strava-sporttypes naar de sporten van de app; al de rest (wandelen, yoga …) wordt niet geïmporteerd.
 const SPORTS: Record<string, Sport> = {
   Swim: 'swim',
   Ride: 'bike',
@@ -160,6 +160,7 @@ const SPORTS: Record<string, Sport> = {
   VirtualRun: 'run',
   WeightTraining: 'strength',
   Crossfit: 'strength',
+  HighIntensityIntervalTraining: 'strength',
   Workout: 'strength',
 }
 
@@ -167,11 +168,7 @@ const SPORTS: Record<string, Sport> = {
 const CARDIO: Record<string, string> = {
   Rowing: 'rowing',
   VirtualRow: 'rowing',
-  Elliptical: 'crosstrainer',
-  Walk: 'walking',
-  Hike: 'hiking',
   StairStepper: 'stairmaster',
-  HighIntensityIntervalTraining: 'hiit',
 }
 
 interface WorkoutRow {
