@@ -92,7 +92,7 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
       {sport === 'cardio' && (
         <fieldset className="animate-fade-in">
           <legend className={labelClass}>Soort cardio</legend>
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-3 gap-1.5">
             {CARDIO_TYPES.map((t) => (
               <button
                 key={t}

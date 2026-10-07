@@ -66,11 +66,12 @@ export const SPORT_BORDER: Record<Sport, string> = {
 }
 
 /** Soorten cardiotraining waaruit je kiest bij sport "Cardio". Nieuwe soorten mogen hier gewoon bij. */
-export const CARDIO_TYPES = ['rowing', 'stairmaster'] as const
+export const CARDIO_TYPES = ['rowing', 'crosstrainer', 'stairmaster'] as const
 export type CardioType = (typeof CARDIO_TYPES)[number]
 
 export const CARDIO_LABEL: Record<CardioType, string> = {
   rowing: 'Roeien',
+  crosstrainer: 'Crosstrainer',
   stairmaster: 'Stairmaster',
 }
 

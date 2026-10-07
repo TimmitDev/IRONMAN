@@ -168,6 +168,7 @@ const SPORTS: Record<string, Sport> = {
 const CARDIO: Record<string, string> = {
   Rowing: 'rowing',
   VirtualRow: 'rowing',
+  Elliptical: 'crosstrainer',
   StairStepper: 'stairmaster',
 }
 
