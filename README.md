@@ -23,6 +23,7 @@ login en data. Wordt gehost op GitHub Pages.
    - `012_highlights.sql`: PR's, "eerste keer" en "langste ooit" als label in de feed
    - `013_challenges.sql`: uitdagingen voor de groep, met automatische voortgang
    - `014_cardio.sql`: vijfde sport "Cardio" met een soort per training (roeien, crosstrainer of stairmaster)
+   - `015_kcal.sql`: verbrande kcal per training en je (privé) gewicht in `private_settings`
 3. **Authentication → URL Configuration**
    - Site URL: `https://timmitdev.github.io/IRONMAN/`
    - Redirect URLs: `https://timmitdev.github.io/IRONMAN/**` en `http://localhost:5173/**`

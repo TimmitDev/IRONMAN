@@ -5,14 +5,16 @@ import { useUnread } from '../lib/nav'
 import { PresenceProvider } from '../lib/presence'
 import { useMe } from '../lib/profile'
 import { useInbox } from '../lib/social'
+import { ProgressProvider } from '../lib/progress'
 import { useStravaAutoSync } from '../lib/strava'
 import { Avatar } from './Avatar'
+import { ProgressChips } from './LevelBadge'
+import { LevelUpOverlay } from './LevelUpOverlay'
 import { Logo } from './Logo'
 import { MobileNav } from './MobileNav'
 import { Navbar } from './Navbar'
 import { RightSidebar } from './RightSidebar'
 import { Sidebar } from './Sidebar'
-import { ThemeSwitchButton } from './ThemeToggle'
 
 export function PageLoader() {
   return (
@@ -27,7 +29,10 @@ export function Layout() {
   return (
     <PresenceProvider>
       <FollowsProvider meId={me.id}>
-        <Shell />
+        <ProgressProvider>
+          <Shell />
+          <LevelUpOverlay />
+        </ProgressProvider>
       </FollowsProvider>
     </PresenceProvider>
   )
@@ -52,8 +57,11 @@ function Shell() {
       <header className="sticky top-0 z-20 border-b border-line bg-canvas/85 pt-[env(safe-area-inset-top)] backdrop-blur-xl lg:hidden">
         <div className="flex h-14 items-center gap-2 px-4 sm:px-6">
           <Logo />
+          {/* Thema wisselen zit op mobiel in het Meer-menu; hier is de plek voor level en streak. */}
           <div className="ml-auto flex items-center gap-1">
-            <ThemeSwitchButton />
+            <Link to="/dashboard" aria-label="Je voortgang">
+              <ProgressChips />
+            </Link>
             <Link to="/instellingen" className="ml-1 rounded-full" aria-label="Instellingen">
               <Avatar name={me.display_name} size="sm" />
             </Link>

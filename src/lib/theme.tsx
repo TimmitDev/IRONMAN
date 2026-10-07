@@ -23,7 +23,7 @@ function apply(pref: ThemePreference, animate: boolean) {
     window.setTimeout(() => root.classList.remove('theme-transition'), 250)
   }
   root.dataset.theme = dark ? 'dark' : 'light'
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#0a0a0a' : '#fafafa')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#08090b' : '#f6f6f7')
 }
 
 interface ThemeState {

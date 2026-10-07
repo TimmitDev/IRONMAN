@@ -24,7 +24,7 @@ function Section({ title, description, children }: { title: string; description:
         <h2 className="text-sm font-medium text-fg">{title}</h2>
         <p className="mt-1 text-sm text-fg-3">{description}</p>
       </div>
-      <div className="min-w-0 rounded-xl border border-line bg-surface p-5 sm:p-6">{children}</div>
+      <div className="min-w-0 rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">{children}</div>
     </section>
   )
 }
@@ -39,6 +39,7 @@ export function Settings() {
     <div className="mx-auto max-w-5xl">
       <PageHeader title="Instellingen" description="Je profiel, wat je deelt met anderen, weergave en je account." />
       <ProfileSection />
+      <BodySection />
       <PrivacySection />
       <Section title="Weergave" description="Licht, donker of automatisch volgens je apparaat.">
         <ThemeToggle labels />
@@ -89,6 +90,57 @@ function ProfileSection() {
           <Link to={`/leaderboard/${me.id}`} className={secondaryButton}>
             Bekijk je profiel
           </Link>
+          <StatusText status={status} />
+        </div>
+      </form>
+    </Section>
+  )
+}
+
+function BodySection() {
+  const { me, saveWeight } = useMe()
+  const [weight, setWeight] = useState(me.weight_kg ? String(me.weight_kg) : '')
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<Status>(null)
+  const parsed = weight ? Math.round(Number(weight.replace(',', '.')) * 10) / 10 : null
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (parsed !== null && !(parsed >= 30 && parsed <= 250)) return setStatus({ type: 'error', text: 'Vul een gewicht tussen 30 en 250 kg in.' })
+    setBusy(true)
+    setStatus(null)
+    try {
+      await saveWeight(parsed)
+      setStatus({ type: 'ok', text: 'Opgeslagen.' })
+    } catch (err) {
+      setStatus({ type: 'error', text: errorMessage(err) })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Section title="Lichaam" description="Je gewicht is nodig om verbrande kcal te berekenen. Alleen jij ziet het.">
+      <form onSubmit={handleSubmit}>
+        <label className="block max-w-48">
+          <span className={labelClass}>Gewicht</span>
+          <span className="relative block">
+            <input
+              type="text"
+              inputMode="decimal"
+              className={`${inputClass} pr-10 tabular-nums`}
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="bv. 72,5"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-fg-3">kg</span>
+          </span>
+        </label>
+        <p className={hintClass}>Al gelogde trainingen houden hun kcal; nieuwe trainingen rekenen met dit gewicht.</p>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <button type="submit" disabled={busy || parsed === me.weight_kg} className={primaryButton}>
+            {busy ? 'Opslaan…' : 'Opslaan'}
+          </button>
           <StatusText status={status} />
         </div>
       </form>

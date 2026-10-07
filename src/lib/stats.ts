@@ -1,4 +1,4 @@
-import { addDays, parseISODate, sumKm, sumMinutes, weekStart } from './race'
+import { addDays, sumKm, sumMinutes, weekStart } from './race'
 import type { Workout } from './types'
 
 type Item = Pick<Workout, 'date' | 'sport' | 'duration_min' | 'distance_km'>
@@ -15,22 +15,6 @@ export function weekSummary<T extends Item>(items: T[], start: string) {
     sessions: week.length,
     km: sumKm(week.filter((w) => w.sport !== 'strength')),
   }
-}
-
-/**
- * Aantal weken op rij met minstens één training, tot en met deze week.
- * Is er deze week nog niets, dan telt de reeks vanaf vorige week (de week is nog niet om).
- */
-export function weekStreak(items: Item[], today = new Date()) {
-  const weeks = new Set(items.map((w) => weekStart(parseISODate(w.date))))
-  let start = weekStart(today)
-  if (!weeks.has(start)) start = addDays(start, -7)
-  let n = 0
-  while (weeks.has(start)) {
-    n++
-    start = addDays(start, -7)
-  }
-  return n
 }
 
 /** Minuten per week voor de laatste `count` weken (oudste eerst), inclusief deze week. */

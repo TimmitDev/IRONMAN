@@ -5,7 +5,10 @@ import { BadgesCard } from '../components/Badges'
 import { Delta, KpiStrip } from '../components/KpiStrip'
 import { WeekStrip } from '../components/WeekStrip'
 import { toast } from '../lib/feedback'
-import { signed, weekStreak, weekSummary } from '../lib/stats'
+import { signed, weekSummary } from '../lib/stats'
+import { formatKcal, workoutKcal } from '../lib/kcal'
+import { useProfile } from '../lib/profile'
+import { ProgressHero } from '../components/ProgressHero'
 import { Card } from '../components/Card'
 import { CompleteDialog } from '../components/CompleteDialog'
 import { EmptyState } from '../components/EmptyState'
@@ -20,7 +23,7 @@ import { WeeklyChart } from '../components/WeeklyChart'
 import { WorkoutList } from '../components/WorkoutList'
 import { RACE_TYPES, addDays, currentPhase, daysUntilRace, formatDuration, formatSessionDuration, racePassed, sumKm, sumMinutes, todayISO, weekStart } from '../lib/race'
 import { useRace } from '../lib/raceContext'
-import { SPORTS, SPORT_BG, SPORT_LABEL, type PlannedWorkout, type Sport, type Workout } from '../lib/types'
+import { SPORTS, SPORT_BG, SPORT_LABEL, SPORT_SOFT, SPORT_TEXT, type PlannedWorkout, type Sport, type Workout } from '../lib/types'
 import { errorMessage, eyebrowClass, linkClass, primaryButton, secondaryButton } from '../lib/ui'
 import { useGoals } from '../lib/useGoals'
 import { usePlan } from '../lib/usePlan'
@@ -91,6 +94,8 @@ export function Dashboard() {
           </Card>
         )}
 
+        <ProgressHero workouts={workouts} />
+
         {/* Race-countdown + vandaag */}
         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
           <Hero />
@@ -145,7 +150,7 @@ export function Dashboard() {
             <BadgesCard results={badges} />
             <LongestCard workouts={workouts} />
             <Card title="Recente trainingen" action={<MoreLink to="/workouts">Alles</MoreLink>}>
-              <WorkoutList workouts={workouts.slice(0, 5)} />
+              <WorkoutList workouts={workouts.slice(0, 5)} showKcal />
             </Card>
           </div>
         </div>
@@ -164,10 +169,13 @@ export function Dashboard() {
 
 /** Vier kerncijfers voor deze week, telkens tegenover je doel of vorige week. */
 function WeekKpis({ workouts, goalMinutes }: { workouts: Workout[]; goalMinutes: number }) {
+  const weight = useProfile().profile?.weight_kg ?? null
   const start = weekStart(new Date())
   const now = weekSummary(workouts, start)
   const prev = weekSummary(workouts, addDays(start, -7))
-  const streak = weekStreak(workouts)
+  const kcal = (items: Workout[]) => items.reduce((a, w) => a + (workoutKcal(w, weight) ?? 0), 0)
+  const nowKcal = kcal(now.items)
+  const prevKcal = kcal(prev.items)
   const pct = goalMinutes ? Math.round((now.minutes / goalMinutes) * 100) : null
 
   return (
@@ -189,9 +197,15 @@ function WeekKpis({ workouts, goalMinutes }: { workouts: Workout[]; goalMinutes:
           sub: `vorige week ${prev.km.toLocaleString('nl-BE')} km`,
         },
         {
-          label: 'Reeks',
-          value: `${streak} ${streak === 1 ? 'week' : 'weken'}`,
-          sub: streak ? 'op rij actief' : 'Log een training om te starten',
+          label: 'Verbrand',
+          value: nowKcal ? formatKcal(nowKcal) : weight ? '0 kcal' : '–',
+          sub: weight ? (
+            <Delta value={nowKcal - prevKcal}>{signed(Math.round(nowKcal - prevKcal), (v) => v.toLocaleString('nl-BE'))} t.o.v. vorige week</Delta>
+          ) : (
+            <Link to="/instellingen" className="font-medium text-fg-2 underline-offset-4 hover:underline">
+              Stel je gewicht in
+            </Link>
+          ),
         },
       ]}
     />
@@ -220,17 +234,17 @@ function Hero() {
       ) : (
         <div className="mt-4 flex flex-wrap items-end gap-x-12 gap-y-4">
           <div className="flex items-baseline gap-2">
-            <span className="text-6xl leading-none font-light tracking-tight text-fg tabular-nums sm:text-7xl">{days}</span>
-            <span className="text-base text-fg-3">{days === 1 ? 'dag' : 'dagen'}</span>
+            <span className="font-display text-7xl leading-none font-extrabold tracking-tight text-fg tabular-nums sm:text-8xl">{days}</span>
+            <span className="font-display text-xl font-bold text-fg-3 uppercase">{days === 1 ? 'dag' : 'dagen'}</span>
           </div>
           <dl className="flex gap-10 pb-1.5 text-sm">
             <div>
               <dt className="text-xs text-fg-3">Weken</dt>
-              <dd className="mt-0.5 text-lg font-medium tracking-tight text-fg tabular-nums">{Math.floor(days / 7)}</dd>
+              <dd className="font-display mt-0.5 text-2xl font-bold tracking-tight text-fg tabular-nums">{Math.floor(days / 7)}</dd>
             </div>
             <div>
               <dt className="text-xs text-fg-3">Fase</dt>
-              <dd className="mt-0.5 text-lg font-medium tracking-tight text-fg">{phase.name}</dd>
+              <dd className="font-display mt-0.5 text-2xl font-bold tracking-tight text-fg uppercase">{phase.name}</dd>
             </div>
           </dl>
         </div>
@@ -332,16 +346,18 @@ function GoalTile({
 }) {
   const pct = goalMin ? Math.round((doneMin / goalMin) * 100) : null
   return (
-    <section className="min-w-0 rounded-xl border border-line bg-surface p-4 sm:p-5">
+    <section className="min-w-0 rounded-2xl border border-line bg-surface shadow-card p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2">
-        <span className="inline-flex min-w-0 items-center gap-2 text-sm text-fg-2">
-          <span className={`size-1.5 shrink-0 rounded-full ${SPORT_BG[sport]}`} aria-hidden />
+        <span className="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-fg-2">
+          <span className={`flex size-7 shrink-0 items-center justify-center rounded-md ${SPORT_SOFT[sport]} ${SPORT_TEXT[sport]}`} aria-hidden>
+            <Icon name={sport} className="size-4" />
+          </span>
           <span className="truncate">{SPORT_LABEL[sport]}</span>
         </span>
-        {pct !== null && <span className="text-xs text-fg-3 tabular-nums">{pct}%</span>}
+        {pct !== null && <span className={`text-xs font-bold tabular-nums ${pct >= 100 ? 'text-success' : 'text-fg-3'}`}>{pct}%</span>}
       </div>
       <p className="mt-4 flex flex-wrap items-baseline gap-x-1.5 tabular-nums">
-        <span className="text-2xl font-medium tracking-tight text-fg">{doneMin ? formatDuration(doneMin) : '0'}</span>
+        <span className="font-display text-3xl font-bold tracking-tight text-fg">{doneMin ? formatDuration(doneMin) : '0'}</span>
         {goalMin > 0 && <span className="text-sm text-fg-3">/ {formatDuration(goalMin)}</span>}
       </p>
       <div className="mt-4">

@@ -29,7 +29,7 @@ const SPLIT: Record<Sport, number> = { swim: 0.15, bike: 0.5, run: 0.3, strength
  */
 export function Onboarding() {
   const { session } = useAuth()
-  const { profile, loading, save: saveProfile } = useProfile()
+  const { profile, loading, save: saveProfile, saveWeight } = useProfile()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
 
@@ -67,7 +67,17 @@ export function Onboarding() {
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pt-8 pb-[calc(2rem+env(safe-area-inset-bottom))] sm:px-6 sm:pt-12">
         {step === 0 && <WelcomeStep onNext={next} />}
-        {step === 1 && <ProfileStep defaultName={profile?.display_name ?? defaultName} initial={profile} onSave={saveProfile} onBack={back} onNext={next} />}
+        {step === 1 && (
+          <ProfileStep
+            defaultName={profile?.display_name ?? defaultName}
+            initial={profile}
+            initialWeight={profile?.weight_kg ?? null}
+            onSave={saveProfile}
+            onSaveWeight={saveWeight}
+            onBack={back}
+            onNext={next}
+          />
+        )}
         {step === 2 && profile && <RaceStep profile={profile} onSave={saveProfile} onBack={back} onNext={next} />}
         {step === 3 && <WeekStep onBack={back} onNext={next} />}
         {step === 4 && <GoalsStep onBack={back} onNext={next} />}
@@ -174,17 +184,22 @@ function WelcomeStep({ onNext }: { onNext: () => void }) {
 function ProfileStep({
   defaultName,
   initial,
+  initialWeight,
   onSave,
+  onSaveWeight,
   onBack,
   onNext,
 }: {
   defaultName: string
   initial: { show_on_leaderboard: boolean; share_workouts: boolean } | null
   onSave: (f: { display_name: string; show_on_leaderboard: boolean; share_workouts: boolean }) => Promise<void>
+  onSaveWeight: (kg: number | null) => Promise<void>
+  initialWeight: number | null
   onBack: () => void
   onNext: () => void
 }) {
   const [name, setName] = useState(defaultName)
+  const [weight, setWeight] = useState(initialWeight ? String(initialWeight) : '')
   const [visible, setVisible] = useState(initial?.show_on_leaderboard ?? true)
   const [share, setShare] = useState(initial?.share_workouts ?? true)
   const [busy, setBusy] = useState(false)
@@ -193,11 +208,14 @@ function ProfileStep({
   async function submit() {
     const display_name = name.trim()
     if (!display_name) return setError('Kies een naam.')
+    const kg = weight ? Math.round(Number(weight.replace(',', '.')) * 10) / 10 : null
+    if (kg !== null && !(kg >= 30 && kg <= 250)) return setError('Vul een gewicht tussen 30 en 250 kg in, of laat het leeg.')
     setBusy(true)
     setError(null)
     try {
       // Delen zonder zichtbaar profiel kan niet: dan ziet niemand de trainingen.
       await onSave({ display_name, show_on_leaderboard: visible, share_workouts: visible && share })
+      if (kg !== initialWeight) await onSaveWeight(kg)
       onNext()
     } catch (e) {
       setError(errorMessage(e))
@@ -217,7 +235,7 @@ function ProfileStep({
         Je naam verschijnt in de feed, bij kudos en op het leaderboard.
       </StepHeader>
 
-      <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+      <div className="rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
         <div className="flex items-center gap-4">
           <Avatar name={name || '?'} size="lg" />
           <label className="min-w-0 flex-1">
@@ -226,9 +244,24 @@ function ProfileStep({
           </label>
         </div>
         <p className={hintClass}>Maximaal 30 tekens. Je voornaam of een bijnaam werkt prima.</p>
+        <label className="mt-5 block max-w-48">
+          <span className={labelClass}>Gewicht (optioneel)</span>
+          <span className="relative block">
+            <input
+              type="text"
+              inputMode="decimal"
+              className={`${inputClass} pr-10 tabular-nums`}
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="bv. 72,5"
+            />
+            <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-fg-3">kg</span>
+          </span>
+        </label>
+        <p className={hintClass}>Voor het berekenen van verbrande kcal. Alleen jij ziet het.</p>
       </div>
 
-      <div className="mt-4 space-y-5 rounded-xl border border-line bg-surface p-5 sm:p-6">
+      <div className="mt-4 space-y-5 rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
         <div className="flex items-center gap-2 text-sm font-medium text-fg">
           <Icon name="shield" className="size-4 text-fg-3" />
           Privacy
@@ -304,7 +337,7 @@ function RaceStep({
         volledige afstand.
       </StepHeader>
 
-      <div className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+      <div className="rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
         <RaceFields value={draft} onChange={setDraft} />
       </div>
 
@@ -388,13 +421,13 @@ function WeekStep({ onBack, onNext }: { onBack: () => void; onNext: () => void }
         </div>
       </fieldset>
 
-      <div className="mt-6 grid gap-4 rounded-xl border border-line bg-surface p-5 sm:grid-cols-3 sm:p-6">
+      <div className="mt-6 grid gap-4 rounded-2xl border border-line bg-surface shadow-card p-5 sm:grid-cols-3 sm:p-6">
         {daySelect('restDay', 'Rustdag')}
         {daySelect('longBikeDay', 'Lange rit')}
         {daySelect('longRunDay', 'Lange loop')}
       </div>
 
-      <div className="mt-4 rounded-xl border border-line bg-surface p-5 sm:p-6">
+      <div className="mt-4 rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
         <Switch
           checked={fillSchedule}
           onChange={setFillSchedule}
@@ -468,7 +501,7 @@ function GoalsForm({
         {fromPlan ? 'We vulden alvast in wat je plan deze week voorziet.' : `Een voorstel voor de fase ${currentPhase(race).name}.`} Pas gerust aan.
       </StepHeader>
 
-      <div className="divide-y divide-line rounded-xl border border-line bg-surface">
+      <div className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
         {SPORTS.map((sp) => (
           <label key={sp} className="flex items-center gap-3 px-5 py-3.5 sm:px-6">
             <span className={`size-2 shrink-0 rounded-full ${SPORT_BG[sp]}`} />
@@ -511,7 +544,7 @@ function CommunityStep({ meId, onBack, onNext }: { meId: string; onBack: () => v
       </StepHeader>
 
       {players.length ? (
-        <ul className="divide-y divide-line rounded-xl border border-line bg-surface">
+        <ul className="divide-y divide-line rounded-2xl border border-line bg-surface shadow-card">
           {players.map((p) => (
             <li key={p.user_id} className="flex items-center gap-3 px-5 py-3 sm:px-6">
               <Avatar name={p.display_name} size="sm" />

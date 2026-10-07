@@ -9,6 +9,8 @@
 
 @theme {
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Smalle, vette sportletter voor titels en grote cijfers (font-display). */
+  --font-display: 'Barlow Condensed', 'Inter', ui-sans-serif, system-ui, sans-serif;
 
   /* Vlakken */
   --color-canvas: var(--canvas);
@@ -53,6 +55,26 @@
   --animate-sheet: sheet 280ms var(--ease-out-soft) backwards;
   --animate-toast: toast 240ms var(--ease-out-soft) backwards;
   --animate-grow-y: grow-y 600ms var(--ease-out-soft) backwards;
+  --animate-burst: burst 900ms var(--ease-out-soft) both;
+  --animate-level-pop: level-pop 700ms cubic-bezier(0.3, 1.6, 0.5, 1) both;
+
+  /* Snipper vliegt van het midden naar (--dx, --dy) en vervaagt. */
+  @keyframes burst {
+    from {
+      transform: translate(-50%, -50%) scale(0.4);
+      opacity: 1;
+    }
+    to {
+      transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) rotate(220deg) scale(1);
+      opacity: 0;
+    }
+  }
+  @keyframes level-pop {
+    from {
+      transform: scale(0.2) rotate(-20deg);
+      opacity: 0;
+    }
+  }
 
   @keyframes fade-up {
     from {
@@ -102,44 +124,44 @@
 }
 
 /*
- * Minimaal en rustig: neutrale grijzen, vlakken die zich scheiden met een dunne lijn in plaats van schaduw,
- * en het merkrood alleen als klein accent. Het verschil tussen canvas en surface is bewust klein.
+ * Sportief en uitgesproken: koele antraciet-tinten, kaarten die loskomen van de achtergrond, vette cijfers in
+ * de displayletter en het merkrood als hoofdaccent (knoppen, level, XP). Sportkleuren blijven voor data.
  */
 :root,
 [data-theme='light'] {
   color-scheme: light;
-  --canvas: #fafafa;
+  --canvas: #f6f6f7;
   --surface: #ffffff;
-  --subtle: #f5f5f5;
-  --muted: #ececec;
-  --hover: rgb(0 0 0 / 0.035);
-  --overlay: rgb(0 0 0 / 0.32);
-  --line: #ebebeb;
-  --line-strong: #d9d9d9;
-  --fg: #171717;
-  --fg-2: #404040;
-  --fg-3: #737373;
-  --fg-4: #a3a3a3;
+  --subtle: #f1f1f3;
+  --muted: #e6e6ea;
+  --hover: rgb(0 0 0 / 0.04);
+  --overlay: rgb(0 0 0 / 0.4);
+  --line: #e6e6ea;
+  --line-strong: #d4d4da;
+  --fg: #0c0d10;
+  --fg-2: #3a3c42;
+  --fg-3: #6e717a;
+  --fg-4: #a1a3ab;
   --danger: #dc2626;
   --success: #16a34a;
   --warning: #b45309;
-  --card-shadow: none;
+  --card-shadow: 0 1px 2px rgb(16 18 24 / 0.04), 0 4px 16px -6px rgb(16 18 24 / 0.06);
 }
 
 [data-theme='dark'] {
   color-scheme: dark;
-  --canvas: #0a0a0a;
-  --surface: #111111;
-  --subtle: #171717;
-  --muted: #232323;
-  --hover: rgb(255 255 255 / 0.04);
-  --overlay: rgb(0 0 0 / 0.6);
-  --line: #1f1f1f;
-  --line-strong: #2e2e2e;
-  --fg: #ededed;
-  --fg-2: #c4c4c4;
-  --fg-3: #8a8a8a;
-  --fg-4: #5c5c5c;
+  --canvas: #08090b;
+  --surface: #111317;
+  --subtle: #181b20;
+  --muted: #23272e;
+  --hover: rgb(255 255 255 / 0.045);
+  --overlay: rgb(0 0 0 / 0.65);
+  --line: #1d2026;
+  --line-strong: #2c3038;
+  --fg: #f4f4f5;
+  --fg-2: #c9cad0;
+  --fg-3: #8b8e97;
+  --fg-4: #5a5d66;
   --danger: #f87171;
   --success: #4ade80;
   --warning: #fbbf24;

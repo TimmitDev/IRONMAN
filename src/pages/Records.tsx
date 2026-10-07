@@ -13,7 +13,6 @@ import { addDays, formatPace, formatSessionDuration, formatShortDate, parseISODa
 import {
   RECORD_SPORTS,
   higherIsFaster,
-  longestWeekStreak,
   paceSeries,
   paceTrend,
   recordHistory,
@@ -26,8 +25,8 @@ import {
   type RecordSport,
   type SportRecords,
 } from '../lib/records'
-import { weekStreak } from '../lib/stats'
-import { SPORT_BG, SPORT_HEX, SPORT_LABEL, SPORT_NOUN, type Workout } from '../lib/types'
+import { useProgress } from '../lib/progress'
+import { SPORT_BG, SPORT_HEX, SPORT_LABEL, SPORT_NOUN, isTriSport, type Workout } from '../lib/types'
 import { useWorkouts } from '../lib/useWorkouts'
 import { eyebrowClass, pillClass, primaryButton } from '../lib/ui'
 
@@ -139,10 +138,9 @@ function RecordKpis({
   const buckets = sports.flatMap((s) => s.buckets)
   const records = buckets.filter((b) => b.best).length
   const recent = history.filter((e) => e.date >= addDays(todayISO(), -30)).length
-  const endurance = workouts.filter((w) => w.sport !== 'strength')
+  const endurance = workouts.filter((w) => isTriSport(w.sport))
   const km = sumKm(endurance)
-  const streak = weekStreak(workouts)
-  const longest = longestWeekStreak(workouts)
+  const { streak } = useProgress()
   // De mijlpaal die het dichtst bij is.
   const next = tracks.filter((t) => t.next).sort((a, b) => b.progress - a.progress)[0]
 
@@ -161,9 +159,9 @@ function RecordKpis({
           sub: 'zwemmen, fietsen en lopen',
         },
         {
-          label: 'Reeks',
-          value: `${streak} ${streak === 1 ? 'week' : 'weken'}`,
-          sub: `langste: ${longest} ${longest === 1 ? 'week' : 'weken'}`,
+          label: 'Streak',
+          value: `${streak.days} ${streak.days === 1 ? 'dag' : 'dagen'}`,
+          sub: `langste: ${streak.best} ${streak.best === 1 ? 'dag' : 'dagen'}`,
         },
       ]}
     />

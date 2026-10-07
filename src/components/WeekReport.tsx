@@ -90,7 +90,7 @@ export function WeekReport({
   const nextTotal = sumMinutes(next.planned)
 
   return (
-    <section className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+    <section className="rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className={`inline-flex items-center gap-2 ${eyebrowClass}`}>

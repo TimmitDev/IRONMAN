@@ -1,7 +1,11 @@
 import { useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { estimateKcal } from '../lib/kcal'
+import { useProfile } from '../lib/profile'
+import { workoutXp } from '../lib/progress'
 import { addDays, formatDuration, formatPace, todayISO } from '../lib/race'
 import { CARDIO_LABEL, CARDIO_TYPES, type CardioType, type NewWorkout, type Sport } from '../lib/types'
-import { errorMessage, inputClass, labelClass, primaryButton } from '../lib/ui'
+import { errorMessage, hintClass, inputClass, labelClass, primaryButton } from '../lib/ui'
 import { DurationFields, emptyDuration, fromMinutes, toMinutes, type DurationValue } from './DurationFields'
 import { Icon } from './Icon'
 import { SportPicker } from './SportPicker'
@@ -39,7 +43,13 @@ const chipClass = (active: boolean, activeClass = 'border-fg bg-fg text-canvas')
 
 /** Training loggen (leeg) of bewerken (`initial`). Eén kolom breed, zodat het in de zijkolom en in een venster past. */
 export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSubmit: (w: NewWorkout) => Promise<void> }) {
+  const weight = useProfile().profile?.weight_kg ?? null
   const [sport, setSport] = useState<Sport>(initial?.sport ?? 'run')
+  // Leeg = automatisch. Een opgeslagen waarde die afwijkt van de schatting was met de hand of door Strava gezet: die tonen we.
+  const [kcalInput, setKcalInput] = useState(() => {
+    if (initial?.kcal == null) return ''
+    return initial.kcal === estimateKcal(initial, weight) ? '' : String(initial.kcal)
+  })
   const [cardioType, setCardioType] = useState<CardioType | null>(initial?.cardio_type ?? null)
   const [date, setDate] = useState(initial?.date ?? todayISO())
   const [duration, setDuration] = useState<DurationValue>(initial ? fromMinutes(initial.duration_min) : emptyDuration)
@@ -55,6 +65,11 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
   // Krachttraining heeft geen afstand.
   const hasDistance = sport !== 'strength'
   const pace = hasDistance ? formatPace(sport, minutes, distance ? Number(distance) : null) : null
+  const kcalEstimate = estimateKcal(
+    { sport, cardio_type: sport === 'cardio' ? cardioType : null, duration_min: minutes, distance_km: hasDistance && distance ? Number(distance) : null, rpe },
+    weight,
+  )
+  const kcal = kcalInput ? Math.round(Number(kcalInput)) : kcalEstimate
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -71,12 +86,14 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
         distance_km: hasDistance && distance ? Number(distance) : null,
         rpe,
         notes: notes.trim() || null,
+        kcal,
       })
       if (!initial) {
         setDuration(emptyDuration)
         setDistance('')
         setRpe(null)
         setNotes('')
+        setKcalInput('')
       }
     } catch (err) {
       setError(errorMessage(err))
@@ -187,6 +204,45 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
         </div>
       </fieldset>
 
+      <div>
+        <label className="flex items-center gap-3 rounded-lg border border-line bg-subtle p-3">
+          <span className="flex size-10 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand">
+            <Icon name="flame" className="size-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-xs text-fg-3">{kcalInput ? 'Verbrande kcal (aangepast)' : 'Verbrande kcal (geschat)'}</span>
+            <input
+              type="number"
+              min="0"
+              max="20000"
+              inputMode="numeric"
+              aria-label="Verbrande kcal"
+              className="font-display w-full bg-transparent text-2xl font-bold tracking-tight text-fg tabular-nums placeholder:text-fg focus:outline-none"
+              value={kcalInput}
+              placeholder={kcalEstimate !== null ? String(kcalEstimate) : '–'}
+              onChange={(e) => setKcalInput(e.target.value)}
+            />
+          </span>
+          {kcalInput && (
+            <button type="button" onClick={() => setKcalInput('')} className="shrink-0 text-xs font-medium text-fg-3 hover:text-fg">
+              Automatisch
+            </button>
+          )}
+        </label>
+        <p className={hintClass}>
+          {weight ? (
+            <>Op basis van {weight.toLocaleString('nl-BE')} kg, sport, duur{hasDistance ? ', tempo' : ''} en RPE. Tik om aan te passen.</>
+          ) : (
+            <>
+              <Link to="/instellingen" className="font-medium text-fg-2 underline underline-offset-4">
+                Stel je gewicht in
+              </Link>{' '}
+              voor een automatische berekening, of vul zelf in.
+            </>
+          )}
+        </p>
+      </div>
+
       <label className="block">
         <span className={labelClass}>Notities</span>
         <textarea
@@ -202,6 +258,11 @@ export function WorkoutForm({ initial, onSubmit }: { initial?: NewWorkout; onSub
       <button type="submit" disabled={busy} className={`${primaryButton} h-10 w-full`}>
         {!busy && !initial && <Icon name="plus" className="size-4" />}
         {busy ? 'Opslaan…' : initial ? 'Opslaan' : 'Training toevoegen'}
+        {!busy && !initial && minutes > 0 && (
+          <span className="ml-1 inline-flex items-center gap-0.5 rounded-md bg-white/20 px-1.5 py-0.5 text-xs font-bold tabular-nums">
+            <Icon name="bolt" className="size-3 fill-current" />+{workoutXp({ duration_min: minutes, rpe })} XP
+          </span>
+        )}
       </button>
     </form>
   )

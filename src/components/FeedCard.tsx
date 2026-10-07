@@ -125,7 +125,7 @@ export function FeedCard({
     }`
 
   return (
-    <article className="rounded-xl border border-line bg-surface p-5 sm:p-6">
+    <article className="rounded-2xl border border-line bg-surface shadow-card p-5 sm:p-6">
       <header className="flex items-center gap-3">
         <Avatar name={item.display_name} highlight={isOwn} online={online} />
         <div className="min-w-0 flex-1">

@@ -15,6 +15,8 @@ export interface Profile {
   /** YYYY-MM-DD */
   race_date: string | null
   race_type: RaceType | null
+  /** Uit `private_settings`, enkel voor jezelf; null = niet ingevuld (of vóór migratie 015). */
+  weight_kg: number | null
 }
 
 export type ProfileFields = Pick<Profile, 'display_name' | 'show_on_leaderboard'> &
@@ -26,6 +28,7 @@ interface ProfileState {
   profile: Profile | null
   loading: boolean
   save: (fields: ProfileFields) => Promise<void>
+  saveWeight: (kg: number | null) => Promise<void>
 }
 
 const ProfileContext = createContext<ProfileState | null>(null)
@@ -47,14 +50,15 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!userId) return
     let stale = false
-    supabase
-      .from('profiles')
-      .select(COLUMNS)
-      .eq('id', userId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!stale) setState({ userId, profile: data as Profile | null })
-      })
+    Promise.all([
+      supabase.from('profiles').select(COLUMNS).eq('id', userId).maybeSingle(),
+      // Faalt stil vóór migratie 015: dan gewoon geen gewicht.
+      supabase.from('private_settings').select('weight_kg').eq('user_id', userId).maybeSingle(),
+    ]).then(([{ data }, { data: priv }]) => {
+      if (stale) return
+      const weight = priv?.weight_kg == null ? null : Number(priv.weight_kg)
+      setState({ userId, profile: data ? { ...(data as Omit<Profile, 'weight_kg'>), weight_kg: weight } : null })
+    })
     return () => {
       stale = true
     }
@@ -68,12 +72,21 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
         .select(COLUMNS)
         .single()
       if (error) throw error
-      setState({ userId: userId!, profile: data as Profile })
+      setState((s) => ({ userId: userId!, profile: { ...(data as Omit<Profile, 'weight_kg'>), weight_kg: s.profile?.weight_kg ?? null } }))
     },
     [userId],
   )
 
-  return <ProfileContext.Provider value={{ profile, loading, save }}>{children}</ProfileContext.Provider>
+  const saveWeight = useCallback(
+    async (kg: number | null) => {
+      const { error } = await supabase.from('private_settings').upsert({ user_id: userId, weight_kg: kg })
+      if (error) throw error
+      setState((s) => (s.profile ? { ...s, profile: { ...s.profile, weight_kg: kg } } : s))
+    },
+    [userId],
+  )
+
+  return <ProfileContext.Provider value={{ profile, loading, save, saveWeight }}>{children}</ProfileContext.Provider>
 }
 
 export function useProfile() {
@@ -84,7 +97,7 @@ export function useProfile() {
 
 /** Binnen de app-layout bestaat het profiel altijd (anders stuurt de router naar de onboarding). */
 export function useMe() {
-  const { profile, save } = useProfile()
+  const { profile, save, saveWeight } = useProfile()
   if (!profile) throw new Error('useMe zonder profiel')
-  return { me: profile, save }
+  return { me: profile, save, saveWeight }
 }

@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import { addDays, parseISODate, weekStart } from './race'
 import { SPORT_LABEL, type Workout } from './types'
 
 // Persoonlijke records en mijlpalen. Trainingen hebben geen splits: een record is het gemiddelde tempo
@@ -244,18 +243,6 @@ export function paceSeries(workouts: Workout[], sport: RecordSport, from: string
     .filter((w) => w.sport === sport && w.date >= from && w.duration_min > 0 && (w.distance_km ?? 0) >= MIN_PACE_KM[sport])
     .sort(chronological)
     .map((w) => ({ date: w.date, value: paceValue(sport, w.duration_min, w.distance_km!), km: w.distance_km!, minutes: w.duration_min, workoutId: w.id }))
-}
-
-/** Langste reeks opeenvolgende weken (maandag–zondag) met minstens één training. */
-export function longestWeekStreak(workouts: Pick<Workout, 'date'>[]): number {
-  const weeks = [...new Set(workouts.map((w) => weekStart(parseISODate(w.date))))].sort()
-  let best = 0
-  let run = 0
-  weeks.forEach((w, i) => {
-    run = i > 0 && addDays(weeks[i - 1], 7) === w ? run + 1 : 1
-    best = Math.max(best, run)
-  })
-  return best
 }
 
 const median = (xs: number[]) => {

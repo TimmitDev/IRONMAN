@@ -27,6 +27,10 @@ export interface StravaActivity {
   type?: string
   moving_time: number
   distance: number
+  /** Alleen in de detailweergave (webhook); niet in de lijst. */
+  calories?: number
+  /** Arbeid op de pedalen bij ritten met vermogen. */
+  kilojoules?: number
   start_date_local: string
   map?: { summary_polyline?: string | null; polyline?: string | null }
 }
@@ -178,6 +182,7 @@ interface WorkoutRow {
   date: string
   sport: Sport
   cardio_type: string | null
+  kcal: number | null
   duration_min: number
   distance_km: number | null
   notes: string | null
@@ -196,6 +201,9 @@ function toWorkout(a: StravaActivity, userId: string): WorkoutRow | null {
     date: a.start_date_local.slice(0, 10),
     sport,
     cardio_type: cardioType,
+    // Gemeten calorieën als Strava ze heeft; anders kJ op de pedalen (≈ kcal verbrand, want het lichaam is ~24% efficiënt
+    // en 1 kcal = 4,184 kJ: die twee heffen elkaar zo goed als op). Zonder beide schat de app zelf (src/lib/kcal.ts).
+    kcal: a.calories ? Math.round(a.calories) : a.kilojoules ? Math.round(a.kilojoules) : null,
     // Bewegingstijd, zoals Strava die ook als "tijd" toont; minuten met 4 decimalen zoals de database.
     duration_min: Math.round((a.moving_time / 60) * 10000) / 10000,
     distance_km: sport === 'strength' || !a.distance ? null : Math.round(a.distance / 10) / 100,

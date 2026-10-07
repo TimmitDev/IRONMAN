@@ -96,6 +96,8 @@ export interface Workout {
   distance_km: number | null
   rpe: number | null
   notes: string | null
+  /** Verbrande kcal (formulier of Strava); null = onbekend, zie workoutKcal in lib/kcal.ts. */
+  kcal?: number | null
   created_at: string
   /** Gezet als de training uit Strava geïmporteerd is. */
   strava_activity_id?: number | null
@@ -103,7 +105,7 @@ export interface Workout {
   route_polyline?: string | null
 }
 
-export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'cardio_type' | 'duration_min' | 'distance_km' | 'rpe' | 'notes'>
+export type NewWorkout = Pick<Workout, 'date' | 'sport' | 'cardio_type' | 'duration_min' | 'distance_km' | 'rpe' | 'notes' | 'kcal'>
 
 export interface PlannedWorkout {
   id: string

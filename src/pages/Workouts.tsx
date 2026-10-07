@@ -258,7 +258,7 @@ function MonthGroups({ workouts, onEdit }: { workouts: Workout[]; onEdit: (w: Wo
                 </div>
               )}
             </div>
-            <WorkoutList workouts={items} onEdit={onEdit} />
+            <WorkoutList workouts={items} onEdit={onEdit} showKcal />
           </section>
         )
       })}

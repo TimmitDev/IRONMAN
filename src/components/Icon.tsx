@@ -105,6 +105,8 @@ const PATHS = {
   ),
   'eye-off': <path d="M9.9 4.2A10 10 0 0 1 12 4c6.5 0 10 8 10 8a17 17 0 0 1-2.2 3.2M6.6 6.6A17 17 0 0 0 2 12s3.5 8 10 8a9.7 9.7 0 0 0 5.4-1.6M14.1 14.1a3 3 0 1 1-4.2-4.2M2 2l20 20" />,
   menu: <path d="M4 6h16M4 12h16M4 18h16" />,
+  flame: <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.4-.5-2-1-3-1.1-2.1-.2-4 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.2.4-2.3 1-3.3.3 1.9 1.6 2.8 2.5 2.8z" />,
+  bolt: <path d="M13 2 3 14h9l-1 8 10-12h-9z" />,
   // Sporten: zelfde sleutels als Sport, dus <Icon name={sport} /> werkt rechtstreeks.
   swim: (
     <>

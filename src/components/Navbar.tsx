@@ -11,6 +11,7 @@ import { iconButton } from '../lib/ui'
 import { Avatar } from './Avatar'
 import { ago } from './FeedCard'
 import { Icon, type IconName } from './Icon'
+import { ProgressChips } from './LevelBadge'
 import { DarkModeSwitch } from './ThemeToggle'
 
 /** Open/dicht voor een uitklapmenu; sluit bij klik ernaast, Escape of een andere pagina. */
@@ -49,6 +50,9 @@ export function Navbar({ inbox, unread, onMarkRead }: { inbox: InboxItem[]; unre
     <header className="sticky top-0 z-20 hidden h-14 items-center gap-3 border-b border-line bg-canvas/80 px-6 backdrop-blur-xl lg:flex">
       <PlayerSearch />
       <div className="ml-auto flex shrink-0 items-center gap-1">
+        <Link to="/dashboard" className="mr-2 rounded-full transition hover:opacity-80" aria-label="Je voortgang">
+          <ProgressChips />
+        </Link>
         <Notifications inbox={inbox} unread={unread} onMarkRead={onMarkRead} />
         <ProfileMenu />
       </div>

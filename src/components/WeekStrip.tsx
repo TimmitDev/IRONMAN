@@ -11,7 +11,7 @@ export function WeekStrip({ start, done, planned }: { start: string; done: Worko
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
 
   return (
-    <Link to="/plan" className="grid grid-cols-7 overflow-hidden rounded-xl border border-line bg-surface transition hover:border-line-strong" aria-label="Deze week in je schema">
+    <Link to="/plan" className="grid grid-cols-7 overflow-hidden rounded-2xl border border-line bg-surface shadow-card transition hover:border-line-strong" aria-label="Deze week in je schema">
       {days.map((d, i) => {
         const dayDone = done.filter((w) => w.date === d)
         const dayOpen = planned.filter((p) => p.date === d && !p.workout_id)

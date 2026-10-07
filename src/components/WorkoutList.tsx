@@ -1,4 +1,6 @@
 import { formatPace, formatSessionDuration, formatShortDate } from '../lib/race'
+import { workoutKcal } from '../lib/kcal'
+import { useProfile } from '../lib/profile'
 import { SPORT_SOFT, SPORT_TEXT, workoutLabel, type Workout } from '../lib/types'
 import { EmptyState } from './EmptyState'
 import { Icon } from './Icon'
@@ -7,8 +9,12 @@ import { RouteThumb } from './RouteThumb'
 /** Zwaardere sessies vallen meer op: neutraal tot 6, waarschuwingskleur vanaf 7, rood vanaf 9. */
 const rpeClass = (rpe: number) => (rpe >= 9 ? 'bg-danger/10 text-danger' : rpe >= 7 ? 'bg-warning/10 text-warning' : 'bg-subtle text-fg-2')
 
-/** Lijst met trainingen; met `onEdit` is elke rij aanklikbaar om te bewerken. */
-export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?: (w: Workout) => void }) {
+/**
+ * Lijst met trainingen; met `onEdit` is elke rij aanklikbaar om te bewerken.
+ * `showKcal` alleen voor je eigen trainingen: kcal van anderen is privé.
+ */
+export function WorkoutList({ workouts, onEdit, showKcal = false }: { workouts: Workout[]; onEdit?: (w: Workout) => void; showKcal?: boolean }) {
+  const weight = useProfile().profile?.weight_kg ?? null
   if (!workouts.length)
     return (
       <EmptyState icon="activity" title="Nog geen trainingen">
@@ -20,6 +26,7 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
     <ul className="divide-y divide-line">
       {workouts.map((w) => {
         const pace = formatPace(w.sport, w.duration_min, w.distance_km)
+        const kcal = showKcal ? workoutKcal(w, weight) : null
         const content = (
           <>
             {w.route_polyline ? (
@@ -49,11 +56,13 @@ export function WorkoutList({ workouts, onEdit }: { workouts: Workout[]; onEdit?
               </p>
             </div>
             <div className="shrink-0 text-right tabular-nums">
-              <div className="font-medium tracking-tight text-fg">{formatSessionDuration(w.duration_min)}</div>
-              {w.distance_km ? (
+              <div className="font-semibold tracking-tight text-fg">{formatSessionDuration(w.duration_min)}</div>
+              {w.distance_km || kcal ? (
                 <div className="mt-0.5 text-xs text-fg-3">
-                  {w.distance_km} km
-                  {pace && <span className="text-fg-4"> · {pace}</span>}
+                  {w.distance_km ? `${w.distance_km} km` : ''}
+                  {pace && <span className="hidden text-fg-4 sm:inline"> · {pace}</span>}
+                  {w.distance_km && kcal ? ' · ' : ''}
+                  {kcal ? `${kcal.toLocaleString('nl-BE')} kcal` : ''}
                 </div>
               ) : null}
             </div>

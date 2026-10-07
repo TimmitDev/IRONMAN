@@ -50,10 +50,10 @@ export function MobileNav({ unread }: { unread: number }) {
           <div className="flex flex-1 justify-center">
             <Link
               to="/workouts"
-              className="flex size-11 items-center justify-center rounded-full bg-fg text-canvas transition active:scale-95"
+              className="-mt-5 flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-[0_8px_20px_-6px_rgb(227_18_45/0.7)] ring-4 ring-canvas transition active:scale-95"
               aria-label="Training loggen"
             >
-              <Icon name="plus" className="size-5" strokeWidth={2} />
+              <Icon name="plus" className="size-6" strokeWidth={2.5} />
             </Link>
           </div>
           {tab(TABS[2])}

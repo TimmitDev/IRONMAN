@@ -14,7 +14,7 @@
     <meta name="apple-mobile-web-app-title" content="IRONMAN" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
     <script>
       // Thema zetten vóór de eerste paint, zodat er geen flits van het verkeerde thema is.
       // Zelfde logica als src/lib/theme.tsx.
@@ -25,7 +25,7 @@
         } catch (e) {}
         var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
         document.documentElement.dataset.theme = dark ? 'dark' : 'light'
-        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#0a0a0a' : '#fafafa')
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#08090b' : '#f6f6f7')
       })()
     </script>
     <title>IRONMAN Training</title>
